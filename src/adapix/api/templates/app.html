@@ -1060,6 +1060,7 @@ a{color:inherit;text-decoration:none}
       <button data-view="settings">Settings</button>
     </div>
     <div class="actions">
+      <button class="icon-btn" id="run-campaigns" title="Run campaigns now" style="font-size:13px;padding:0 10px;width:auto;gap:6px;display:flex;align-items:center">▶ Run</button>
       <button class="icon-btn" id="reload" title="Reload">⟲</button>
       <a class="cta" href="/chat">Chat with Adapix →</a>
     </div>
@@ -1618,7 +1619,20 @@ a{color:inherit;text-decoration:none}
       return;
     }
     if (action === 'test'){
-      toast('Test fired for ' + key + '. Check chat for the result.');
+      toast('Sending test message for ' + key + '…');
+      try {
+        const r = await fetch('/api/v1/' + key + '/test', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({to: 'test@adapix.com'}),
+        });
+        const j = await r.json().catch(()=>({}));
+        if (r.ok) toast(key + ' test sent successfully.');
+        else toast('Test failed: ' + (j.detail || r.status));
+      } catch(e) {
+        toast('Test failed — check that ' + key + ' credentials are set in .env');
+      }
       return;
     }
   }
@@ -1699,6 +1713,31 @@ a{color:inherit;text-decoration:none}
     });
     const rl = document.getElementById('reload');
     if (rl) rl.addEventListener('click', async () => { await loadFeed(); render(); });
+
+    const runBtn = document.getElementById('run-campaigns');
+    if (runBtn) runBtn.addEventListener('click', async () => {
+      runBtn.disabled = true;
+      runBtn.textContent = '▶ Running…';
+      try {
+        const r = await fetch('/api/v1/campaigns/run', {method:'POST', credentials:'include'});
+        const j = await r.json();
+        const composed = (j.results||[]).reduce((s,x)=>s+(x.composed||0),0);
+        const errs = (j.errors||[]).length;
+        if (errs && !composed) {
+          toast('Campaign pass hit an error — Claude API may be busy. Will retry in 5 min.');
+        } else if (composed > 0) {
+          toast(composed + ' message' + (composed===1?'':'s') + ' drafted — check the Queue tab to approve.');
+          await loadFeed(); render();
+        } else {
+          toast('No messages due right now. Campaigns are up to date.');
+        }
+      } catch(e) {
+        toast('Could not reach server. Is it running?');
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = '▶ Run';
+      }
+    });
   }
 
   function toast(msg){
