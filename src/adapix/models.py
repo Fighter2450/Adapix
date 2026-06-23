@@ -120,6 +120,46 @@ class Message(Base):
     campaign: Mapped["Campaign"] = relationship(back_populates="messages")
 
 
+class Automation(Base):
+    """A scheduled browser automation — visits a URL, extracts data, saves a doc."""
+
+    __tablename__ = "automations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str] = mapped_column(Text)
+    task: Mapped[str] = mapped_column(Text)  # natural-language description of what to extract
+    schedule: Mapped[str] = mapped_column(String(64), default="0 9 * * *")  # cron expression
+    output_format: Mapped[str] = mapped_column(String(16), default="docx")  # docx | txt | json
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)  # active | paused
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_run_status: Mapped[str | None] = mapped_column(String(32), nullable=True)  # ok | error
+    last_result_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    runs: Mapped[list["AutomationRun"]] = relationship(
+        back_populates="automation", cascade="all, delete-orphan"
+    )
+
+
+class AutomationRun(Base):
+    """One execution of an automation — stores the extracted data and output file."""
+
+    __tablename__ = "automation_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    automation_id: Mapped[int] = mapped_column(ForeignKey("automations.id"), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="running")  # running | ok | error
+    extracted_data: Mapped[str | None] = mapped_column(Text, nullable=True)  # raw Claude output
+    result_path: Mapped[str | None] = mapped_column(Text, nullable=True)  # path to output file
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    automation: Mapped["Automation"] = relationship(back_populates="runs")
+
+
 class EscalationEvent(Base):
     """A flagged inbound message that needs human attention."""
 

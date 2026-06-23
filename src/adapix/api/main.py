@@ -60,11 +60,10 @@ def create_app() -> FastAPI:
     async def _startup() -> None:
         init_db()
         asyncio.create_task(_campaign_loop())
+        asyncio.create_task(_automation_loop())
 
     async def _campaign_loop() -> None:
-        """Run campaigns every 5 minutes in the background — this is what
-        makes Adapix 'never sleep'. First run fires after a short delay so
-        the server is fully up before hitting the DB."""
+        """Run campaigns every 5 minutes in the background."""
         await asyncio.sleep(10)
         while True:
             try:
@@ -74,7 +73,22 @@ def create_app() -> FastAPI:
                 log.info(f"Campaign pass complete — {total} messages composed.")
             except Exception as exc:
                 log.error(f"Campaign scheduler error: {exc}")
-            await asyncio.sleep(300)  # every 5 minutes
+            await asyncio.sleep(300)
+
+    async def _automation_loop() -> None:
+        """Check every 5 minutes for automations whose cron schedule is due."""
+        await asyncio.sleep(30)  # slight offset from campaign loop
+        while True:
+            try:
+                from ..automations import get_due_automations, run_automation
+                import threading
+                due = get_due_automations()
+                for aid in due:
+                    log.info(f"Automation {aid} is due — launching...")
+                    threading.Thread(target=run_automation, args=(aid,), daemon=True).start()
+            except Exception as exc:
+                log.error(f"Automation scheduler error: {exc}")
+            await asyncio.sleep(300)
 
     # ------------------------------------------------------------------
     # Admin dashboard (auth required)

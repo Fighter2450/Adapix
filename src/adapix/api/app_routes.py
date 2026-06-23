@@ -1189,3 +1189,149 @@ def run_all_campaigns() -> dict[str, Any]:
         "results": results,
         "errors": errors,
     }
+
+
+# ---------------------------------------------------------------------------
+# Automations API
+# ---------------------------------------------------------------------------
+
+class AutomationBody(BaseModel):
+    name: str
+    url: str
+    task: str
+    schedule: str = "0 9 * * *"
+    output_format: str = "docx"
+
+
+@router.get("/api/v1/automations")
+def api_list_automations(_user: str = Depends(verify_admin)) -> dict[str, Any]:
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation, AutomationRun
+    settings = Settings()
+    with get_session(settings) as s:
+        autos = s.query(Automation).order_by(Automation.created_at.desc()).all()
+        items = []
+        for a in autos:
+            last_run = (
+                s.query(AutomationRun)
+                .filter(AutomationRun.automation_id == a.id)
+                .order_by(AutomationRun.started_at.desc())
+                .first()
+            )
+            items.append({
+                "id": a.id,
+                "name": a.name,
+                "url": a.url,
+                "task": a.task,
+                "schedule": a.schedule,
+                "output_format": a.output_format,
+                "status": a.status,
+                "last_run_at": a.last_run_at.isoformat() if a.last_run_at else None,
+                "last_run_status": a.last_run_status,
+                "last_error": a.last_error,
+                "has_result": bool(a.last_result_path),
+                "run_count": s.query(AutomationRun).filter(AutomationRun.automation_id == a.id).count(),
+            })
+    return {"automations": items}
+
+
+@router.post("/api/v1/automations")
+def api_create_automation(body: AutomationBody, _user: str = Depends(verify_admin)) -> dict[str, Any]:
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    settings = Settings()
+    with get_session(settings) as s:
+        a = Automation(
+            name=body.name,
+            url=body.url,
+            task=body.task,
+            schedule=body.schedule,
+            output_format=body.output_format,
+        )
+        s.add(a)
+        s.flush()
+        aid = a.id
+    return {"ok": True, "id": aid}
+
+
+@router.delete("/api/v1/automations/{aid}")
+def api_delete_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[str, Any]:
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    settings = Settings()
+    with get_session(settings) as s:
+        a = s.get(Automation, aid)
+        if not a:
+            raise HTTPException(status_code=404, detail="not found")
+        s.delete(a)
+    return {"ok": True}
+
+
+@router.patch("/api/v1/automations/{aid}")
+def api_update_automation(aid: int, body: AutomationBody, _user: str = Depends(verify_admin)) -> dict[str, Any]:
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    settings = Settings()
+    with get_session(settings) as s:
+        a = s.get(Automation, aid)
+        if not a:
+            raise HTTPException(status_code=404, detail="not found")
+        a.name = body.name
+        a.url = body.url
+        a.task = body.task
+        a.schedule = body.schedule
+        a.output_format = body.output_format
+    return {"ok": True}
+
+
+@router.post("/api/v1/automations/{aid}/run")
+def api_run_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[str, Any]:
+    """Trigger an automation immediately (outside its schedule)."""
+    import threading
+    from ..automations import run_automation
+    def _run():
+        try:
+            run_automation(aid)
+        except Exception as exc:
+            log.error(f"Automation {aid} thread error: {exc}")
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ok": True, "message": "Automation started — check back in a moment for results."}
+
+
+@router.post("/api/v1/automations/{aid}/pause")
+def api_pause_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[str, Any]:
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    settings = Settings()
+    with get_session(settings) as s:
+        a = s.get(Automation, aid)
+        if not a:
+            raise HTTPException(status_code=404, detail="not found")
+        a.status = "paused" if a.status == "active" else "active"
+        new_status = a.status
+    return {"ok": True, "status": new_status}
+
+
+@router.get("/api/v1/automations/{aid}/download")
+def api_download_result(aid: int, _user: str = Depends(verify_admin)):
+    from pathlib import Path as FPath
+    from fastapi.responses import FileResponse
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    settings = Settings()
+    with get_session(settings) as s:
+        a = s.get(Automation, aid)
+        if not a or not a.last_result_path:
+            raise HTTPException(status_code=404, detail="no result yet")
+        path = FPath(a.last_result_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="result file missing")
+        ext = path.suffix
+        media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if ext == ".docx" else "text/plain"
+        return FileResponse(str(path), media_type=media, filename=path.name)

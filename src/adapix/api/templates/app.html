@@ -992,6 +992,82 @@ a{color:inherit;text-decoration:none}
 .device-row .v.ok{color:var(--good)}
 
 /* ================================================================
+   AUTOMATIONS — section 04 in Workshop
+   ================================================================ */
+.auto-list{display:flex;flex-direction:column;gap:12px}
+.auto-card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:16px 18px;
+  display:grid;grid-template-columns:1fr auto;gap:8px 16px;
+  transition:border-color .2s;
+}
+.auto-card:hover{border-color:rgba(0,212,255,.2)}
+.auto-card-name{font-weight:600;color:#fff;font-size:14px}
+.auto-card-url{font-size:12px;color:var(--slate-3);margin-top:2px;word-break:break-all}
+.auto-card-task{font-size:13px;color:var(--slate);margin-top:6px;line-height:1.5;grid-column:1/-1}
+.auto-card-meta{
+  display:flex;align-items:center;gap:10px;margin-top:10px;grid-column:1/-1;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--slate-3);
+}
+.auto-pill{
+  padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:600;letter-spacing:.05em;
+  border:1px solid;
+}
+.auto-pill.ok{background:rgba(121,224,142,.10);color:var(--good);border-color:rgba(121,224,142,.25)}
+.auto-pill.error{background:rgba(255,140,134,.10);color:var(--hot);border-color:rgba(255,140,134,.25)}
+.auto-pill.active{background:rgba(0,212,255,.08);color:var(--cyan-2);border-color:rgba(0,212,255,.25)}
+.auto-pill.paused{background:rgba(255,255,255,.05);color:var(--slate-2);border-color:rgba(255,255,255,.10)}
+.auto-card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:1/-1;margin-top:4px}
+.auto-btn{
+  padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;
+  transition:all .15s;
+}
+.auto-btn:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22)}
+.auto-btn.primary{background:linear-gradient(140deg,var(--cyan-2),var(--cyan));color:#031428;border:none}
+.auto-btn.primary:hover{box-shadow:0 8px 20px -8px rgba(0,212,255,.6);transform:translateY(-1px)}
+.auto-btn.danger{color:var(--hot);border-color:rgba(255,140,134,.2)}
+.auto-btn.danger:hover{background:rgba(255,140,134,.08);border-color:rgba(255,140,134,.4)}
+.auto-empty{
+  text-align:center;padding:40px 24px;color:var(--slate-3);
+  border:1px dashed rgba(255,255,255,.08);border-radius:14px;
+}
+.auto-empty-glyph{font-size:32px;margin-bottom:12px}
+.auto-empty-title{font-size:15px;color:var(--slate);font-weight:600;margin-bottom:6px}
+.auto-empty-sub{font-size:13px;line-height:1.6}
+
+/* New automation modal */
+.auto-modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,11,26,.85);
+  backdrop-filter:blur(8px);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.auto-modal{
+  background:linear-gradient(160deg,#0d1f3c,#07111e);
+  border:1px solid rgba(0,212,255,.2);border-radius:20px;
+  padding:28px 28px 24px;width:100%;max-width:520px;
+  box-shadow:0 40px 80px -20px rgba(0,0,0,.7);
+  animation:modalIn .25s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.auto-modal h2{font-size:20px;font-weight:700;color:#fff;margin:0 0 20px}
+.auto-field{margin-bottom:16px}
+.auto-field label{display:block;font-size:12px;font-weight:600;color:var(--slate-2);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.auto-field input,.auto-field textarea,.auto-field select{
+  width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;padding:10px 12px;color:#fff;font:inherit;font-size:13.5px;
+  outline:none;transition:border-color .15s;
+}
+.auto-field input:focus,.auto-field textarea:focus,.auto-field select:focus{
+  border-color:rgba(0,212,255,.5);box-shadow:0 0 0 2px rgba(0,212,255,.08);
+}
+.auto-field textarea{min-height:80px;resize:vertical;line-height:1.55}
+.auto-field select option{background:#0d1f3c}
+.auto-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.cron-hint{font-size:11px;color:var(--slate-3);margin-top:5px;line-height:1.5}
+
+/* ================================================================
    Mobile bottom nav — only shown when sidebars are hidden
    ================================================================ */
 .bn{
@@ -1585,6 +1661,13 @@ a{color:inherit;text-decoration:none}
       +     '<div class="wb-eyebrow"><span class="wb-tag">03</span>PLUG-INS<span class="wb-ct">'+totalPlugs+'</span></div>'
       +     '<div class="wb-plug-list">'+pluginRows+'</div>'
       +   '</section>'
+
+      +   '<section class="wb-section" id="auto-section">'
+      +     '<div class="wb-eyebrow"><span class="wb-tag">04</span>AUTOMATIONS<span class="wb-ct" id="auto-count">…</span></div>'
+      +     '<div id="auto-list-container"><div class="auto-empty"><div class="auto-empty-glyph">⟳</div><div class="auto-empty-title">Loading…</div></div></div>'
+      +     '<div style="margin-top:14px"><button class="auto-btn primary" id="auto-new-btn">+ New automation</button></div>'
+      +   '</section>'
+
       + '</div>';
 
     // Wire tool clicks → prefill the chat
@@ -1601,6 +1684,164 @@ a{color:inherit;text-decoration:none}
         btn.getAttribute('data-plug-key'),
         btn.getAttribute('data-plug-action')
       ));
+    });
+
+    // Load and render automations
+    await renderAutomations();
+    document.getElementById('auto-new-btn')?.addEventListener('click', () => showAutoModal());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Automations
+  // ---------------------------------------------------------------------------
+
+  async function loadAutomations(){
+    const r = await fetch('/api/v1/automations', {credentials:'include'});
+    if (!r.ok) return [];
+    return (await r.json()).automations || [];
+  }
+
+  async function renderAutomations(){
+    const autos = await loadAutomations().catch(()=>[]);
+    const ct = document.getElementById('auto-count');
+    const container = document.getElementById('auto-list-container');
+    if (!ct || !container) return;
+    ct.textContent = autos.length;
+    if (!autos.length){
+      container.innerHTML = '<div class="auto-empty">'
+        + '<div class="auto-empty-glyph">⚙</div>'
+        + '<div class="auto-empty-title">No automations yet.</div>'
+        + '<div class="auto-empty-sub">Set one up and Adapix will open Chrome, visit the site, extract your data, and save it as a document — automatically, on schedule.</div>'
+        + '</div>';
+      return;
+    }
+    container.innerHTML = '<div class="auto-list">' + autos.map(a => {
+      const lastRun = a.last_run_at
+        ? new Date(a.last_run_at).toLocaleString()
+        : 'Never run';
+      const statusPill = a.last_run_status === 'ok'
+        ? '<span class="auto-pill ok">Last run ✓</span>'
+        : a.last_run_status === 'error'
+        ? '<span class="auto-pill error">Last run failed</span>'
+        : '';
+      const activePill = '<span class="auto-pill '+(a.status==='active'?'active':'paused')+'">'+(a.status==='active'?'Active':'Paused')+'</span>';
+      return '<div class="auto-card" data-id="'+a.id+'">'
+        + '<div>'
+        +   '<div class="auto-card-name">'+escapeHTML(a.name)+'</div>'
+        +   '<div class="auto-card-url">'+escapeHTML(a.url)+'</div>'
+        + '</div>'
+        + '<div style="text-align:right;font-size:11px;color:var(--slate-3);font-family:\'JetBrains Mono\',monospace">'+escapeHTML(a.schedule)+'</div>'
+        + '<div class="auto-card-task">'+escapeHTML(a.task)+'</div>'
+        + '<div class="auto-card-meta">'
+        +   activePill + statusPill
+        +   '<span style="margin-left:auto">'+escapeHTML(lastRun)+'</span>'
+        +   '<span>'+escapeHTML(a.output_format.toUpperCase())+'</span>'
+        + '</div>'
+        + '<div class="auto-card-actions">'
+        +   '<button class="auto-btn primary auto-run-btn" data-id="'+a.id+'">▶ Run now</button>'
+        +   (a.has_result ? '<button class="auto-btn auto-dl-btn" data-id="'+a.id+'">↓ Download</button>' : '')
+        +   '<button class="auto-btn auto-pause-btn" data-id="'+a.id+'">'+(a.status==='active'?'Pause':'Resume')+'</button>'
+        +   '<button class="auto-btn auto-edit-btn" data-id="'+a.id+'" data-auto=\''+JSON.stringify(a).replace(/'/g,"&#39;")+'\'">Edit</button>'
+        +   '<button class="auto-btn danger auto-del-btn" data-id="'+a.id+'">Delete</button>'
+        + '</div>'
+        + '</div>';
+    }).join('') + '</div>';
+
+    // Wire buttons
+    container.querySelectorAll('.auto-run-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        btn.disabled = true; btn.textContent = 'Running…';
+        try {
+          const r = await fetch('/api/v1/automations/'+id+'/run', {method:'POST',credentials:'include'});
+          const j = await r.json();
+          toast('Automation started — results will appear when done.');
+          setTimeout(()=>renderAutomations(), 3000);
+        } catch(e){ toast('Failed to start automation'); }
+        finally { btn.disabled=false; btn.textContent='▶ Run now'; }
+      });
+    });
+    container.querySelectorAll('.auto-dl-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.open('/api/v1/automations/'+btn.dataset.id+'/download', '_blank');
+      });
+    });
+    container.querySelectorAll('.auto-pause-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await fetch('/api/v1/automations/'+btn.dataset.id+'/pause', {method:'POST',credentials:'include'});
+        await renderAutomations();
+      });
+    });
+    container.querySelectorAll('.auto-del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this automation?')) return;
+        await fetch('/api/v1/automations/'+btn.dataset.id, {method:'DELETE',credentials:'include'});
+        await renderAutomations();
+      });
+    });
+    container.querySelectorAll('.auto-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try { showAutoModal(JSON.parse(btn.dataset.auto)); } catch(_){}
+      });
+    });
+  }
+
+  function showAutoModal(existing){
+    const isEdit = !!existing;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'auto-modal-backdrop';
+    backdrop.innerHTML = '<div class="auto-modal">'
+      + '<h2>'+(isEdit ? 'Edit automation' : 'New automation')+'</h2>'
+      + '<div class="auto-field"><label>Name</label>'
+      +   '<input id="am-name" placeholder="e.g. Daily competitor pricing" value="'+escapeHTML(isEdit?existing.name:'')+'"></div>'
+      + '<div class="auto-field"><label>Website URL</label>'
+      +   '<input id="am-url" placeholder="https://example.com/pricing" value="'+escapeHTML(isEdit?existing.url:'')+'"></div>'
+      + '<div class="auto-field"><label>What to extract</label>'
+      +   '<textarea id="am-task" placeholder="Find all product prices and their names. Include any discounts or sale prices shown.">'+escapeHTML(isEdit?existing.task:'')+'</textarea></div>'
+      + '<div class="auto-field"><label>Schedule (cron)</label>'
+      +   '<input id="am-schedule" placeholder="0 9 * * *" value="'+escapeHTML(isEdit?existing.schedule:'0 9 * * *')+'">'
+      +   '<div class="cron-hint">Examples: <b>0 9 * * *</b> = every day at 9am &nbsp;·&nbsp; <b>0 9 * * 1</b> = every Monday 9am &nbsp;·&nbsp; <b>0 9 * * 1-5</b> = weekdays 9am</div>'
+      + '</div>'
+      + '<div class="auto-field"><label>Output format</label>'
+      +   '<select id="am-format">'
+      +     '<option value="docx"'+(isEdit&&existing.output_format==='docx'?' selected':'')+'>Word document (.docx)</option>'
+      +     '<option value="txt"'+(isEdit&&existing.output_format==='txt'?' selected':'')+'>Plain text (.txt)</option>'
+      +     '<option value="json"'+(isEdit&&existing.output_format==='json'?' selected':'')+'>JSON (.json)</option>'
+      +   '</select></div>'
+      + '<div class="auto-modal-actions">'
+      +   '<button class="auto-btn" id="am-cancel">Cancel</button>'
+      +   '<button class="auto-btn primary" id="am-save">'+(isEdit?'Save changes':'Create automation')+'</button>'
+      + '</div>'
+      + '</div>';
+    document.body.appendChild(backdrop);
+
+    document.getElementById('am-cancel').addEventListener('click', ()=>backdrop.remove());
+    backdrop.addEventListener('click', e => { if(e.target===backdrop) backdrop.remove(); });
+
+    document.getElementById('am-save').addEventListener('click', async () => {
+      const body = {
+        name:    document.getElementById('am-name').value.trim(),
+        url:     document.getElementById('am-url').value.trim(),
+        task:    document.getElementById('am-task').value.trim(),
+        schedule:document.getElementById('am-schedule').value.trim() || '0 9 * * *',
+        output_format: document.getElementById('am-format').value,
+      };
+      if (!body.name || !body.url || !body.task){
+        toast('Name, URL, and task are required.'); return;
+      }
+      const url = isEdit
+        ? '/api/v1/automations/'+existing.id
+        : '/api/v1/automations';
+      const method = isEdit ? 'PATCH' : 'POST';
+      const r = await fetch(url, {method, credentials:'include',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+      if (r.ok){
+        backdrop.remove();
+        toast(isEdit ? 'Automation updated.' : 'Automation created.');
+        await renderAutomations();
+      } else {
+        toast('Save failed — check the server logs.');
+      }
     });
   }
 
