@@ -1,0 +1,30 @@
+# Example practice configuration.
+# Copy to <practice_id>.yaml for each real practice and fill in real values.
+
+id: example
+name: "Steel City Orthodontics"
+doctor_name: "Dr. Sarah Bennett"
+office_phone: "(412) 555-0142"
+office_hours: "Monday-Thursday 8am-5pm, Friday 8am-2pm"
+typical_treatment_duration: "18-24 months for braces, 12-18 months for clear aligners"
+
+# How outbound messages are released:
+#   required - queue for human approval before sending (pilot default)
+#   auto     - send immediately (after the practice is comfortable)
+approval_mode: required
+
+financing_options:
+  - "0% interest in-house payment plans up to 24 months"
+  - "Care Credit financing"
+  - "Insurance billing on the family's behalf"
+  - "10% discount for full payment up front"
+
+additional_knowledge:
+  brand_voice: "warm, family-friendly, no-pressure"
+  doctor_background: "Dr. Bennett completed her residency at Pitt and has been practicing in Pittsburgh for 12 years. Specializes in clear aligners and Phase 1 treatment for younger patients."
+  signature_program: "Steel City Smiles Club: free electric toothbrush, monthly progress photos, and a celebration when treatment ends."
+  common_concerns:
+    - "Cost"
+    - "Treatment length / will my kid stick with it"
+    - "Whether the kid actually needs braces or can wait"
+    - "Aligners vs. braces decision"

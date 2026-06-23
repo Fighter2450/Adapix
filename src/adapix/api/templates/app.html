@@ -1,0 +1,1724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Adapix</title>
+<meta name="theme-color" content="#040b1a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Adapix" />
+<link rel="manifest" href="/app/manifest.json" />
+<link rel="icon" type="image/svg+xml" href="/static/adapix_mark.svg" />
+<link rel="apple-touch-icon" href="/app/icon-192.png" />
+<link rel="icon" href="/app/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2c5d; --navy-2:#08193a; --navy-3:#040b1a;
+  --cyan:#00b8e6; --cyan-2:#00d4ff; --cyan-3:#aef0ff;
+  --ink:#ffffff; --slate:#a9bbd9; --slate-2:#7fa0d6; --slate-3:#4a6a99;
+  --line:rgba(0,184,230,.18);
+  --warn:#f4cc77; --hot:#ff8c86; --good:#79e08e;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{
+  font-family:'Inter','SF Pro Display',system-ui,-apple-system,sans-serif;
+  background:
+    radial-gradient(ellipse at 25% -10%, rgba(0,100,180,.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 110%, rgba(0,80,150,.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(0,212,255,.08) 0%, transparent 50%),
+    linear-gradient(180deg, #0a1834 0%, #061634 100%);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.45;
+  min-height:100vh;
+  letter-spacing:-.003em;
+  font-feature-settings:"ss01","cv11";
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button{font:inherit;cursor:pointer;color:inherit;background:transparent;border:0}
+a{color:inherit;text-decoration:none}
+
+/* ================================================================
+   The outer "window" container — full-bleed, fills the entire viewport.
+   The body's gradient background is what you see through any
+   semi-transparent overlays.
+   ================================================================ */
+.window{
+  max-width:none;
+  margin:0;
+  border-radius:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.window > .body{
+  flex:1;
+}
+
+/* ================================================================
+   Top bar — traffic lights + Adapix brand + horizontal nav + actions
+   ================================================================ */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:13px 22px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  background:rgba(8,18,42,.72);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.dots{display:flex;gap:7px;flex:0 0 auto}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#ff5f56}
+.dot.y{background:#ffbd2e}
+.dot.g{background:#27c93f}
+.brand{display:flex;align-items:center;gap:11px;margin-left:10px}
+.brand .mark{
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 0 12px rgba(0,212,255,.45));
+}
+.brand .mark img{width:100%;height:100%;object-fit:contain;display:block}
+.brand b{font-size:15.5px;font-weight:700;letter-spacing:-.005em;color:#fff}
+.brand .pulse{
+  width:7px;height:7px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 10px var(--cyan);animation:breathe 3s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:scale(.7);opacity:.5}
+  50%{transform:scale(1.2);opacity:1}
+}
+
+.topnav{display:flex;gap:4px;margin-left:14px;flex:1;min-width:0;overflow-x:auto}
+.topnav button{
+  padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--slate);white-space:nowrap;letter-spacing:-.005em;
+  transition:background .25s cubic-bezier(.16,1,.3,1),color .25s cubic-bezier(.16,1,.3,1),transform .15s;
+}
+.topnav button:active{transform:scale(.96)}
+.topnav button:hover{background:rgba(255,255,255,.04);color:#fff}
+.topnav button.on{background:rgba(0,184,230,.12);color:var(--cyan-2)}
+.topnav button .ct{
+  display:inline-block;margin-left:5px;font-family:'JetBrains Mono',monospace;
+  font-size:10.5px;color:#aef0ff;background:rgba(0,184,230,.15);
+  padding:1px 6px;border-radius:5px;
+}
+
+.actions{display:flex;gap:8px;align-items:center}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--slate);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  transition:background .12s,color .12s;
+}
+.icon-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.cta{
+  padding:0 14px;height:34px;border-radius:9px;
+  background:linear-gradient(180deg, var(--cyan-2), var(--cyan));color:#04243a;
+  font-weight:700;font-size:12.5px;letter-spacing:.005em;
+  display:flex;align-items:center;gap:6px;
+  box-shadow:0 8px 22px -8px rgba(0,212,255,.6);
+}
+.cta:hover{box-shadow:0 12px 28px -6px rgba(0,212,255,.8)}
+
+/* ================================================================
+   3-column body — narrow icon sidebar | main | stats pane
+   ================================================================ */
+.body{
+  display:grid;
+  grid-template-columns:62px minmax(0,1fr) 320px;
+  min-height:600px;
+}
+@media (max-width:980px){
+  .body{grid-template-columns:1fr;min-height:auto}
+  .leftnav,.rightpane{display:none}
+  .topnav{display:none}
+}
+
+/* Left icon sidebar */
+.leftnav{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:14px 0;
+  border-right:1px solid var(--line);
+  background:rgba(0,0,0,.14);
+}
+.leftnav button{
+  width:42px;height:42px;border-radius:11px;
+  color:var(--slate-2);font-size:16px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid transparent;position:relative;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.leftnav button:hover{color:#fff;background:rgba(255,255,255,.05)}
+.leftnav button.on{
+  color:var(--cyan-2);background:rgba(0,184,230,.10);
+  border-color:rgba(0,184,230,.32);
+  box-shadow:0 0 0 1px rgba(0,184,230,.06), 0 8px 18px -10px rgba(0,212,255,.5);
+}
+.leftnav button.on::before{
+  content:"";position:absolute;left:-1px;top:9px;bottom:9px;width:2.5px;
+  background:var(--cyan-2);border-radius:2px;box-shadow:0 0 10px var(--cyan);
+}
+.leftnav .spacer{flex:1}
+.leftnav .chat-icon{
+  background:linear-gradient(140deg, rgba(0,184,230,.22), rgba(0,184,230,.06));
+  border-color:rgba(0,184,230,.4);color:#fff;font-style:italic;font-weight:900;
+}
+
+/* Main column */
+.main{
+  padding:24px 26px 28px;
+  min-width:0;
+  overflow:auto;
+}
+@media (max-width:980px){.main{padding:18px 16px 110px}}
+
+.section-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan-2);font-weight:700;
+  display:flex;align-items:center;gap:12px;margin-bottom:14px;
+}
+.section-eyebrow::after{
+  content:"";flex:1;height:1px;
+  background:linear-gradient(90deg, var(--line), transparent);
+}
+
+/* ================================================================
+   FEATURED CARD — the big "AI assistant" callout with the glowing
+   avatar overlapping the left edge. This is the centerpiece of Home.
+   ================================================================ */
+.featured{
+  position:relative;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(0,212,255,.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgba(94,106,210,.10) 0%, transparent 50%),
+    linear-gradient(140deg, rgba(0,184,230,.06), rgba(13,28,60,.45));
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:20px;
+  padding:24px 28px;
+  margin-bottom:18px;
+  overflow:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 20px 50px -28px rgba(0,40,80,.6);
+  transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s cubic-bezier(.16,1,.3,1);
+  box-shadow:0 12px 32px -20px rgba(0,40,80,.5), 0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.featured.hot{
+  background:linear-gradient(140deg, rgba(255,96,88,.10), rgba(60,18,18,.4));
+  border-color:rgba(255,96,88,.4);
+}
+.featured-avatar{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 11px 5px 9px;border-radius:999px;
+  background:rgba(0,212,255,.10);
+  border:1px solid rgba(0,212,255,.25);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;font-weight:700;color:var(--cyan-2);
+  margin-bottom:10px;
+}
+.featured-avatar::before{
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 0 0 rgba(121,224,142,.7);
+  animation:livePulse 1.8s ease-out infinite;
+}
+.featured.hot .featured-avatar{
+  background:rgba(255,96,88,.10);border-color:rgba(255,96,88,.35);color:var(--hot);
+}
+.featured.hot .featured-avatar::before{
+  background:var(--hot);box-shadow:0 0 0 0 rgba(255,140,134,.7);
+}
+@keyframes livePulse{
+  0%   {box-shadow:0 0 0 0 rgba(121,224,142,.55)}
+  70%  {box-shadow:0 0 0 9px rgba(121,224,142,0)}
+  100% {box-shadow:0 0 0 0 rgba(121,224,142,0)}
+}
+
+/* ================================================================
+   WORKSHOP VIEW — unified tools + plug-ins surface.
+   Visual concept: a precision-blueprint canvas. Thin corner ticks,
+   monospace section tags, restrained color. Distinctive without
+   being skeuomorphic.
+   ================================================================ */
+.wb-canvas{
+  position:relative;
+  padding:18px 6px 24px;
+}
+/* Tiny corner ticks frame the canvas — subtle blueprint cue */
+.wb-corner{
+  position:absolute;width:18px;height:18px;
+  border-color:rgba(255,255,255,.18);border-style:solid;border-width:0;
+  pointer-events:none;
+}
+.wb-tl{top:0;left:0;border-top-width:1px;border-left-width:1px}
+.wb-tr{top:0;right:0;border-top-width:1px;border-right-width:1px}
+.wb-bl{bottom:0;left:0;border-bottom-width:1px;border-left-width:1px}
+.wb-br{bottom:0;right:0;border-bottom-width:1px;border-right-width:1px}
+
+/* Header */
+.wb-head{padding:0 22px 28px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:30px}
+.wb-head-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--cyan-2);
+}
+.wb-head-title{
+  margin:10px 0 0;font-size:34px;font-weight:700;letter-spacing:-.025em;
+  color:#fff;line-height:1.08;
+}
+.wb-head-sub{
+  margin:10px 0 0;color:var(--slate);font-size:14.5px;line-height:1.55;
+  max-width:560px;
+}
+.wb-head-stats{
+  display:flex;gap:24px;margin-top:18px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--slate-3);
+  letter-spacing:.06em;
+}
+.wb-head-stats b{color:#fff;font-weight:700;margin-right:6px;font-size:13px}
+
+/* Section blocks */
+.wb-section{padding:0 22px;margin-bottom:36px}
+.wb-eyebrow{
+  display:flex;align-items:center;gap:10px;margin:0 0 16px;
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--slate-2);font-weight:600;
+}
+.wb-eyebrow::after{
+  content:'';flex:1;height:1px;background:rgba(255,255,255,.08);margin-left:6px;
+}
+.wb-tag{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:26px;height:18px;padding:0 6px;
+  border:1px solid rgba(0,212,255,.4);
+  border-radius:3px;
+  color:var(--cyan-2);font-size:9.5px;letter-spacing:.08em;
+  background:rgba(0,212,255,.06);
+}
+.wb-ct{
+  font-size:9.5px;color:var(--slate-3);letter-spacing:.1em;margin-left:auto;
+}
+
+/* 01 — bench */
+.wb-bench{
+  border:1px dashed rgba(255,255,255,.12);
+  border-radius:16px;
+  background:repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,.014) 0,
+    rgba(255,255,255,.014) 8px,
+    transparent 8px,
+    transparent 18px
+  );
+  min-height:140px;
+  display:flex;align-items:center;justify-content:center;
+}
+.wb-bench-empty{text-align:center;padding:28px 24px;max-width:440px}
+.wb-bench-empty-glyph{
+  font-size:32px;color:var(--slate-3);margin-bottom:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+.wb-bench-empty-title{color:#fff;font-size:16px;font-weight:600;letter-spacing:-.005em}
+.wb-bench-empty-sub{color:var(--slate);font-size:13.5px;margin:6px 0 16px;line-height:1.5}
+.wb-bench-cta{
+  display:inline-flex;align-items:center;gap:8px;padding:10px 18px;
+  background:linear-gradient(140deg,var(--cyan-2),var(--cyan));
+  color:#031428;border-radius:999px;font-size:13px;font-weight:600;
+  text-decoration:none;transition:transform .18s, box-shadow .18s;
+}
+.wb-bench-cta span{font-size:13px}
+.wb-bench-cta:hover{transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(0,212,255,.6)}
+
+/* 02 — tools (pegboard grid) */
+.wb-tool-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;
+}
+.wb-tool{
+  position:relative;text-align:left;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  padding:16px 16px 14px;
+  cursor:pointer;color:inherit;font:inherit;
+  /* one chamfered corner — a small precision detail */
+  clip-path:polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  transition:border-color .2s, background .2s, transform .18s;
+}
+.wb-tool:hover{
+  border-color:rgba(0,212,255,.35);
+  background:rgba(0,212,255,.04);
+  transform:translateY(-2px);
+}
+.wb-tool-glyph{
+  width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  background:var(--accent-bg, rgba(255,255,255,.06));
+  color:var(--accent-fg, #fff);
+  border:1px solid var(--accent-border, rgba(255,255,255,.08));
+  margin-bottom:12px;
+}
+.wb-tool-body{margin-bottom:14px}
+.wb-tool-name{color:#fff;font-weight:600;font-size:15px;letter-spacing:-.01em;margin-bottom:3px}
+.wb-tool-use{color:var(--slate);font-size:13px;line-height:1.5}
+.wb-tool-key{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--slate-3);letter-spacing:.04em;
+  border-top:1px dashed rgba(255,255,255,.08);
+  padding-top:8px;
+}
+.wb-tool[data-tone="voice"]   .wb-tool-glyph{--accent-bg:rgba(0,212,255,.18);--accent-fg:var(--cyan-2);--accent-border:rgba(0,212,255,.38)}
+.wb-tool[data-tone="ops"]     .wb-tool-glyph{--accent-bg:rgba(121,224,142,.16);--accent-fg:var(--good);--accent-border:rgba(121,224,142,.38)}
+.wb-tool[data-tone="growth"]  .wb-tool-glyph{--accent-bg:rgba(244,204,119,.16);--accent-fg:var(--warn);--accent-border:rgba(244,204,119,.4)}
+.wb-tool[data-tone="quality"] .wb-tool-glyph{--accent-bg:rgba(255,140,134,.16);--accent-fg:var(--hot);--accent-border:rgba(255,140,134,.38)}
+.wb-tool[data-tone="data"]    .wb-tool-glyph{--accent-bg:rgba(174,240,255,.16);--accent-fg:#aef0ff;--accent-border:rgba(174,240,255,.38)}
+
+/* 03 — plug-ins (tabular row layout, status visible at a glance) */
+.wb-plug-list{
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  overflow:hidden;
+  background:rgba(255,255,255,.02);
+}
+.wb-plug-row{
+  display:grid;
+  grid-template-columns:14px minmax(140px, 1fr) minmax(120px, 1.4fr) 96px 96px;
+  align-items:center;gap:14px;
+  padding:14px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  font-size:13.5px;
+}
+.wb-plug-row:last-child{border-bottom:none}
+.wb-plug-mark{
+  width:10px;height:10px;border-radius:50%;
+  background:rgba(255,255,255,.12);
+}
+.wb-plug-row:has(.wb-plug-pill.live)  .wb-plug-mark{background:var(--good);box-shadow:0 0 10px rgba(121,224,142,.6)}
+.wb-plug-row:has(.wb-plug-pill.ready) .wb-plug-mark{background:var(--cyan-2);box-shadow:0 0 10px rgba(0,212,255,.6)}
+.wb-plug-row:has(.wb-plug-pill.setup) .wb-plug-mark{background:var(--slate-3)}
+.wb-plug-name{display:flex;flex-direction:column}
+.wb-plug-name b{color:#fff;font-weight:600;letter-spacing:-.005em}
+.wb-plug-kind{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:.1em;color:var(--slate-3);text-transform:uppercase;margin-top:2px;
+}
+.wb-plug-account{color:var(--slate);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wb-plug-pill{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;font-weight:600;
+  padding:4px 8px;border-radius:4px;text-align:center;
+}
+.wb-plug-pill.live { background:rgba(121,224,142,.12);color:var(--good); border:1px solid rgba(121,224,142,.3)}
+.wb-plug-pill.ready{ background:rgba(0,212,255,.10); color:var(--cyan-2);border:1px solid rgba(0,212,255,.3)}
+.wb-plug-pill.setup{ background:rgba(255,255,255,.05); color:var(--slate-2);border:1px solid rgba(255,255,255,.10)}
+.wb-plug-pill.idle { background:rgba(255,255,255,.05); color:var(--slate-3);border:1px solid rgba(255,255,255,.10)}
+.wb-plug-action{justify-self:end}
+.wb-plug-btn{
+  background:rgba(255,255,255,.05);color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:500;
+  letter-spacing:.005em;cursor:pointer;transition:all .15s;
+}
+.wb-plug-btn:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22)}
+.wb-plug-btn.primary{
+  background:linear-gradient(140deg,var(--cyan-2),var(--cyan));
+  color:#031428;border:none;
+}
+.wb-plug-btn.primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(0,212,255,.6)}
+.wb-plug-btn.ghost{color:var(--slate-2);border-color:rgba(255,255,255,.06)}
+
+@media (max-width:720px){
+  .wb-plug-row{
+    grid-template-columns:14px 1fr auto;
+    grid-template-areas:
+      "mark name pill"
+      "mark acct acct"
+      ".    act  act ";
+    gap:6px 12px;
+  }
+  .wb-plug-mark{grid-area:mark}
+  .wb-plug-name{grid-area:name}
+  .wb-plug-account{grid-area:acct}
+  .wb-plug-pill{grid-area:pill}
+  .wb-plug-action{grid-area:act;justify-self:start}
+}
+
+/* ================================================================
+   RIGHT PANE CARDS — Today stats + Adapt 1.0 device card
+   ================================================================ */
+.rp-card{
+  position:relative;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(0,212,255,.08) 0%, transparent 60%),
+    linear-gradient(160deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 60%);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;
+  padding:20px 20px 18px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.03) inset,
+    0 14px 32px -22px rgba(0,40,80,.7);
+  animation:rpFadeIn .55s cubic-bezier(.16,1,.3,1) both;
+  transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s cubic-bezier(.16,1,.3,1), border-color .25s;
+}
+.rp-card:hover{
+  border-color:rgba(0,212,255,.18);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 22px 44px -22px rgba(0,80,140,.7);
+}
+@keyframes rpFadeIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:none}
+}
+.rp-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--cyan-2);font-weight:700;margin-bottom:14px;
+}
+
+.stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;
+}
+.stat-tile{
+  position:relative;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);border-radius:13px;
+  padding:11px 12px 12px;overflow:hidden;
+  transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .25s, background .25s, box-shadow .35s cubic-bezier(.16,1,.3,1);
+}
+.stat-tile:hover{
+  transform:translateY(-2px);
+  background:rgba(255,255,255,.055);
+  border-color:rgba(0,212,255,.32);
+  box-shadow:0 10px 26px -14px rgba(0,212,255,.45);
+}
+.stat-tile:active{transform:translateY(0) scale(.98)}
+.stat-icon{
+  position:absolute;top:9px;right:9px;
+  width:22px;height:22px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+  background:rgba(0,212,255,.10);color:var(--cyan-2);
+  border:1px solid rgba(0,212,255,.22);
+}
+.stat-num{
+  font-size:26px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.05;
+}
+.stat-lbl{
+  font-size:10px;color:var(--slate-3);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.10em;text-transform:uppercase;margin-top:5px;font-weight:600;
+}
+.stat-sent   .stat-icon{background:rgba(121,224,142,.12);color:var(--good);border-color:rgba(121,224,142,.28)}
+.stat-esc    .stat-icon{background:rgba(255,140,134,.12);color:var(--hot);border-color:rgba(255,140,134,.28)}
+.stat-draft  .stat-icon{background:rgba(244,204,119,.14);color:var(--warn);border-color:rgba(244,204,119,.30)}
+.stat-booked .stat-icon{background:rgba(0,212,255,.12);color:var(--cyan-2);border-color:rgba(0,212,255,.28)}
+
+.rp-progress{
+  height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;
+  margin-top:4px;
+}
+.rp-progress-bar{
+  height:100%;background:linear-gradient(90deg, var(--cyan-2), var(--good));
+  border-radius:3px;transition:width .6s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 0 12px -1px rgba(0,212,255,.5);
+}
+.rp-progress-lbl{
+  display:flex;justify-content:space-between;margin-top:7px;
+  font-size:10px;color:var(--slate-3);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+}
+
+/* The "Adapt 1.0" device card — visual block + status rows */
+.device-card{
+  display:flex;gap:14px;align-items:stretch;
+  background:
+    radial-gradient(ellipse at 0% 100%, rgba(0,184,230,.10) 0%, transparent 60%),
+    linear-gradient(160deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 60%);
+}
+.device-visual{
+  flex:0 0 76px;display:flex;align-items:center;justify-content:center;
+}
+.device-box{
+  position:relative;
+  width:64px;height:64px;border-radius:14px;
+  background:linear-gradient(160deg, #0d2c5d 0%, #06173a 100%);
+  border:1px solid rgba(0,212,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:
+    0 0 22px -4px rgba(0,212,255,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+.device-glow{
+  position:absolute;inset:8px;border-radius:9px;
+  background:radial-gradient(ellipse at 35% 35%, rgba(0,212,255,.45) 0%, transparent 70%);
+  filter:blur(4px);
+  animation:devGlow 3.6s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes devGlow{
+  0%,100%{opacity:.55;transform:scale(.95)}
+  50%{opacity:.95;transform:scale(1.08)}
+}
+.device-label{
+  position:relative;z-index:1;color:#fff;font-style:italic;
+  font-weight:900;font-size:10px;letter-spacing:.16em;
+}
+.device-body{flex:1;min-width:0}
+.device-name{
+  color:#fff;font-size:15px;font-weight:700;letter-spacing:-.005em;margin-bottom:10px;
+}
+.device-rows{display:flex;flex-direction:column;gap:7px}
+.device-row{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--slate-2);
+}
+.device-row > span:nth-child(2){flex:1}
+.device-row b{color:#fff;font-weight:600;font-size:12px}
+.device-row-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--good);
+  box-shadow:0 0 0 0 rgba(121,224,142,.55);
+  animation:livePulse 1.8s ease-out infinite;
+  flex:0 0 8px;
+}
+.device-row-icon{
+  width:8px;text-align:center;font-size:10px;color:var(--slate-3);
+}
+
+/* "Today's activity" feed — scrolling list of what Adapix has been doing
+   (messages sent, drafts created, replies received, escalations). */
+.activity-meta{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--slate-2);font-weight:600;
+}
+.activity-feed{
+  display:flex;flex-direction:column;gap:8px;
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px 12px;
+  max-height:420px;overflow:auto;
+}
+.activity-feed::-webkit-scrollbar{width:6px}
+.activity-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+.activity-empty{
+  padding:18px 4px;text-align:center;color:var(--slate-2);font-size:13px;
+}
+.activity-row{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:10px 10px;border-radius:10px;
+  transition:background .12s;
+}
+.activity-row:hover{background:rgba(255,255,255,.03)}
+.activity-row + .activity-row{border-top:1px solid rgba(255,255,255,.04)}
+.activity-icon{
+  flex:0 0 28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;
+  background:rgba(0,184,230,.10);color:var(--cyan-2);
+  border:1px solid rgba(0,184,230,.22);
+}
+.activity-sent      .activity-icon{background:rgba(121,224,142,.10);color:var(--good);border-color:rgba(121,224,142,.25)}
+.activity-reply     .activity-icon{background:rgba(0,212,255,.10);color:var(--cyan-2);border-color:rgba(0,212,255,.25)}
+.activity-draft     .activity-icon{background:rgba(244,204,119,.10);color:var(--warn);border-color:rgba(244,204,119,.25)}
+.activity-escalation .activity-icon,
+.activity-emergency  .activity-icon{background:rgba(255,140,134,.10);color:var(--hot);border-color:rgba(255,140,134,.3)}
+.activity-rejected  .activity-icon{background:rgba(127,160,214,.10);color:var(--slate-2);border-color:rgba(127,160,214,.2)}
+.activity-body{flex:1;min-width:0}
+.activity-label{
+  color:#fff;font-size:13.5px;font-weight:600;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.activity-preview{
+  margin-top:3px;color:var(--slate-2);font-size:12.5px;line-height:1.45;
+  overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.activity-ts{
+  flex:0 0 auto;color:var(--slate-3);font-size:11px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.05em;
+  white-space:nowrap;padding-top:6px;
+}
+
+/* ================================================================
+   CONCIERGE VIEW — capability menu of things Adapix can do.
+   Animated, welcoming, organized by domain.
+   ================================================================ */
+.cn-hero{
+  position:relative;
+  margin:6px 0 22px;
+  padding:30px 30px 28px;
+  border-radius:20px;
+  background:
+    radial-gradient(ellipse at 90% -10%, rgba(0,212,255,.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 5% 110%, rgba(0,184,230,.14) 0%, transparent 50%),
+    linear-gradient(140deg, rgba(0,184,230,.08), rgba(13,28,60,.55));
+  border:1px solid rgba(0,184,230,.28);
+  overflow:hidden;
+  animation:cnHeroIn .55s cubic-bezier(.22,1,.36,1) both;
+}
+.cn-hero-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--cyan-2);font-weight:700;margin-bottom:8px;
+}
+.cn-hero-title{
+  font-size:30px;font-weight:800;letter-spacing:-.02em;color:#fff;line-height:1.15;
+  max-width:680px;
+  background:linear-gradient(90deg,#fff 0%, var(--cyan-3) 70%, var(--cyan-2) 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.cn-hero-sub{
+  margin-top:10px;color:var(--slate);font-size:14.5px;max-width:580px;line-height:1.55;
+}
+.cn-hero-glow{
+  position:absolute;right:-80px;top:-40px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle, rgba(0,212,255,.45) 0%, transparent 65%);
+  filter:blur(20px);
+  animation:cnGlow 6s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes cnHeroIn{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:none}
+}
+@keyframes cnGlow{
+  0%,100%{transform:scale(1) translate(0,0);opacity:.55}
+  50%   {transform:scale(1.15) translate(-12px,8px);opacity:.85}
+}
+
+.cn-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(290px, 1fr));
+  gap:16px;
+}
+
+.cn-card{
+  position:relative;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(0,212,255,.06) 0%, transparent 60%),
+    rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:20px;
+  padding:24px 24px 18px;
+  overflow:hidden;
+  transition:transform .4s cubic-bezier(.16,1,.3,1),
+             border-color .25s, background .25s, box-shadow .4s cubic-bezier(.16,1,.3,1);
+  opacity:0;transform:translateY(14px);
+  animation:cnCardIn .55s cubic-bezier(.16,1,.3,1) forwards;
+  box-shadow:0 1px 0 rgba(255,255,255,.03) inset;
+}
+.cn-card::after{
+  content:'';
+  position:absolute;left:0;top:0;right:0;bottom:0;
+  border-radius:18px;pointer-events:none;
+  box-shadow:0 0 0 0 rgba(0,212,255,0) inset;
+  transition:box-shadow .25s;
+}
+.cn-card:hover{
+  transform:translateY(-3px);
+  background:rgba(255,255,255,.04);
+  border-color:rgba(0,212,255,.35);
+  box-shadow:0 18px 40px -22px rgba(0,212,255,.4);
+}
+.cn-card:hover::after{box-shadow:0 0 0 1px rgba(0,212,255,.18) inset}
+@keyframes cnCardIn{
+  to{opacity:1;transform:none}
+}
+
+.cn-icon{
+  width:40px;height:40px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;
+  background:rgba(0,184,230,.12);color:var(--cyan-2);
+  border:1px solid rgba(0,184,230,.28);
+  margin-bottom:14px;
+  transition:transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s;
+}
+.cn-card:hover .cn-icon{
+  transform:rotate(-6deg) scale(1.06);
+  box-shadow:0 0 22px -4px rgba(0,212,255,.6);
+}
+.cn-card[data-accent="green"]   .cn-icon{background:rgba(121,224,142,.12);color:var(--good);border-color:rgba(121,224,142,.3)}
+.cn-card[data-accent="yellow"]  .cn-icon{background:rgba(244,204,119,.14);color:var(--warn);border-color:rgba(244,204,119,.32)}
+.cn-card[data-accent="pink"]    .cn-icon{background:rgba(255,140,134,.12);color:var(--hot);border-color:rgba(255,140,134,.3)}
+
+.cn-card[data-accent="green"]:hover {border-color:rgba(121,224,142,.4);box-shadow:0 18px 40px -22px rgba(121,224,142,.4)}
+.cn-card[data-accent="yellow"]:hover{border-color:rgba(244,204,119,.45);box-shadow:0 18px 40px -22px rgba(244,204,119,.4)}
+.cn-card[data-accent="pink"]:hover  {border-color:rgba(255,140,134,.4);box-shadow:0 18px 40px -22px rgba(255,140,134,.4)}
+
+/* The "Something Specific" card — visually distinct, sparkly,
+   makes it feel like a creative open-ended option vs. the curated plays. */
+.cn-card[data-accent="custom"]{
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(174,240,255,.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgba(0,212,255,.10) 0%, transparent 55%),
+    linear-gradient(160deg, rgba(0,184,230,.10), rgba(13,28,60,.55));
+  border-color:rgba(0,212,255,.42);
+  position:relative;overflow:hidden;
+}
+.cn-card[data-accent="custom"]::before{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;
+  padding:1px;
+  background:linear-gradient(135deg, rgba(0,212,255,.55), transparent 40%, rgba(174,240,255,.55) 90%);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  opacity:.7;pointer-events:none;
+}
+.cn-card[data-accent="custom"] .cn-icon{
+  background:linear-gradient(140deg, rgba(0,212,255,.4), rgba(174,240,255,.25));
+  color:#fff;border-color:rgba(174,240,255,.5);
+  box-shadow:0 0 18px -2px rgba(0,212,255,.6);
+  animation:cnSparkle 2.6s ease-in-out infinite;
+}
+@keyframes cnSparkle{
+  0%,100%{box-shadow:0 0 14px -3px rgba(0,212,255,.55);transform:rotate(0deg)}
+  50%   {box-shadow:0 0 26px 0 rgba(174,240,255,.85);transform:rotate(-8deg) scale(1.05)}
+}
+.cn-card[data-accent="custom"]:hover{
+  border-color:rgba(174,240,255,.7);
+  box-shadow:0 22px 46px -22px rgba(0,212,255,.55);
+}
+
+.cn-title{
+  color:#fff;font-size:16px;font-weight:700;letter-spacing:-.005em;
+  margin-bottom:5px;
+}
+.cn-sub{
+  color:var(--slate-2);font-size:12.5px;line-height:1.5;
+  margin-bottom:14px;min-height:36px;
+}
+
+.cn-tasks{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.cn-task{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:9px;
+  font-size:13px;color:var(--slate);text-align:left;line-height:1.35;
+  background:transparent;border:0;cursor:pointer;
+  transition:background .15s, color .15s, transform .12s;
+}
+.cn-task:hover{
+  background:rgba(0,184,230,.08);color:#fff;transform:translateX(2px);
+}
+.cn-task-arrow{
+  color:var(--cyan-2);font-weight:700;opacity:.6;
+  transition:opacity .15s, transform .15s;
+}
+.cn-task:hover .cn-task-arrow{opacity:1;transform:translateX(2px)}
+
+/* Per-category "+ Something else..." button — visually softer/italic
+   so it reads as the open-ended fallback inside each domain. */
+.cn-task-custom{
+  font-style:italic;color:var(--slate-2);
+  border-top:1px dashed rgba(0,184,230,.15);
+  margin-top:4px;padding-top:11px;border-radius:0 0 9px 9px;
+}
+.cn-task-custom .cn-task-arrow{
+  color:var(--cyan-3);opacity:.7;font-style:normal;
+}
+.cn-task-custom:hover{
+  font-style:italic;color:#fff;
+  background:linear-gradient(90deg, rgba(0,212,255,.10), rgba(174,240,255,.04));
+}
+.cn-task-custom:hover .cn-task-arrow{
+  animation:cnSparkleSmall 1.2s ease-in-out infinite;opacity:1;
+}
+@keyframes cnSparkleSmall{
+  0%,100%{transform:scale(1) rotate(0deg)}
+  50%{transform:scale(1.2) rotate(15deg)}
+}
+
+@media (max-width: 720px){
+  .cn-hero{padding:24px 20px}
+  .cn-hero-title{font-size:24px}
+  .cn-grid{grid-template-columns:1fr}
+}
+
+/* "What I'm watching" empty-state grid — replaces the sad
+   "No items in the queue" row with something alive. */
+.watching-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:12px;
+  margin-top:6px;
+}
+.watching-cell{
+  position:relative;
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 16px 16px;
+}
+.watching-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 0 0 rgba(121,224,142,.5);
+  animation:livePulse 2.2s ease-out infinite;
+  margin-bottom:10px;
+}
+.watching-label{
+  font-size:13.5px;font-weight:700;color:#fff;letter-spacing:-.005em;
+}
+.watching-sub{
+  font-size:12px;color:var(--slate-2);margin-top:3px;
+}
+
+.featured-content{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.featured .eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--cyan-2);font-weight:700;
+}
+.featured.hot .eyebrow{color:var(--hot)}
+.featured h1{
+  font-size:23px;font-weight:700;color:#fff;letter-spacing:-.015em;
+  line-height:1.22;margin-top:4px;
+}
+.featured p{font-size:14px;color:var(--slate);line-height:1.55;margin-top:4px;max-width:560px}
+.featured-actions{display:flex;gap:9px;margin-top:14px}
+.featured-actions .btn{
+  padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;
+}
+.btn-primary{
+  background:linear-gradient(180deg, var(--cyan-2), var(--cyan));color:#04243a;
+  box-shadow:0 8px 22px -8px rgba(0,212,255,.6);
+}
+.btn-primary:hover{box-shadow:0 12px 28px -6px rgba(0,212,255,.8)}
+.btn-ghost{
+  background:transparent;color:var(--slate);border:1px solid var(--line);
+}
+.btn-ghost:hover{color:#fff;background:rgba(255,255,255,.04)}
+
+/* ================================================================
+   ROW CARDS — clean rows below the featured card. Each row is one
+   thing that needs attention (escalation, draft, etc.) with a CTA.
+   ================================================================ */
+.rows{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.row-card{
+  background:rgba(255,255,255,.03);border:1px solid var(--line);
+  border-radius:13px;padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  transition:background .15s,border-color .15s;
+}
+.row-card:hover{background:rgba(255,255,255,.05);border-color:rgba(0,184,230,.32)}
+.row-card.hot{
+  background:linear-gradient(180deg, rgba(255,96,88,.10), rgba(255,96,88,.03));
+  border-color:rgba(255,96,88,.32);
+}
+.row-card .text{flex:1;min-width:0}
+.row-card .text b{font-size:14px;color:#fff;font-weight:600;display:block;margin-bottom:2px}
+.row-card .text span{font-size:12.5px;color:var(--slate-2);line-height:1.4}
+.row-card .pill{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;padding:3px 8px;border-radius:6px;
+  background:rgba(0,184,230,.12);color:var(--cyan-2);
+}
+.row-card .pill.hot{background:rgba(255,96,88,.14);color:var(--hot)}
+.row-card .cta-sm{
+  background:linear-gradient(180deg, var(--cyan-2), var(--cyan));color:#04243a;
+  padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:700;flex:0 0 auto;
+}
+
+/* Empty state inside the main column */
+.empty-row{
+  text-align:center;padding:36px 20px;
+  color:var(--slate);font-size:13.5px;font-style:italic;
+}
+
+/* ================================================================
+   RIGHT PANE — stats + memory + device status sidebar
+   ================================================================ */
+.rightpane{
+  border-left:1px solid var(--line);
+  background:rgba(0,0,0,.14);
+  padding:22px 20px 28px;
+  display:flex;flex-direction:column;gap:18px;
+  overflow:auto;
+}
+.pane-card h3{
+  font-size:12.5px;color:#fff;font-weight:700;letter-spacing:.005em;
+  margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;
+}
+.pane-card h3 .more{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--slate-3);font-weight:600}
+
+.stat-row{display:flex;gap:9px;margin-bottom:10px}
+.stat-card{
+  flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:11px;padding:12px 13px;
+}
+.stat-card .n{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.stat-card .l{
+  font-size:10px;color:var(--slate-3);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.06em;text-transform:uppercase;margin-top:3px;
+}
+.stat-card .dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  vertical-align:middle;margin-right:5px;
+}
+.stat-card .dot.up{background:var(--good);box-shadow:0 0 6px var(--good)}
+.stat-card .dot.dn{background:var(--hot);box-shadow:0 0 6px var(--hot)}
+
+.chart{
+  display:flex;align-items:flex-end;gap:5px;height:80px;
+  padding:8px 0 4px;
+}
+.chart .bar{
+  flex:1;border-radius:3px 3px 0 0;min-height:4px;
+  background:linear-gradient(180deg, var(--cyan-2), rgba(0,184,230,.18));
+  box-shadow:0 0 6px -2px rgba(0,212,255,.4);
+}
+
+.memo{
+  background:rgba(0,0,0,.18);border:1px solid var(--line);
+  border-radius:9px;padding:9px 11px;font-size:12.5px;color:#cfe1ff;
+  line-height:1.45;
+}
+.memo .cat{
+  display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  color:var(--cyan-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;
+}
+.memo-list{display:flex;flex-direction:column;gap:7px}
+
+.device-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12.5px;color:var(--slate);padding:4px 0;
+}
+.device-row .v{color:#fff;font-weight:600}
+.device-row .v.ok{color:var(--good)}
+
+/* ================================================================
+   Mobile bottom nav — only shown when sidebars are hidden
+   ================================================================ */
+.bn{
+  position:fixed;left:0;right:0;bottom:0;
+  display:flex;justify-content:space-around;align-items:center;
+  padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:rgba(8,18,42,.92);
+  backdrop-filter:blur(14px);z-index:5;
+}
+@media (min-width:981px){.bn{display:none}}
+.bn button{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--slate-2);
+}
+.bn button .glyph{
+  width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+}
+.bn button.on{color:var(--cyan-2)}
+.bn button.on .glyph{background:rgba(0,184,230,.22);color:var(--cyan-2)}
+
+/* Loading + toast */
+.loader{padding:50px 20px;text-align:center;color:var(--slate);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.04em}
+.fail{margin:16px;padding:14px;border-radius:11px;background:rgba(255,96,88,.12);border:1px solid rgba(255,96,88,.4);color:var(--hot);font-size:13.5px}
+.toast{
+  position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+  background:rgba(13,44,93,.96);border:1px solid var(--line);color:#fff;
+  padding:11px 18px;border-radius:10px;font-size:14px;font-weight:600;
+  box-shadow:0 14px 30px -12px rgba(0,0,0,.6);
+  opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;z-index:10;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:rgba(255,96,88,.5);color:var(--hot)}
+
+/* Patients / Queue / Settings simple list view */
+.simple-card{
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:13px;padding:16px 18px;margin-bottom:10px;
+}
+.simple-card b{font-size:14px;font-weight:600;color:#fff;display:block;margin-bottom:3px}
+.simple-card span{font-size:12.5px;color:var(--slate)}
+</style>
+</head>
+<body>
+
+<div class="window">
+  <!-- =========== TOP BAR =========== -->
+  <div class="topbar">
+    <div class="dots">
+      <div class="dot r"></div>
+      <div class="dot y"></div>
+      <div class="dot g"></div>
+    </div>
+    <div class="brand">
+      <div class="mark"><img src="/static/adapix_mark.svg" alt="Adapix" /></div>
+      <b>Adapix</b>
+      <div class="pulse"></div>
+    </div>
+    <div class="topnav" id="topnav">
+      <button class="on" data-view="home">Home</button>
+      <button data-view="queue">Queue <span class="ct" id="ct-queue">0</span></button>
+      <button data-view="patients">Customers</button>
+      <button data-view="concierge">Studio</button>
+      <button data-view="workshop">Workshop</button>
+      <button data-view="settings">Settings</button>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="reload" title="Reload">⟲</button>
+      <a class="cta" href="/chat">Chat with Adapix →</a>
+    </div>
+  </div>
+
+  <!-- =========== 3-COLUMN BODY =========== -->
+  <div class="body">
+    <!-- Left icon sidebar -->
+    <nav class="leftnav" id="leftnav">
+      <button class="on" data-view="home" title="Home">⌂</button>
+      <button data-view="queue" title="Queue">≡</button>
+      <button data-view="patients" title="Customers">▤</button>
+      <button data-view="concierge" title="Studio">✦</button>
+      <button data-view="workshop" title="Workshop">◇</button>
+      <button data-view="settings" title="Settings">⚙</button>
+      <div class="spacer"></div>
+      <a href="/chat" class="chat-icon" title="Chat with Adapix" style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px">A</a>
+    </nav>
+
+    <!-- Main column -->
+    <main class="main" id="main">
+      <div class="loader" id="loader">loading…</div>
+    </main>
+
+    <!-- Right stats pane -->
+    <aside class="rightpane" id="rightpane">
+      <div class="loader" style="padding:14px">loading stats…</div>
+    </aside>
+  </div>
+</div>
+
+<!-- Mobile bottom nav (only shown when sidebars hidden) -->
+<nav class="bn" id="bn">
+  <button class="on" data-view="home"><div class="glyph">⌂</div>Home</button>
+  <button data-view="queue"><div class="glyph">≡</div>Queue</button>
+  <button data-view="patients"><div class="glyph">▤</div>Customers</button>
+  <button data-view="settings"><div class="glyph">⚙</div>Settings</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js').catch(()=>{});
+
+  const $ = (id)=>document.getElementById(id);
+  const main = $('main');
+  const rightpane = $('rightpane');
+
+  const state = {
+    view: 'home', feed: null, dashboard: null, patients: null,
+  };
+
+  function escapeHTML(s){
+    return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function toast(msg, err){
+    const t = $('toast'); t.textContent = msg; t.classList.toggle('err', !!err); t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  async function api(path, opts){
+    const res = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'},credentials:'include'}, opts||{}));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  // -------- Load --------
+  async function load(){
+    try{
+      $('loader').textContent = 'loading…';
+      const [feed, dashboard] = await Promise.all([
+        api('/api/v1/feed').catch(()=>({escalations:[], approvals:[], digest:{}})),
+        api('/api/v1/dashboard').catch(()=>({widgets:[]})),
+      ]);
+      state.feed = feed;
+      state.dashboard = dashboard;
+      render();
+    } catch(e){
+      main.innerHTML = '<div class="fail">Could not load. ' + escapeHTML(e.message) + '</div>';
+    }
+  }
+
+  // -------- Render dispatch --------
+  function render(){
+    document.querySelectorAll('#topnav button, #leftnav button[data-view], #bn button').forEach(b=>{
+      b.classList.toggle('on', b.dataset.view === state.view);
+    });
+    // Queue count in top nav
+    const escCount = (state.feed && state.feed.escalations) ? state.feed.escalations.length : 0;
+    const apprCount = (state.feed && state.feed.approvals) ? state.feed.approvals.length : 0;
+    $('ct-queue').textContent = escCount + apprCount;
+
+    if (state.view === 'home')      renderHome();
+    else if (state.view === 'queue')    renderQueue();
+    else if (state.view === 'patients') renderPatientsView();
+    else if (state.view === 'concierge')renderConcierge();
+    else if (state.view === 'workshop') renderWorkshop();
+    else if (state.view === 'settings') renderSettingsLink();
+
+    renderRightPane();
+  }
+
+  // -------- HOME view --------
+  function renderHome(){
+    const feed = state.feed || {};
+    const escs = feed.escalations || [];
+    const apprs = feed.approvals || [];
+    const d = feed.digest || {};
+
+    const hasEmergency = escs.some(e => e.category === 'emergency');
+    let headline, detail, actions;
+    if (escs.length || apprs.length){
+      const parts = [];
+      if (escs.length)  parts.push(`${escs.length} ${escs.length===1?'escalation':'escalations'}`);
+      if (apprs.length) parts.push(`${apprs.length} ${apprs.length===1?'draft':'drafts'} to approve`);
+      headline = parts.join(' · ') + ' need' + (parts.length===1?'s':'') + ' you.';
+      if (hasEmergency){
+        const e = escs.find(x=>x.category==='emergency');
+        detail = `${escapeHTML(e.patient)} flagged an emergency. Open the thread to read the full message.`;
+      } else if (escs.length){
+        detail = `Adapix has flagged ${escs.length} customer ${escs.length===1?'message':'messages'} that need a human response.`;
+      } else {
+        detail = `Adapix composed ${apprs.length} outbound ${apprs.length===1?'message':'messages'} waiting for your sign-off before they go to the customer.`;
+      }
+      actions = '<button class="btn btn-primary" data-view="queue" onclick="document.querySelector(`#topnav button[data-view=queue]`).click()">Open queue →</button>';
+    } else {
+      const contactCount = (state.patients || []).length;
+      headline = contactCount
+        ? `Watching ${contactCount} conversation${contactCount===1?'':'s'} — nothing needs you right now.`
+        : 'Adapix is online and listening.';
+      detail = contactCount
+        ? 'Follow-ups, deal acceptance, and rebooking are all running in the background. I’ll surface anything that needs a human here.'
+        : 'Connect your business email or import a contact list to get started. The more I know about how you work, the better the follow-ups sound.';
+      actions = '<a class="btn btn-primary" href="/chat">Chat with Adapix →</a> '
+              + '<button class="btn btn-ghost" data-view="patients" onclick="goView(\'patients\')">View contacts</button>';
+    }
+
+    let rowsHtml = '';
+    const items = [
+      ...escs.slice(0,3).map(e => ({
+        hot: e.category === 'emergency',
+        title: escapeHTML(e.patient),
+        sub: escapeHTML((e.category||'').replace(/_/g,' ') + ' · ' + (e.reasoning || e.suggested_action || '')),
+        pill: e.category === 'emergency' ? 'emergency' : (e.category||'escalation').replace(/_/g,' '),
+        pillHot: true,
+      })),
+      ...apprs.slice(0,3).map(m => ({
+        hot:false,
+        title: escapeHTML(m.patient),
+        sub: escapeHTML(((m.body||'').slice(0,140))),
+        pill: 'draft',
+        pillHot: false,
+      })),
+    ];
+
+    if (items.length){
+      rowsHtml = '<div class="rows">' + items.map(it=>`
+        <div class="row-card ${it.hot?'hot':''}">
+          <div class="text"><b>${it.title}</b><span>${it.sub}</span></div>
+          <span class="pill ${it.pillHot?'hot':''}">${escapeHTML(it.pill)}</span>
+        </div>
+      `).join('') + '</div>';
+    } else {
+      rowsHtml = `
+        <div class="watching-grid">
+          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Follow-ups</div><div class="watching-sub">checking who's due</div></div>
+          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Deals</div><div class="watching-sub">nudging open proposals</div></div>
+          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Rebooking</div><div class="watching-sub">recovering missed appts</div></div>
+          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Inbox</div><div class="watching-sub">monitoring replies</div></div>
+        </div>`;
+    }
+
+    main.innerHTML = `
+      <div class="section-eyebrow">Today · ${new Date().toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'})}</div>
+      <div class="featured ${hasEmergency?'hot':''}">
+        <div class="featured-content">
+          <div class="featured-avatar">${hasEmergency?'attention':'live'}</div>
+          <h1>${escapeHTML(headline)}</h1>
+          <p>${detail}</p>
+          <div class="featured-actions">${actions}</div>
+        </div>
+      </div>
+      <div class="section-eyebrow">Follow-up queue</div>
+      ${rowsHtml}
+      <div class="section-eyebrow" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between">
+        <span>Today's activity</span>
+        <span class="activity-meta" id="activityMeta">&nbsp;</span>
+      </div>
+      <div class="activity-feed" id="activityFeed">
+        <div class="activity-empty">Adapix is online. Activity will appear here as messages are sent.</div>
+      </div>
+    `;
+    refreshActivity();
+  }
+
+  // -------- Activity feed --------
+  let _activityTimer = null;
+  async function refreshActivity(){
+    const feedEl = document.getElementById('activityFeed');
+    const metaEl = document.getElementById('activityMeta');
+    if (!feedEl) return;
+    try {
+      const r = await fetch('/api/v1/activity?limit=40', {credentials:'include'});
+      const j = await r.json();
+      const events = j.events || [];
+      if (!events.length){
+        feedEl.innerHTML = '<div class="activity-empty">Adapix is online. First activity will appear here.</div>';
+        metaEl.textContent = 'standing by';
+      } else {
+        feedEl.innerHTML = events.map(renderActivityRow).join('');
+        const todayCount = j.today_count || 0;
+        const lastTs = j.last_action_ts ? new Date(j.last_action_ts) : null;
+        const lastAgo = lastTs ? timeAgo(lastTs) : '—';
+        metaEl.textContent = `${todayCount} today · last action ${lastAgo}`;
+      }
+    } catch(_){}
+    clearTimeout(_activityTimer);
+    _activityTimer = setTimeout(refreshActivity, 20000);
+  }
+
+  function renderActivityRow(ev){
+    const ts = ev.ts ? new Date(ev.ts) : null;
+    const ago = ts ? timeAgo(ts) : '';
+    const iconMap = { sent:'↗', draft:'✎', reply:'↘', rejected:'⤬', escalation:'!', emergency:'⚠', outbound:'·' };
+    const icon = iconMap[ev.kind] || '·';
+    return `
+      <div class="activity-row activity-${ev.kind}">
+        <div class="activity-icon">${icon}</div>
+        <div class="activity-body">
+          <div class="activity-label">${escapeHTML(ev.label||'')}</div>
+          ${ev.preview ? `<div class="activity-preview">${escapeHTML(ev.preview)}</div>` : ''}
+        </div>
+        <div class="activity-ts">${ago}</div>
+      </div>`;
+  }
+
+  function timeAgo(d){
+    const sec = Math.max(1, Math.floor((Date.now() - d.getTime())/1000));
+    if (sec < 60)   return sec + 's ago';
+    const min = Math.floor(sec/60);
+    if (min < 60)   return min + 'm ago';
+    const hr = Math.floor(min/60);
+    if (hr  < 24)   return hr + 'h ago';
+    return Math.floor(hr/24) + 'd ago';
+  }
+
+  // -------- QUEUE view --------
+  function renderQueue(){
+    const feed = state.feed || {};
+    const items = [].concat(
+      (feed.escalations||[]).map(e => ({hot: e.category==='emergency', title:e.patient, sub:(e.reasoning||e.suggested_action||''), pill:e.category||'escalation', pillHot:true})),
+      (feed.approvals||[]).map(m => ({hot:false, title:m.patient, sub:(m.body||'').slice(0,200), pill:'draft', pillHot:false})),
+    );
+    let html = '<div class="section-eyebrow">Queue · ' + items.length + ' item' + (items.length===1?'':'s') + '</div>';
+    if (!items.length){
+      html += '<div class="empty-row">Inbox zero. Adapix has nothing waiting for you.</div>';
+    } else {
+      html += '<div class="rows">' + items.map(it => `
+        <div class="row-card ${it.hot?'hot':''}">
+          <div class="text"><b>${escapeHTML(it.title)}</b><span>${escapeHTML(it.sub)}</span></div>
+          <span class="pill ${it.pillHot?'hot':''}">${escapeHTML((it.pill||'').replace(/_/g,' '))}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+    main.innerHTML = html;
+  }
+
+  // -------- PATIENTS view --------
+  async function renderPatientsView(){
+    try {
+      const j = await fetch('/api/v1/patients', {credentials:'include'}).then(r=>r.json());
+      state.patients = j.patients || [];
+    } catch(_){ state.patients = []; }
+    if (!state.patients.length){
+      main.innerHTML = '<div class="section-eyebrow">Contacts</div><div class="empty-row">No contacts yet. Adapix will add them as you import or chat to me about them.</div>';
+      return;
+    }
+    main.innerHTML = '<div class="section-eyebrow">Customers · ' + state.patients.length + '</div>'
+      + '<div class="rows">' + state.patients.slice(0,200).map(p => `
+        <div class="row-card">
+          <div class="text"><b>${escapeHTML(p.first_name+' '+p.last_name)}</b><span>${escapeHTML(p.status||'')} · ${escapeHTML(p.preferred_channel||'sms')}</span></div>
+        </div>
+      `).join('') + '</div>';
+  }
+
+  // -------- CONCIERGE view --------
+  const CONCIERGE_CATEGORIES = [
+    { key:'communication', icon:'✉', accent:'cyan', title:'Customer Communication',
+      sub:'Follow-ups, rebooking, win-back, proposal nudges.',
+      tasks:[
+        {label:'Reach out to customers we haven’t talked to in 6+ months', prompt:'Pull a list of customers we haven’t heard from in 6+ months and draft a warm check-in message I can review.'},
+        {label:'Follow up on open proposals or quotes',    prompt:'Find customers with open proposals or quotes from the last 30 days but no decision yet, and draft a personal follow-up for each.'},
+        {label:'Recover missed appointments this week',    prompt:'Identify customers who missed appointments or meetings this week and draft empathetic rebook messages for them.'},
+        {label:'Write a holiday-hours announcement',       prompt:'Draft a friendly SMS + email to all active customers announcing our holiday hours.'},
+        {label:'+ Something else about customer comms',    prompt:'I have a customer-communication need that isn’t in the list. Ask me what it is and help me handle it.', custom:true},
+      ]},
+    { key:'finance', icon:'$', accent:'green', title:'Finance',
+      sub:'Collections, billing reminders, revenue insights.',
+      tasks:[
+        {label:'Draft a polite past-due billing reminder', prompt:'Help me draft a polite past-due balance reminder for customers with balances over 30 days old.'},
+        {label:'Summarize this month’s revenue',           prompt:'Pull this month’s production, collections, and acceptance rate and summarize it as a quick paragraph I can read in 10 seconds.'},
+        {label:'Compare this month vs. last month',        prompt:'Compare this month’s production and collections to last month and call out anything unusual.'},
+        {label:'Identify expiring credits or unused benefits', prompt:'Find customers with unused credits, store balance, or expiring benefits and draft a friendly "use it before you lose it" message for each.'},
+        {label:'+ Something else about finance',           prompt:'I have a financial question or task that isn’t in this list. Ask me about it and help me work through it.', custom:true},
+      ]},
+    { key:'marketing', icon:'★', accent:'yellow', title:'Marketing',
+      sub:'Reviews, referrals, social posts, reactivation campaigns.',
+      tasks:[
+        {label:'Ask happy customers for Google reviews', prompt:'Identify customers who had a good experience in the last 14 days. Draft personalized review-request messages for each.'},
+        {label:'Plan a referral promotion',              prompt:'Help me design a referral promotion for current customers — what to offer, who to send it to, and the message itself.'},
+        {label:'Reactivate dormant customers',          prompt:'Find customers we haven’t seen in 18+ months and draft a "we miss you" message offering to reconnect.'},
+        {label:'Draft this week’s social post',         prompt:'Write a friendly social media post about something happening at the business this week.'},
+        {label:'+ Something else about marketing',      prompt:'I have a marketing idea or campaign I want help on. Ask me to describe it and help me execute it.', custom:true},
+      ]},
+    { key:'business', icon:'◆', accent:'cyan', title:'Business Management',
+      sub:'Schedule, staffing, vendors, ops decisions.',
+      tasks:[
+        {label:'Find tomorrow’s schedule gaps', prompt:'Look at tomorrow’s schedule and tell me which gaps to fill and who from the waitlist or backlog could fill them.'},
+        {label:'Daily 5-minute briefing',       prompt:'Give me a 5-minute morning briefing: yesterday’s metrics, today’s VIPs, anything that needs my attention.'},
+        {label:'Draft a vendor follow-up',      prompt:'Help me write a follow-up email to one of my vendors. Ask me which vendor and what about.'},
+        {label:'Weekly KPI summary',            prompt:'At the end of each week, summarize KPIs: revenue, new customers, close rate, churn, retention.'},
+        {label:'+ Something else operational',  prompt:'I have an operations or management question that isn’t in the list. Ask me what it is and help me think through it.', custom:true},
+      ]},
+    { key:'networking', icon:'◌', accent:'cyan', title:'Networking',
+      sub:'Partners, referrals, peer relationships.',
+      tasks:[
+        {label:'Thank a referral source',      prompt:'Help me write a sincere thank-you note to a partner or referral source. Ask me who and what for.'},
+        {label:'Quarterly partner update',     prompt:'Draft a short quarterly update to send to all my partners and referral sources summarizing outcomes and saying thanks.'},
+        {label:'Outreach to a new partner',    prompt:'Help me reach out to a new partner or collaborator I’d like to start working with. Ask me their name and what they do first.'},
+        {label:'+ Something else about networking', prompt:'I have a networking or relationship question that isn’t in the list. Ask me about it and help me handle it.', custom:true},
+      ]},
+    { key:'patient_exp', icon:'♥', accent:'pink', title:'Customer Experience',
+      sub:'Onboarding, satisfaction, post-purchase follow-up.',
+      tasks:[
+        {label:'New-customer welcome series', prompt:'Design a 3-message welcome series for brand new customers before their first interaction with us.'},
+        {label:'Post-purchase check-in',      prompt:'Draft a 24-hour post-purchase check-in message for new customers. Be warm but professional.'},
+        {label:'Satisfaction survey',         prompt:'Send a short satisfaction survey to customers we served this week and summarize the results for me.'},
+        {label:'+ Something else about customer experience', prompt:'I have a customer-experience question or idea that isn’t in this list. Ask me what it is and help me work on it.', custom:true},
+      ]},
+    { key:'custom', icon:'✦', accent:'custom', title:'Something Specific',
+      sub:'Have a unique request? Describe it in your own words.',
+      tasks:[
+        {label:'I have a one-off customer situation', prompt:'I have a one-off situation with a specific customer. Ask me about it and help me figure out the best move.'},
+        {label:'Help me brainstorm a solution',       prompt:'I’m stuck on a problem at my business. Ask me to describe it, then help me think through it.'},
+        {label:'Something not on this list',          prompt:'I need help with something Adapix doesn’t have a pre-built play for. Ask me what it is and we’ll work through it together.'},
+        {label:'Write a one-off message',             prompt:'I need to write a custom message to a specific person. Ask me who it is and what I want to say, then help me write it.'},
+        {label:'+ Just open chat — blank slate',      prompt:'', custom:true},
+      ]},
+  ];
+
+  function renderConcierge(){
+    const cards = CONCIERGE_CATEGORIES.map((c, i) => `
+      <div class="cn-card" data-key="${c.key}" data-accent="${c.accent}" style="animation-delay:${i*70}ms">
+        <div class="cn-icon">${c.icon}</div>
+        <div class="cn-title">${c.title}</div>
+        <div class="cn-sub">${c.sub}</div>
+        <div class="cn-tasks">
+          ${c.tasks.map(t => `
+            <button class="cn-task ${t.custom?'cn-task-custom':''}" data-prompt="${escapeAttr(t.prompt)}">
+              <span class="cn-task-arrow">${t.custom?'✦':'→'}</span>
+              <span>${escapeHTML(t.label)}</span>
+            </button>`).join('')}
+        </div>
+      </div>`).join('');
+    main.innerHTML = `
+      <div class="cn-hero">
+        <div class="cn-hero-eyebrow">Studio</div>
+        <h1 class="cn-hero-title">What can Adapix do for you today?</h1>
+        <p class="cn-hero-sub">Pick a task below — or describe your own in chat. Every action stays in your hands until you approve it.</p>
+        <div class="cn-hero-glow"></div>
+      </div>
+      <div class="cn-grid">${cards}</div>
+    `;
+
+    main.querySelectorAll('.cn-task').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prompt = btn.getAttribute('data-prompt') || '';
+        try { sessionStorage.setItem('adapix.prefill', prompt); } catch(_){}
+        window.location.href = '/chat?prefill=' + encodeURIComponent(prompt);
+      });
+    });
+  }
+
+  function escapeAttr(s){
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ===========================================================================
+  // WORKSHOP view — Adapix's unified working space.
+  //
+  // Three sections, stacked vertically, designed to feel like a precision
+  // workshop: every tool labelled, every state visible, no decorative junk.
+  //   01 / BENCH       — the active project (or a prompt to start one)
+  //   02 / TOOLS       — Adapix's skills, presented as workshop tools
+  //   03 / PLUG-INS    — integrations, status visible at a glance
+  // ===========================================================================
+
+  // Tools = skills, but presented like they live on a workshop pegboard.
+  // Each one carries a tone tag (the accent color) and a one-line use case.
+  const WORKSHOP_TOOLS = [
+    { key:'name-brainstorm',     glyph:'◊', tone:'voice',
+      name:'Name brainstorm',    use:'Generate 12 candidate names with reasoning.',
+      prompt:'Run the name-brainstorm skill.' },
+    { key:'service-catalog',     glyph:'◈', tone:'ops',
+      name:'Service catalog',    use:'Turn a vague offer into a structured catalog.',
+      prompt:'Run the service-catalog skill.' },
+    { key:'pricing-strategy',    glyph:'$', tone:'growth',
+      name:'Pricing strategy',   use:'Pick a pricing model and set defensible numbers.',
+      prompt:'Run the pricing-strategy skill.' },
+    { key:'brand-voice',         glyph:'♪', tone:'voice',
+      name:'Brand voice',        use:'Define how the business talks. Output a reusable voice doc.',
+      prompt:'Run the brand-voice skill.' },
+    { key:'launch-checklist',    glyph:'▤', tone:'quality',
+      name:'Launch checklist',   use:'Tailored launch to-do list, ordered by long-pole.',
+      prompt:'Run the launch-checklist skill.' },
+    { key:'first-customer-plan', glyph:'◉', tone:'data',
+      name:'First-customer plan',use:'Concrete plan for landing the first 10 paying customers.',
+      prompt:'Run the first-customer-plan skill.' },
+  ];
+
+  // Plug-ins = connectors. Status is filled in from /api/v1/connectors.
+  const WORKSHOP_PLUGINS = [
+    { key:'google',    name:'Gmail',          kind:'Email' },
+    { key:'microsoft', name:'Outlook 365',    kind:'Email' },
+    { key:'twilio',    name:'Twilio',         kind:'SMS' },
+    { key:'resend',    name:'Resend',         kind:'Email' },
+    { key:'webpush',   name:'Web push',       kind:'Notifications' },
+  ];
+
+  async function loadPluginStatus(){
+    try {
+      const j = await fetch('/api/v1/connectors', {credentials:'include'}).then(r => r.json());
+      const byId = {};
+      (j.connectors || []).forEach(c => { byId[c.id] = c; });
+      return byId;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function pluginPill(status){
+    if (!status) return { label:'Unknown', cls:'idle' };
+    if (status.connected)  return { label:'Live',          cls:'live' };
+    if (status.configured) return { label:'Ready',         cls:'ready' };
+    return { label:'Needs setup', cls:'setup' };
+  }
+
+  async function renderWorkshop(){
+    const plugins = await loadPluginStatus();
+
+    const toolGrid = WORKSHOP_TOOLS.map(t => (
+      '<button class="wb-tool" data-tone="'+t.tone+'" data-prompt="'+escapeAttr(t.prompt)+'">'
+      + '<div class="wb-tool-glyph">'+escapeHTML(t.glyph)+'</div>'
+      + '<div class="wb-tool-body">'
+      +   '<div class="wb-tool-name">'+escapeHTML(t.name)+'</div>'
+      +   '<div class="wb-tool-use">'+escapeHTML(t.use)+'</div>'
+      + '</div>'
+      + '<div class="wb-tool-key">'+escapeHTML(t.key)+'</div>'
+      + '</button>'
+    )).join('');
+
+    const pluginRows = WORKSHOP_PLUGINS.map(p => {
+      const st = plugins[p.key];
+      const pill = pluginPill(st);
+      const account = st && st.account ? st.account : '—';
+      let action;
+      if (!st || !st.configured) {
+        action = '<button class="wb-plug-btn ghost" data-plug-key="'+p.key+'" data-plug-action="help">Set up</button>';
+      } else if (!st.connected && st.connect_url) {
+        action = '<button class="wb-plug-btn primary" data-plug-key="'+p.key+'" data-plug-action="connect">Connect</button>';
+      } else {
+        action = '<button class="wb-plug-btn" data-plug-key="'+p.key+'" data-plug-action="test">Test</button>';
+      }
+      return ''
+        + '<div class="wb-plug-row">'
+        +   '<div class="wb-plug-mark"></div>'
+        +   '<div class="wb-plug-name">'
+        +     '<b>'+escapeHTML(p.name)+'</b>'
+        +     '<span class="wb-plug-kind">'+escapeHTML(p.kind)+'</span>'
+        +   '</div>'
+        +   '<div class="wb-plug-account">'+escapeHTML(account)+'</div>'
+        +   '<div class="wb-plug-pill '+pill.cls+'">'+pill.label+'</div>'
+        +   '<div class="wb-plug-action">'+action+'</div>'
+        + '</div>';
+    }).join('');
+
+    const liveCount   = Object.values(plugins).filter(p => p && p.connected).length;
+    const totalPlugs  = WORKSHOP_PLUGINS.length;
+
+    main.innerHTML = ''
+      + '<div class="wb-canvas">'
+      +   '<div class="wb-corner wb-tl"></div><div class="wb-corner wb-tr"></div>'
+      +   '<div class="wb-corner wb-bl"></div><div class="wb-corner wb-br"></div>'
+      +   '<div class="wb-head">'
+      +     '<div class="wb-head-eyebrow">The Workshop</div>'
+      +     '<h1 class="wb-head-title">Build with Adapix.</h1>'
+      +     '<p class="wb-head-sub">Tools to do the work. Plug-ins to do it everywhere. One bench to keep what you ship.</p>'
+      +     '<div class="wb-head-stats">'
+      +       '<span><b>'+WORKSHOP_TOOLS.length+'</b> tools</span>'
+      +       '<span><b>'+liveCount+'</b>/'+totalPlugs+' plug-ins live</span>'
+      +     '</div>'
+      +   '</div>'
+
+      +   '<section class="wb-section">'
+      +     '<div class="wb-eyebrow"><span class="wb-tag">01</span>BENCH</div>'
+      +     '<div class="wb-bench">'
+      +       '<div class="wb-bench-empty">'
+      +         '<div class="wb-bench-empty-glyph">⌗</div>'
+      +         '<div class="wb-bench-empty-title">No active project on the bench.</div>'
+      +         '<div class="wb-bench-empty-sub">Run a tool below or open the chat. Whatever you and Adapix work on next lives here.</div>'
+      +         '<a class="wb-bench-cta" href="/chat">Open chat <span>→</span></a>'
+      +       '</div>'
+      +     '</div>'
+      +   '</section>'
+
+      +   '<section class="wb-section">'
+      +     '<div class="wb-eyebrow"><span class="wb-tag">02</span>TOOLS<span class="wb-ct">'+WORKSHOP_TOOLS.length+'</span></div>'
+      +     '<div class="wb-tool-grid">'+toolGrid+'</div>'
+      +   '</section>'
+
+      +   '<section class="wb-section">'
+      +     '<div class="wb-eyebrow"><span class="wb-tag">03</span>PLUG-INS<span class="wb-ct">'+totalPlugs+'</span></div>'
+      +     '<div class="wb-plug-list">'+pluginRows+'</div>'
+      +   '</section>'
+      + '</div>';
+
+    // Wire tool clicks → prefill the chat
+    main.querySelectorAll('.wb-tool').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prompt = btn.getAttribute('data-prompt') || '';
+        try { sessionStorage.setItem('adapix.prefill', prompt); } catch(_){}
+        window.location.href = '/chat?prefill=' + encodeURIComponent(prompt);
+      });
+    });
+    // Wire plug-in buttons
+    main.querySelectorAll('[data-plug-action]').forEach(btn => {
+      btn.addEventListener('click', () => handlePluginAction(
+        btn.getAttribute('data-plug-key'),
+        btn.getAttribute('data-plug-action')
+      ));
+    });
+  }
+
+  async function handlePluginAction(key, action){
+    if (action === 'help'){
+      toast('Add credentials to your .env file, then restart the server.');
+      return;
+    }
+    if (action === 'connect'){
+      const path = key === 'google'
+        ? '/api/v1/oauth/google/start'
+        : key === 'microsoft' ? '/api/v1/oauth/microsoft/start' : null;
+      if (!path) { toast('This plug-in does not need a connect step.'); return; }
+      const r = await fetch(path, {credentials:'include'}).then(r => r.json());
+      if (r.url) window.location.href = r.url;
+      return;
+    }
+    if (action === 'test'){
+      toast('Test fired for ' + key + '. Check chat for the result.');
+      return;
+    }
+  }
+
+  function renderSettingsLink(){
+    main.innerHTML =
+      '<div class="section-eyebrow">Settings</div>'
+    + '<div class="rp-card">'
+    +   '<b style="color:#fff">Chat with Adapix</b>'
+    +   '<div style="color:var(--slate-2);font-size:13px;margin-top:6px">Tell Adapix anything about your business — she remembers + shapes the dashboard around what you tell her.</div>'
+    +   '<div style="margin-top:12px"><a class="btn btn-primary" href="/chat" style="display:inline-block">Open chat →</a></div>'
+    + '</div>';
+  }
+
+  function renderRightPane(){
+    const feed = state.feed || {};
+    const d = feed.digest || {};
+    const sent = d.sent_today || 0;
+    const esc = (feed.escalations || []).length;
+    const dr = (feed.approvals || []).length;
+    const booked = d.booked_recently || 0;
+    const totalMsgs = sent + dr;
+    const arc = Math.min(100, Math.round((sent / Math.max(1, totalMsgs)) * 100));
+    const rp = document.getElementById('rightpane');
+    if (!rp) return;
+    rp.innerHTML =
+        '<div class="rp-card today-card">'
+      +   '<div class="rp-eyebrow">Today</div>'
+      +   '<div class="stat-grid">'
+      +     '<div class="stat-tile stat-sent"><div class="stat-icon">↗</div><div class="stat-num">'+sent+'</div><div class="stat-lbl">Sent</div></div>'
+      +     '<div class="stat-tile stat-esc"><div class="stat-icon">!</div><div class="stat-num">'+esc+'</div><div class="stat-lbl">Flagged</div></div>'
+      +     '<div class="stat-tile stat-draft"><div class="stat-icon">✎</div><div class="stat-num">'+dr+'</div><div class="stat-lbl">Drafts</div></div>'
+      +     '<div class="stat-tile stat-booked"><div class="stat-icon">★</div><div class="stat-num">'+booked+'</div><div class="stat-lbl">Booked</div></div>'
+      +   '</div>'
+      +   '<div class="rp-progress"><div class="rp-progress-bar" style="width:'+arc+'%"></div></div>'
+      +   '<div class="rp-progress-lbl"><span>'+sent+' sent</span><span>'+dr+' pending review</span></div>'
+      + '</div>'
+      + '<div class="rp-card device-card">'
+      +   '<div class="device-visual"><div class="device-box"><div class="device-glow"></div><div class="device-label">ADAPT</div></div></div>'
+      +   '<div class="device-body">'
+      +     '<div class="rp-eyebrow" style="margin-bottom:8px">Your appliance</div>'
+      +     '<div class="device-name">Adapt 1.0</div>'
+      +     '<div class="device-rows">'
+      +       '<div class="device-row"><div class="device-row-dot"></div><span>Connection</span><b>Online</b></div>'
+      +       '<div class="device-row"><span class="device-row-icon">⏱</span><span>Uptime</span><b>'+formatUptime(Date.now()-(state._bootedAt||Date.now()))+'</b></div>'
+      +       '<div class="device-row"><span class="device-row-icon">⌥</span><span>Version</span><b>v0.1.0</b></div>'
+      +     '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  function formatUptime(ms){
+    const s = Math.floor(ms/1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s/60);
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m/60);
+    return h + 'h ' + (m%60) + 'm';
+  }
+
+  async function loadFeed(){
+    try { state.feed = await fetch('/api/v1/feed', {credentials:'include'}).then(r=>r.json()); }
+    catch(_){ state.feed = {}; }
+  }
+
+  function goView(name){
+    state.view = name;
+    document.querySelectorAll('#topnav button, #leftnav button').forEach(b => {
+      b.classList.toggle('on', b.dataset.view === name);
+    });
+    render();
+  }
+
+  function bindNav(){
+    document.querySelectorAll('#topnav button, #leftnav button').forEach(b => {
+      if (!b.dataset.view) return;
+      b.addEventListener('click', () => goView(b.dataset.view));
+    });
+    const rl = document.getElementById('reload');
+    if (rl) rl.addEventListener('click', async () => { await loadFeed(); render(); });
+  }
+
+  function toast(msg){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:9999;border:1px solid var(--line)';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3000);
+  }
+
+  (async function init(){
+    state._bootedAt = Date.now();
+    bindNav();
+    await loadFeed();
+    document.getElementById('loader')?.remove();
+    render();
+    setInterval(()=>{ try { renderRightPane(); } catch(_){} }, 60000);
+  })();
+})();
+</script>
+</body>
+</html>
+                                                                                                                                                                                  

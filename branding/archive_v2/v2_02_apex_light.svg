@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none">
+  <path d="M 6 58 L 22 8 L 42 8 L 58 58 Z M 22 42 L 42 42 L 38 22 L 26 22 Z"
+        fill="#0a0c14" fill-rule="evenodd"/>
+  <text x="80" y="46" font-family="Inter, system-ui, sans-serif" font-weight="800"
+        font-size="42" fill="#0a0c14" letter-spacing="-2">adapix</text>
+</svg>

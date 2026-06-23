@@ -1,0 +1,33 @@
+# Adapix dashboard — runs on every boot.
+# Installed by deploy/install.sh; placeholders @APP_USER@ and @APP_DIR@
+# are substituted at install time.
+[Unit]
+Description=Adapix Adapt 1.0 dashboard (FastAPI / uvicorn)
+After=network-online.target avahi-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=@APP_DIR@/.env
+Environment=PYTHONPATH=@APP_DIR@/src
+Environment=ADAPIX_VAR=@APP_DIR@/var
+
+# Bind to port 80 so the user can open http://adapix.local with no port number.
+# Python has the cap_net_bind_service capability set by install.sh so this
+# works without running as root.
+ExecStart=@APP_DIR@/venv/bin/python -m uvicorn adapix.api.main:app \
+    --host 0.0.0.0 --port 80
+
+Restart=on-failure
+RestartSec=3
+
+# Sane defaults for a small appliance
+LimitNOFILE=4096
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

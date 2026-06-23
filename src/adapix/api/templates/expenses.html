@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Adapix Expenses</title>
+<meta name="theme-color" content="#040b1a" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2c5d; --navy-2:#08193a; --navy-3:#040b1a;
+  --cyan:#00b8e6; --cyan-2:#00d4ff; --cyan-3:#aef0ff;
+  --ink:#ffffff; --slate:#a9bbd9; --slate-2:#7fa0d6; --slate-3:#4a6a99;
+  --line:rgba(0,184,230,.18);
+  --good:#79e08e; --good-bg:rgba(39,201,63,.14); --good-bd:rgba(39,201,63,.30);
+  --hot:#ff8c86;  --hot-bg:rgba(255,96,88,.14);   --hot-bd:rgba(255,96,88,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:radial-gradient(circle at 50% 0%, #0a1f47 0%, #040b1a 70%);
+  color:var(--ink);min-height:100vh;
+  -webkit-font-smoothing:antialiased;line-height:1.5;
+}
+
+/* Header */
+header{
+  padding:30px 32px 14px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  border-bottom:1px solid var(--line);
+}
+header .l{display:flex;align-items:center;gap:14px}
+header .pulse{width:11px;height:11px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 12px var(--cyan), 0 0 24px rgba(0,184,230,.4);animation:breathe 3.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.85);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+header .title b{font-size:22px;font-weight:800;letter-spacing:-.01em;color:#fff}
+header .title .sub{font-size:12px;color:var(--slate-2);font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+header a.back{
+  font-size:13px;color:var(--cyan-2);text-decoration:none;font-weight:600;
+  padding:8px 12px;border:1px solid var(--line);border-radius:9px;
+}
+header a.back:hover{background:rgba(0,184,230,.06)}
+
+/* Stat strip */
+.stats{
+  padding:22px 32px 8px;display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;
+}
+.stat{
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:14px;padding:14px 18px;
+}
+.stat .n{font-size:26px;font-weight:800;color:#fff;letter-spacing:-.02em}
+.stat .l{font-size:11.5px;color:var(--slate-2);font-family:'JetBrains Mono',monospace;
+  text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+/* Two-column layout below */
+.body{
+  padding:18px 32px 80px;display:grid;
+  grid-template-columns:minmax(0, 1fr) 320px;gap:22px;
+}
+@media (max-width:880px){.body{grid-template-columns:1fr}}
+
+/* Card style */
+.card{
+  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;
+}
+.card h2{
+  font-size:14px;font-weight:700;letter-spacing:.01em;color:#fff;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card h2 .ct{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--slate-2);font-weight:600;letter-spacing:.06em;
+}
+
+/* Add-expense form */
+.addform{display:grid;grid-template-columns:120px 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:18px}
+.addform .field{display:flex;flex-direction:column;gap:5px}
+.addform label{font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.addform input,.addform select{
+  background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;
+  border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit;
+}
+.addform input:focus,.addform select:focus{outline:none;border-color:rgba(0,184,230,.55)}
+.addform button{
+  background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:#04243a;
+  border:0;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;
+  font-family:inherit;letter-spacing:.005em;height:38px;
+}
+.addform button:hover{box-shadow:0 8px 20px -8px rgba(0,212,255,.6)}
+.addform button:active{transform:scale(.98)}
+@media (max-width:880px){.addform{grid-template-columns:1fr 1fr}}
+
+/* Expense list */
+.exp{
+  display:grid;grid-template-columns:90px 1fr 130px auto 24px;gap:10px;align-items:center;
+  padding:11px 8px;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.exp:last-child{border-bottom:0}
+.exp .date{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--slate-2);letter-spacing:.04em}
+.exp .desc{font-size:14px;color:#fff;font-weight:500;line-height:1.3}
+.exp .desc .vendor{display:block;font-size:11.5px;color:var(--slate-3);font-weight:400;margin-top:2px}
+.exp .cat{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  color:var(--cyan-2);background:rgba(0,184,230,.08);
+  padding:3px 8px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;
+  text-align:center;white-space:nowrap;
+}
+.exp .amt{font-size:14.5px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums}
+.exp .del{
+  background:transparent;border:1px solid var(--line);color:var(--slate-2);
+  width:22px;height:22px;border-radius:6px;font-size:13px;font-weight:700;line-height:1;cursor:pointer;
+}
+.exp .del:hover{color:var(--hot);border-color:var(--hot-bd);background:rgba(255,96,88,.08)}
+.exp.chat{background:linear-gradient(90deg, rgba(0,184,230,.04), transparent)}
+
+/* Category sidebar */
+.cat-list{display:flex;flex-direction:column;gap:8px}
+.cat-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 11px;background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:9px;
+}
+.cat-row .l{font-size:13px;color:#fff;font-weight:500}
+.cat-row .r{font-size:13.5px;font-weight:700;color:var(--cyan-2);font-variant-numeric:tabular-nums}
+
+/* Month rollup */
+.month-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.month-row:last-child{border-bottom:0}
+.month-row .l{color:var(--slate);font-family:'JetBrains Mono',monospace;font-size:12px}
+.month-row .r{color:#fff;font-weight:600}
+
+/* Empty state */
+.empty{padding:60px 20px;text-align:center;color:var(--slate)}
+.empty .em{font-size:36px;opacity:.5;margin-bottom:10px}
+
+/* CSV export button */
+.export{
+  display:inline-block;font-size:12px;color:var(--cyan-2);text-decoration:none;
+  border:1px solid var(--line);border-radius:7px;padding:6px 10px;
+}
+.export:hover{background:rgba(0,184,230,.06)}
+
+/* Toast */
+.toast{
+  position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+  background:rgba(13,44,93,.96);border:1px solid var(--line);color:#fff;
+  padding:11px 18px;border-radius:10px;font-size:14px;font-weight:600;
+  box-shadow:0 14px 30px -12px rgba(0,0,0,.6);
+  opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;z-index:10;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:var(--hot-bd);color:var(--hot)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="l">
+    <div class="pulse"></div>
+    <div class="title">
+      <b>Expenses</b>
+      <div class="sub">Adapix founder log</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a class="back" href="/chat">← Chat</a>
+    <a class="back" href="/app">Dashboard</a>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n" id="totAll">$0.00</div><div class="l">Total spent</div></div>
+  <div class="stat"><div class="n" id="totMonth">$0.00</div><div class="l">This month</div></div>
+  <div class="stat"><div class="n" id="totBurn">$0.00</div><div class="l">Subscription burn / mo</div></div>
+  <div class="stat"><div class="n" id="totCount">0</div><div class="l">Expense count</div></div>
+</div>
+
+<div class="body">
+  <div>
+    <div class="card">
+      <h2>Bulk add <span class="ct">paste a list — Claude parses each line</span></h2>
+      <textarea id="bulkText" rows="6" placeholder="Paste any free-text lines, one expense per line. Examples:
+$84.99 Pi 5 8GB from Amazon May 12
+22.50 NVMe Base - Pimoroni
+Spent $28.34 on the adapixai.com domain at Namecheap
+$10 Anthropic API credits"
+        style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:10px;padding:12px;font-family:inherit;font-size:13.5px;line-height:1.5;resize:vertical;margin-bottom:10px"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
+        <div id="bulkStatus" style="font-size:12px;color:var(--slate-2);font-family:'JetBrains Mono',monospace"></div>
+        <button id="bulkBtn" type="button"
+          style="background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:#04243a;border:0;border-radius:9px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          Parse &amp; add
+        </button>
+      </div>
+      <div id="bulkResults" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Subscriptions <span class="ct" id="subCt">0 active</span></h2>
+      <form id="subform" style="display:grid;grid-template-columns:90px 90px 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px">
+        <div class="field"><label style="font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Amount $</label><input id="s_amount" type="number" step="0.01" min="0" required placeholder="20.00" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit" /></div>
+        <div class="field"><label style="font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Cycle</label><select id="s_cycle" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>
+        <div class="field"><label style="font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Category</label><select id="s_category" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit"></select></div>
+        <div class="field"><label style="font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Vendor</label><input id="s_vendor" type="text" placeholder="Anthropic" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit" /></div>
+        <div class="field"><label style="font-size:10.5px;color:var(--slate-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Description</label><input id="s_description" type="text" placeholder="API credits" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px 11px;font-size:14px;font-family:inherit" /></div>
+        <button type="submit" style="background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:#04243a;border:0;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;height:38px">Add</button>
+      </form>
+      <div id="subList"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Add one expense <span class="ct">amount required, rest optional</span></h2>
+      <form class="addform" id="addform">
+        <div class="field"><label>Amount $</label><input id="f_amount" type="number" step="0.01" min="0" required placeholder="52.00" /></div>
+        <div class="field"><label>Category</label><select id="f_category"></select></div>
+        <div class="field"><label>Vendor</label><input id="f_vendor" type="text" placeholder="Amazon" /></div>
+        <div class="field"><label>Description</label><input id="f_description" type="text" placeholder="1TB NVMe SSD" /></div>
+        <button type="submit">Add</button>
+      </form>
+
+      <h2>All expenses <span class="ct" id="listCt">0</span></h2>
+      <div id="list">
+        <div class="empty"><div class="em">○</div>Nothing logged yet. Add one above or tell Adapix in /chat (e.g. "spent $52 on an SSD").</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>By category <a class="export" href="/api/v1/expenses/export.csv" download>Export CSV</a></h2>
+      <div id="catList" class="cat-list"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>By month</h2>
+      <div id="monthList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const toast = (msg, err)=>{
+    const t = $('toast'); t.textContent = msg; t.classList.toggle('err', !!err); t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  };
+  const fmt = (n)=> '$' + (Number(n)||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const escapeHTML = (s)=> (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  async function api(path, opts){
+    const res = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}, credentials:'include'}, opts||{}));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  function renderCategoryDropdown(cats){
+    const html = cats.map(c=>`<option>${escapeHTML(c)}</option>`).join('');
+    // Populate BOTH the expense and subscription category dropdowns
+    const expenseSel = $('f_category');
+    if (expenseSel) expenseSel.innerHTML = html;
+    const subSel = $('s_category');
+    if (subSel) {
+      subSel.innerHTML = html;
+      // Default the subscription category to "Software / services"
+      // since most recurring spend lives there.
+      const idx = cats.findIndex(c => c === 'Software / services');
+      if (idx >= 0) subSel.selectedIndex = idx;
+    }
+  }
+
+  function renderList(items){
+    const wrap = $('list');
+    $('listCt').textContent = items.length;
+    if (!items.length){
+      wrap.innerHTML = '<div class="empty"><div class="em">○</div>Nothing logged yet. Add one above or tell Adapix in /chat (e.g. "spent $52 on an SSD").</div>';
+      return;
+    }
+    wrap.innerHTML = items.map(it=>`
+      <div class="exp ${it.source==='chat'?'chat':''}">
+        <div class="date">${escapeHTML(it.date)}</div>
+        <div class="desc">
+          ${escapeHTML(it.description || '(no description)')}
+          ${it.vendor ? `<span class="vendor">${escapeHTML(it.vendor)}</span>` : ''}
+        </div>
+        <div class="cat">${escapeHTML(it.category)}</div>
+        <div class="amt">${fmt(it.amount)}</div>
+        <button class="del" data-id="${escapeHTML(it.id)}" title="Delete">×</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('.del').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        if (!confirm('Delete this expense?')) return;
+        try{ await api('/api/v1/expenses/' + encodeURIComponent(b.dataset.id), {method:'DELETE'});
+          toast('Deleted.'); load(); }
+        catch(e){ toast('Delete failed', true); }
+      });
+    });
+  }
+
+  function renderCats(totals){
+    const wrap = $('catList');
+    const rows = Object.entries(totals);
+    if (!rows.length){ wrap.innerHTML = '<div class="empty" style="padding:20px;font-size:12px">No spending yet.</div>'; return; }
+    wrap.innerHTML = rows.map(([k,v])=>`<div class="cat-row"><div class="l">${escapeHTML(k)}</div><div class="r">${fmt(v)}</div></div>`).join('');
+  }
+
+  function renderMonths(totals){
+    const wrap = $('monthList');
+    const rows = Object.entries(totals);
+    if (!rows.length){ wrap.innerHTML = '<div class="empty" style="padding:20px;font-size:12px">No spending yet.</div>'; return; }
+    wrap.innerHTML = rows.map(([k,v])=>`<div class="month-row"><div class="l">${escapeHTML(k)}</div><div class="r">${fmt(v)}</div></div>`).join('');
+  }
+
+  function renderSubs(subs){
+    subs = subs || [];
+    const active = subs.filter(s => s.active);
+    $('subCt').textContent = `${active.length} active`;
+    if (!subs.length){
+      $('subList').innerHTML = '<div class="empty" style="padding:18px;font-size:12.5px">No subscriptions yet. Add one above and it auto-charges every cycle.</div>';
+      return;
+    }
+    $('subList').innerHTML = subs.map(s => `
+      <div style="display:grid;grid-template-columns:1fr 90px 110px auto;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.05);${s.active ? '' : 'opacity:.45'}">
+        <div>
+          <div style="font-size:14px;color:#fff;font-weight:500">${escapeHTML(s.description || '(no description)')}</div>
+          <div style="font-size:11.5px;color:var(--slate-3);margin-top:2px">${escapeHTML(s.vendor)}${s.vendor && s.category ? ' · ' : ''}${escapeHTML(s.category)} · next ${escapeHTML(s.next_charge || '—')}</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan-2);background:rgba(0,184,230,.08);padding:3px 8px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;text-align:center">${escapeHTML(s.cycle)}</div>
+        <div style="font-size:14.5px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums">${fmt(s.amount)}</div>
+        ${s.active
+          ? `<button class="del" data-act="cancel" data-id="${escapeHTML(s.id)}" title="Cancel future charges">⏸</button>`
+          : `<button class="del" data-act="delete" data-id="${escapeHTML(s.id)}" title="Delete subscription">×</button>`}
+      </div>
+    `).join('');
+    $('subList').querySelectorAll('button[data-act]').forEach(b => {
+      b.addEventListener('click', async () => {
+        const id = b.dataset.id;
+        const act = b.dataset.act;
+        const ok = (act === 'delete')
+          ? confirm('Delete this subscription? Past charges in history are kept.')
+          : confirm('Cancel future charges for this subscription?');
+        if (!ok) return;
+        try {
+          if (act === 'cancel') {
+            await api(`/api/v1/subscriptions/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
+            toast('Cancelled.');
+          } else {
+            await api(`/api/v1/subscriptions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            toast('Deleted.');
+          }
+          load();
+        } catch (e) {
+          toast('Failed', true);
+        }
+      });
+    });
+  }
+
+  document.getElementById('subform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      amount:      parseFloat($('s_amount').value),
+      cycle:       $('s_cycle').value,
+      category:    $('s_category').value,
+      vendor:      $('s_vendor').value,
+      description: $('s_description').value,
+    };
+    if (!body.amount || body.amount <= 0){ toast('Enter an amount', true); return; }
+    try {
+      await api('/api/v1/subscriptions', { method:'POST', body: JSON.stringify(body) });
+      toast('Subscription added.');
+      document.getElementById('subform').reset();
+      load();
+    } catch (e) {
+      toast('Add failed', true);
+    }
+  });
+
+  async function load(){
+    try{
+      const d = await api('/api/v1/expenses');
+      $('totAll').textContent   = fmt(d.total_all_time);
+      $('totMonth').textContent = fmt(d.total_this_month);
+      $('totBurn').textContent  = fmt(d.monthly_burn);
+      $('totCount').textContent = d.count;
+      renderCategoryDropdown(d.categories || []);
+      renderList(d.items || []);
+      renderCats(d.totals_by_category || {});
+      renderMonths(d.totals_by_month || {});
+      renderSubs(d.subscriptions || []);
+    } catch(e){
+      toast('Could not load expenses', true);
+    }
+  }
+
+  // Bulk paste handler
+  document.getElementById('bulkBtn').addEventListener('click', async ()=>{
+    const txt = ($('bulkText').value || '').trim();
+    if (!txt){ toast('Paste something first', true); return; }
+    const lines = txt.split('\n').filter(l => l.trim()).length;
+    const btn = $('bulkBtn');
+    const status = $('bulkStatus');
+    btn.disabled = true; btn.textContent = 'Parsing…';
+    status.textContent = `Parsing ${lines} line${lines === 1 ? '' : 's'}…`;
+    try {
+      const res = await api('/api/v1/expenses/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ text: txt }),
+      });
+      // Show per-line outcome
+      const out = (res.results || []).map(r => {
+        if (r.added) {
+          const e = r.expense;
+          return `<div style="font-size:12.5px;color:var(--good);padding:5px 0;border-bottom:1px solid rgba(121,224,142,.12)">✓ ${escapeHTML(r.line)}  →  ${fmt(e.amount)} ${escapeHTML(e.category)}</div>`;
+        } else {
+          return `<div style="font-size:12.5px;color:var(--slate-3);padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">✗ ${escapeHTML(r.line)}  <span style="color:var(--slate-3);font-style:italic">skipped (no expense detected)</span></div>`;
+        }
+      }).join('');
+      $('bulkResults').innerHTML = out;
+      status.textContent = `${res.added} added · ${res.skipped} skipped`;
+      toast(`${res.added} added.`);
+      $('bulkText').value = '';
+      load();
+    } catch (e) {
+      toast('Bulk add failed: ' + e.message, true);
+      status.textContent = 'failed';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Parse & add';
+    }
+  });
+
+  document.getElementById('addform').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const body = {
+      amount:      parseFloat($('f_amount').value),
+      category:    $('f_category').value,
+      vendor:      $('f_vendor').value,
+      description: $('f_description').value,
+    };
+    if (!body.amount || body.amount <= 0){ toast('Enter an amount', true); return; }
+    try{
+      await api('/api/v1/expenses', {method:'POST', body: JSON.stringify(body)});
+      toast('Added.');
+      document.getElementById('addform').reset();
+      load();
+    } catch(e){
+      toast('Add failed', true);
+    }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

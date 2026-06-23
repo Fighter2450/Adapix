@@ -1,0 +1,90 @@
+# Case Acceptance Follow-Up Workflow
+#
+# THE ADAPTIVE LAYER LIVES HERE.
+# This file defines BEHAVIOR. The agent code (src/adapix/agent.py) is workflow-
+# agnostic — it reads this YAML and adapts. To ship a new workflow (recall,
+# no-show, new patient intake, post-treatment, supplier coordination for an
+# HVAC shop someday), drop another YAML next to this one. No Python changes.
+
+id: case_acceptance
+name: "Case Acceptance Follow-Up"
+description: "30-day personalized follow-up for parents who consulted but have not yet committed to treatment."
+version: 1
+
+# Who this workflow targets
+target:
+  patient_status: "consulted_not_started"
+  exclude_statuses:
+    - treatment_started
+    - explicitly_declined
+  exclude_if_days_since_consult_gt: 60
+
+# What the agent is trying to accomplish
+objective: |
+  Help the parent decide to start treatment. Surface the value of the recommended
+  treatment plan, address common concerns (cost, timing, child's hesitation),
+  proactively offer financing options, and make it easy to schedule the start
+  date. Do not pressure. Be warm, informative, and patient. Defer to the practice
+  on any clinical question.
+
+# Voice and tone
+voice:
+  warmth: high
+  formality: medium
+  audience: "parent of patient (typically the mother of a teenager)"
+  forbidden_phrases:
+    - "limited time offer"
+    - "act now"
+    - "guaranteed result"
+    - "best price"
+
+# Cadence — when to send messages over the 30-day window
+cadence:
+  - day: 1
+    channel: sms
+    intent: "Warm check-in. Surface one common concern (cost or timing). Ask if any questions came up after the consult."
+  - day: 3
+    channel: email
+    intent: "Share treatment plan summary in plain language plus financing options. Calm, informative."
+  - day: 7
+    channel: sms
+    intent: "Follow up on financing. Offer to schedule a start date or a financing call."
+  - day: 14
+    channel: email
+    intent: "Share a relatable patient story or before/after framing. Gentle nudge."
+  - day: 21
+    channel: sms
+    intent: "Direct: are you ready to schedule a start date? Make booking easy."
+  - day: 30
+    channel: email
+    intent: "Final touch. Let them know we'll pause outreach but they can reach out anytime. No pressure."
+
+# Escalation rules — when humans take over
+escalation:
+  - trigger: "patient or parent asks a clinical question"
+    action: "do not answer; flag for doctor review"
+  - trigger: "patient explicitly declines treatment"
+    action: "stop campaign, mark declined, send respectful acknowledgment"
+  - trigger: "patient asks for a callback"
+    action: "flag for office manager, send confirmation that someone will call"
+  - trigger: "negative sentiment detected for 3 consecutive turns"
+    action: "stop campaign, flag for owner review"
+  - trigger: "patient mentions emergency or pain"
+    action: "immediate office phone redirect, stop campaign"
+
+# What knowledge the agent needs from the practice config
+knowledge_required:
+  - practice_name
+  - doctor_name
+  - office_phone
+  - office_hours
+  - financing_options
+  - typical_treatment_duration
+
+# How we know it's working
+success_metric:
+  primary: "treatment plans signed within 45 days of campaign start"
+  secondary:
+    - "consultations rebooked"
+    - "financing applications started"
+    - "office callbacks requested"

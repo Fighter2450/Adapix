@@ -1,0 +1,102 @@
+# Secrets — never commit
+.env
+.env.local
+.env.production
+*.env
+!*.env.example
+
+# OAuth tokens, push keys, anything an attacker could replay
+email_tokens.json
+oauth_states.json
+vapid_keys.json
+notification_subscriptions.json
+*.pem
+*.key
+*_credentials.json
+service_account*.json
+
+# Per-device runtime state (each device generates its own at first boot)
+configured.flag
+practice_profile.json
+chat_history.json
+memory.json
+dashboard_config.json
+src/.env
+src/configured.flag
+src/practice_profile.json
+src/chat_history.json
+src/memory.json
+src/dashboard_config.json
+src/email_tokens.json
+src/oauth_states.json
+src/vapid_keys.json
+
+# Local databases (have user data)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments — DO NOT COMMIT
+venv/
+venvvenv/
+.venv/
+env/
+ENV/
+
+# Editors / OSes
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts / logs
+build/
+dist/
+*.log
+
+# Scratch / clutter
+Untitled*
+*.blend1
+*.blend2
+adapix_v*_review.png
+adapix_v*_preview.png
+adapix_v*_ports.png
+_hero_raw.png
+
+# Higgsfield workflow scratch (regeneratable from STL + SVG)
+hardware/adapix_logo_reference.png
+hardware/adapix_hero_reference.png
+hardware/adapix_hero_reference_hi.png
+hardware/adapix_mark_transparency_check.png
+hardware/adapix_mark_check.png
+hardware/adapix_beauty.png
+hardware/adapix_preview.png
+
+# Backups / clean copies
+*.bak
+*.clean
+src/adapix/api/*.clean
+
+# Upload staging
+uploads/
+session_uploads/
+
+# Higgsfield generated videos
+*.mp4
+*.webm

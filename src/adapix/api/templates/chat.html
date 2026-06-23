@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Chat with Adapix</title>
+<meta name="theme-color" content="#040b1a" />
+<link rel="icon" type="image/svg+xml" href="/static/adapix_mark.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2c5d;--navy-2:#08193a;--navy-3:#040b1a;
+  --cyan:#00b8e6;--cyan-2:#00d4ff;--cyan-3:#aef0ff;
+  --ink:#cfe1ff;--ink-soft:#7fa0d6;--ink-dim:#4a6a99;
+  --line:rgba(0,184,230,.18);
+  --user-bg:#155a96;
+  --bot-bg:rgba(255,255,255,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 50% 30%, #0a1f47 0%, var(--navy-3) 75%);
+  -webkit-font-smoothing:antialiased;line-height:1.55;display:flex;flex-direction:column;
+}
+
+/* ===== Header ===== */
+.hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 24px;border-bottom:1px solid var(--line);
+  background:rgba(8,25,58,.6);backdrop-filter:blur(10px);
+}
+.hd-brand{display:flex;align-items:center;gap:12px}
+.hd-logo{
+  width:30px;height:30px;display:block;
+  filter:drop-shadow(0 0 12px rgba(0,212,255,.45));
+}
+.hd-pulse{
+  width:11px;height:11px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 12px var(--cyan), 0 0 24px rgba(0,184,230,.4);
+  animation:breathe 3.5s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:scale(.85);opacity:.7}
+  50%{transform:scale(1.15);opacity:1;box-shadow:0 0 18px var(--cyan-2),0 0 38px rgba(0,212,255,.6)}
+}
+.hd-title{font-weight:700;color:#fff;font-size:15px;letter-spacing:-.005em}
+.hd-sub{font-size:12px;color:var(--ink-soft);font-weight:500}
+.hd-back{color:var(--ink-soft);font-size:14px;text-decoration:none;padding:8px 14px;
+  border:1px solid var(--line);border-radius:8px;transition:background .15s, color .15s}
+.hd-back:hover{color:#fff;background:rgba(255,255,255,.05)}
+.hd-mem{cursor:pointer;font-family:inherit}
+.hd-mem .ct{
+  display:inline-block;background:var(--cyan);color:var(--navy-3);
+  font-weight:800;font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px;
+}
+
+/* Newly-remembered fact pill that appears under bot messages */
+.mem-note{
+  margin:6px 0 0 46px;padding:8px 12px;
+  background:rgba(0,184,230,.07);border:1px solid var(--line);border-radius:10px;
+  font-size:12.5px;color:var(--ink);max-width:75%;
+  animation:pop .35s cubic-bezier(.34,1.56,.64,1);
+}
+.mem-note .lbl{
+  font-family:'JetBrains Mono',monospace;color:var(--cyan-2);
+  font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:5px;display:flex;align-items:center;gap:6px;
+}
+.mem-note .lbl::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 6px var(--cyan);
+}
+.mem-note ul{list-style:none;margin:0;padding:0}
+.mem-note li{padding:3px 0;color:var(--ink-soft);font-style:italic}
+.mem-note li::before{content:"+ ";color:var(--cyan-2);font-weight:700;font-style:normal}
+
+/* Full-memory drawer */
+.mem-drawer{
+  position:fixed;top:0;right:0;bottom:0;width:380px;max-width:90vw;
+  background:linear-gradient(180deg, #08193a 0%, var(--navy-3) 100%);
+  border-left:1px solid var(--line);
+  transform:translateX(110%);transition:transform .25s ease;
+  z-index:30;display:flex;flex-direction:column;
+  box-shadow:-30px 0 60px -20px rgba(0,0,0,.7);
+}
+.mem-drawer.open{transform:translateX(0)}
+.mem-drawer-hd{
+  padding:18px 20px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.mem-drawer-hd h3{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.005em}
+.mem-drawer-hd button{
+  background:transparent;border:0;color:var(--ink-soft);font-size:20px;cursor:pointer;
+  width:32px;height:32px;border-radius:8px;transition:background .15s;
+}
+.mem-drawer-hd button:hover{background:rgba(255,255,255,.06);color:#fff}
+.mem-drawer-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.mem-cat{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan-2);font-weight:700;margin-top:10px;margin-bottom:-2px}
+.mem-cat:first-child{margin-top:0}
+.mem-card{
+  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;
+  padding:11px 13px;font-size:13.5px;color:var(--ink);
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+}
+.mem-card .txt{flex:1;line-height:1.5}
+.mem-card .del{
+  flex:0 0 22px;height:22px;border-radius:6px;background:transparent;
+  border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.mem-card .del:hover{color:#ff8c86;border-color:#ff8c86;background:rgba(255,140,134,.08)}
+.mem-empty{color:var(--ink-dim);font-size:13px;text-align:center;padding:40px 20px;font-style:italic}
+
+/* ===== Conversation area ===== */
+.convo{
+  flex:1;overflow-y:auto;padding:30px 20px 30px;
+  -webkit-overflow-scrolling:touch;
+}
+.thread{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+.row{display:flex;gap:10px;align-items:flex-end}
+.row.bot{justify-content:flex-start}
+.row.user{justify-content:flex-end}
+.row > div:not(.avatar){
+  /* The unclassed wrap div around the bubble + timestamp.
+     Cap its width so the bubble doesn't try to fill the whole row,
+     but let it shrink to fit short text like "hi". */
+  max-width:75%;
+  display:flex;flex-direction:column;
+  min-width:0;
+}
+
+.avatar{
+  flex:0 0 36px;height:36px;border-radius:50%;
+  background:linear-gradient(160deg,var(--navy),var(--cyan));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-style:italic;font-size:16px;
+  box-shadow:0 0 18px rgba(0,184,230,.35);
+}
+
+.bubble{
+  /* Width is now controlled by the parent wrap, see .row > div rule.
+     The bubble shrinks to fit content and only expands up to wrap's max. */
+  padding:13px 17px;border-radius:18px;font-size:14.5px;
+  line-height:1.55;color:#fff;white-space:pre-wrap;word-wrap:break-word;
+  overflow-wrap:anywhere;
+  width:fit-content;
+  animation:pop .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.row.bot .bubble{
+  background:var(--bot-bg);border:1px solid var(--line);border-bottom-left-radius:6px;
+}
+.row.user .bubble{
+  background:linear-gradient(160deg, #1c5aa3, var(--navy));
+  border:1px solid rgba(0,184,230,.25);
+  border-bottom-right-radius:6px;color:#fff;
+  box-shadow:0 8px 20px -10px rgba(0,184,230,.3);
+}
+.timestamp{
+  font-size:10.5px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.04em;margin:4px 0 0 46px;
+}
+.row.user .timestamp{margin:4px 0 0 0;text-align:right}
+
+/* Typing indicator */
+.typing{display:flex;gap:5px;padding:13px 17px}
+.typing span{
+  width:7px;height:7px;border-radius:50%;background:var(--cyan-2);opacity:.5;
+  animation:dot 1.2s ease-in-out infinite;
+}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes dot{
+  0%,80%,100%{transform:translateY(0);opacity:.4}
+  40%{transform:translateY(-6px);opacity:1}
+}
+
+/* Suggested-topic chips */
+.suggestions{
+  max-width:760px;margin:6px auto 0;display:flex;flex-wrap:wrap;gap:8px;
+  padding:0 6px;
+}
+.chip{
+  font-size:12.5px;color:var(--ink-soft);background:rgba(0,184,230,.07);
+  border:1px solid var(--line);border-radius:999px;
+  padding:7px 13px;cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.chip:hover{background:rgba(0,184,230,.18);color:#fff;border-color:var(--cyan)}
+
+/* ===== Composer (sticky input at bottom) ===== */
+.composer{
+  border-top:1px solid var(--line);background:rgba(8,25,58,.85);
+  backdrop-filter:blur(12px);padding:14px 20px 18px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom));
+}
+.composer-row{
+  max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;
+}
+.input-wrap{
+  flex:1;background:rgba(255,255,255,.05);border:1px solid var(--line);
+  border-radius:18px;display:flex;align-items:flex-end;
+  transition:border-color .15s, box-shadow .15s;
+}
+.input-wrap:focus-within{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 4px rgba(0,184,230,.12);
+}
+.input-wrap textarea{
+  flex:1;padding:13px 14px;background:transparent;border:0;outline:none;
+  color:#fff;font-family:inherit;font-size:14.5px;line-height:1.5;
+  resize:none;max-height:160px;min-height:24px;
+}
+.input-wrap textarea::placeholder{color:var(--ink-dim)}
+.send-btn{
+  flex:0 0 42px;height:42px;margin:3px;border:0;border-radius:50%;
+  background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:var(--navy-3);
+  font-weight:800;font-size:18px;cursor:pointer;transition:transform .08s, opacity .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.send-btn:active{transform:scale(.94)}
+.send-btn:disabled{opacity:.35;pointer-events:none}
+.send-btn svg{width:18px;height:18px;fill:var(--navy-3)}
+
+.helper{
+  max-width:760px;margin:8px auto 0;text-align:center;
+  font-size:11.5px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.03em;
+}
+.helper b{color:var(--ink-soft)}
+
+@media (max-width: 600px){
+  .row > div:not(.avatar){max-width:84%}
+  .convo{padding:20px 12px}
+}
+</style>
+</head>
+<body>
+
+<header class="hd">
+  <div class="hd-brand">
+    <img class="hd-logo" src="/static/adapix_mark.svg" alt="Adapix" />
+    <div class="hd-pulse"></div>
+    <div>
+      <div class="hd-title">Chat with Adapix</div>
+      <div class="hd-sub">tunes your AI for your business</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="hd-back hd-mem" id="memToggle">What I remember <span class="ct" id="memCt">0</span></button>
+    <a href="/app" class="hd-back">← Dashboard</a>
+  </div>
+</header>
+
+<aside class="mem-drawer" id="memDrawer">
+  <div class="mem-drawer-hd">
+    <h3>Adapix Memory</h3>
+    <button id="memClose" aria-label="Close">×</button>
+  </div>
+  <div class="mem-drawer-body" id="memBody">
+    <div class="mem-empty">Loading…</div>
+  </div>
+</aside>
+
+<section class="convo" id="convo">
+  <div class="thread" id="thread"></div>
+  <div class="suggestions" id="suggestions"></div>
+</section>
+
+<footer class="composer">
+  <div class="composer-row">
+    <div class="input-wrap">
+      <textarea id="input" rows="1" placeholder="Tell Adapix what's on your mind..."></textarea>
+    </div>
+    <button class="send-btn" id="send" disabled aria-label="Send">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5L21 3l-7 18-3-7-8-2.5z"/></svg>
+    </button>
+  </div>
+  <div class="helper">Press <b>Enter</b> to send · <b>Shift+Enter</b> for new line</div>
+</footer>
+
+<script>
+(function(){
+  const thread = document.getElementById('thread');
+  const convoEl = document.getElementById('convo');
+  const inputEl = document.getElementById('input');
+  const sendBtn = document.getElementById('send');
+  const sugBox  = document.getElementById('suggestions');
+
+  function timeNow(){
+    const d = new Date();
+    return d.getHours()%12 + ':' + String(d.getMinutes()).padStart(2,'0') +
+           (d.getHours() >= 12 ? ' PM' : ' AM');
+  }
+  function escapeHTML(s){
+    return (s||'').replace(/[&<>"']/g, (c)=>(
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function addBubble(side, text, ts){
+    const row = document.createElement('div');
+    row.className = 'row ' + side;
+    if (side === 'bot') {
+      const av = document.createElement('div');
+      av.className = 'avatar'; av.textContent = 'A';
+      row.appendChild(av);
+    }
+    const wrap = document.createElement('div');
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.innerHTML = escapeHTML(text).replace(/\n/g, '<br>');
+    wrap.appendChild(b);
+    const t = document.createElement('div');
+    t.className = 'timestamp';
+    t.textContent = ts || timeNow();
+    wrap.appendChild(t);
+    row.appendChild(wrap);
+    thread.appendChild(row);
+    convoEl.scrollTop = convoEl.scrollHeight;
+    return row;
+  }
+
+  function addTyping(){
+    const row = document.createElement('div');
+    row.className = 'row bot'; row.id = '__typing';
+    const av = document.createElement('div'); av.className = 'avatar'; av.textContent = 'A';
+    const wrap = document.createElement('div');
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+    wrap.appendChild(b);
+    row.appendChild(av); row.appendChild(wrap);
+    thread.appendChild(row);
+    convoEl.scrollTop = convoEl.scrollHeight;
+  }
+  function removeTyping(){
+    const t = document.getElementById('__typing');
+    if (t) t.remove();
+  }
+
+  function renderSuggestions(arr){
+    sugBox.innerHTML = '';
+    (arr || []).forEach(text => {
+      const c = document.createElement('button');
+      c.className = 'chip'; c.textContent = text;
+      c.addEventListener('click', ()=>{
+        inputEl.value = text;
+        inputEl.dispatchEvent(new Event('input'));
+        inputEl.focus();
+      });
+      sugBox.appendChild(c);
+    });
+  }
+
+  async function api(path, opts){
+    const res = await fetch(path, Object.assign({
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+    }, opts || {}));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  async function loadHistory(){
+    try {
+      const j = await api('/api/v1/chat/history');
+      const msgs = j.messages || [];
+      if (msgs.length === 0) {
+        // First time — request an opener from the server
+        await sendOpener();
+      } else {
+        msgs.forEach(m => addBubble(m.role === 'user' ? 'user' : 'bot', m.content, m.ts));
+        renderSuggestions(j.suggestions || []);
+      }
+    } catch (e) {
+      addBubble('bot', 'I had trouble loading our conversation history. Refresh the page or message me below to start fresh.');
+    }
+  }
+
+  async function sendOpener(){
+    addTyping();
+    try {
+      // History is empty → this is the first time the user has opened
+      // the chat after the welcome wizard. Tell Adapix to go into
+      // "interview mode" — she'll start with "I need to ask you a few
+      // questions" and walk through the gaps the wizard didn't cover.
+      const j = await api('/api/v1/chat/opener', {
+        method: 'POST',
+        body: JSON.stringify({ onboarding: true }),
+      });
+      removeTyping();
+      addBubble('bot', j.message);
+      renderSuggestions(j.suggestions || []);
+    } catch (e) {
+      removeTyping();
+      addBubble('bot', "Hi — I'm Adapix. Tell me anything about your business and I'll get smarter about how to help.");
+    }
+  }
+
+  function addRememberedPill(facts){
+    if (!facts || !facts.length) return;
+    const note = document.createElement('div');
+    note.className = 'mem-note';
+    note.innerHTML =
+      '<div class="lbl">Saved to memory</div>' +
+      '<ul>' + facts.map(f=>'<li>'+escapeHTML(f.text)+'</li>').join('') + '</ul>';
+    thread.appendChild(note);
+    convoEl.scrollTop = convoEl.scrollHeight;
+    refreshMemoryCount();
+  }
+
+  async function send(text){
+    if (!text.trim()) return;
+    addBubble('user', text.trim());
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+    addTyping();
+    try {
+      const j = await api('/api/v1/chat/send', {
+        method: 'POST',
+        body: JSON.stringify({ message: text.trim() }),
+      });
+      removeTyping();
+      addBubble('bot', j.reply || '(no reply)');
+      if (j.remembered && j.remembered.length) addRememberedPill(j.remembered);
+      renderSuggestions(j.suggestions || []);
+    } catch (e) {
+      removeTyping();
+      addBubble('bot', "I couldn't reach the AI service. Check your ANTHROPIC_API_KEY in .env and try again.");
+    }
+  }
+
+  // ----- Memory drawer -----
+  const memDrawer = document.getElementById('memDrawer');
+  const memBody = document.getElementById('memBody');
+  const memCt = document.getElementById('memCt');
+  const CAT_LABELS = {
+    rule: 'Hard rules', constraint: 'Constraints (never do)',
+    escalation_criterion: 'Always escalate', preference: 'Preferences',
+    detail: 'Business details',
+  };
+  async function refreshMemoryCount(){
+    try {
+      const j = await api('/api/v1/memory');
+      memCt.textContent = (j.facts || []).length;
+    } catch(_){}
+  }
+  async function openMemory(){
+    memDrawer.classList.add('open');
+    try {
+      const j = await api('/api/v1/memory');
+      const facts = j.facts || [];
+      memCt.textContent = facts.length;
+      if (!facts.length) {
+        memBody.innerHTML =
+          "<div class=\"mem-empty\">Adapix hasn't remembered anything yet.<br/>" +
+          "Tell it something about your business — rules, preferences, details — " +
+          "and it'll start saving facts here.</div>";
+        return;
+      }
+      const byCat = {};
+      facts.forEach(f => { (byCat[f.category||'detail'] = byCat[f.category||'detail']||[]).push(f); });
+      const order = ['rule','constraint','escalation_criterion','preference','detail'];
+      let html = '';
+      order.forEach(cat => {
+        if (!byCat[cat]) return;
+        html += '<div class="mem-cat">'+escapeHTML(CAT_LABELS[cat]||cat)+'</div>';
+        byCat[cat].forEach(f => {
+          html += '<div class="mem-card" data-id="'+f.id+'">' +
+            '<div class="txt">'+escapeHTML(f.text)+'</div>' +
+            '<button class="del" aria-label="Forget this">×</button>' +
+            '</div>';
+        });
+      });
+      memBody.innerHTML = html;
+      memBody.querySelectorAll('.mem-card .del').forEach(btn => {
+        btn.addEventListener('click', async ()=>{
+          const id = btn.closest('.mem-card').dataset.id;
+          await api('/api/v1/memory/'+id, {method:'DELETE'});
+          openMemory();   // refresh
+        });
+      });
+    } catch(e) {
+      memBody.innerHTML = '<div class="mem-empty">Could not load memory.</div>';
+    }
+  }
+  document.getElementById('memToggle').addEventListener('click', openMemory);
+  document.getElementById('memClose').addEventListener('click', ()=> memDrawer.classList.remove('open'));
+  refreshMemoryCount();
+
+  // Auto-grow textarea
+  inputEl.addEventListener('input', ()=>{
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+    sendBtn.disabled = !inputEl.value.trim();
+  });
+
+  // Enter sends, Shift+Enter newline
+  inputEl.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) send(inputEl.value);
+    }
+  });
+
+  sendBtn.addEventListener('click', ()=> send(inputEl.value));
+
+  // If we arrived from the Concierge with a pre-filled task prompt,
+  // drop it into the input ready to send (don't auto-send — user reviews).
+  function applyPrefill(){
+    let prefill = '';
+    try {
+      const url = new URL(window.location.href);
+      prefill = url.searchParams.get('prefill') || '';
+      if (!prefill) prefill = sessionStorage.getItem('adapix.prefill') || '';
+      sessionStorage.removeItem('adapix.prefill');
+      // Clean the URL so reloads don't re-prefill
+      if (url.searchParams.has('prefill')) {
+        url.searchParams.delete('prefill');
+        history.replaceState({}, '', url.toString());
+      }
+    } catch(_) {}
+    if (prefill) {
+      inputEl.value = prefill;
+      inputEl.dispatchEvent(new Event('input'));
+      inputEl.focus();
+    }
+  }
+
+  loadHistory().then(()=> {
+    applyPrefill();
+    inputEl.focus();
+  });
+})();
+</script>
+</body>
+</html>

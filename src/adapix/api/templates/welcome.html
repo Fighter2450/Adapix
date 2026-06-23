@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Adapt 1.0 — first boot</title>
+<meta name="theme-color" content="#040b1a" />
+<link rel="icon" type="image/svg+xml" href="/static/adapix_mark.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2c5d; --navy-2:#08193a; --navy-3:#040b1a;
+  --cyan:#00b8e6; --cyan-2:#00d4ff; --cyan-3:#aef0ff;
+  --ink:#cfe1ff; --ink-soft:#7fa0d6; --ink-dim:#4a6a99;
+  --line:rgba(0,184,230,.18);
+  --bg-grad: radial-gradient(circle at 50% 40%, #0a1f47 0%, #040b1a 70%);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  color:var(--ink);background:var(--navy-3);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+
+/* ============================================================
+   Living background: dark gradient + slow drifting cyan particles
+   ============================================================ */
+.bg{position:fixed;inset:0;z-index:0;background:var(--bg-grad)}
+.particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.particles::before,.particles::after{
+  content:"";position:absolute;border-radius:50%;
+  background:radial-gradient(circle, rgba(0,212,255,.08) 0%, transparent 70%);
+  width:600px;height:600px;
+  animation:drift 28s ease-in-out infinite;
+  filter:blur(40px);
+}
+.particles::before{top:-100px;left:-150px;animation-delay:-5s}
+.particles::after{bottom:-100px;right:-150px;animation-delay:-14s;
+  background:radial-gradient(circle, rgba(0,184,230,.06) 0%, transparent 70%)}
+@keyframes drift{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(60px,-30px) scale(1.05)}
+  66%{transform:translate(-30px,40px) scale(.95)}
+}
+
+/* ============================================================
+   The "core" — a persistent breathing cyan dot, anchored top-left.
+   Same energy as the device's LED. Pulses through the whole flow.
+   ============================================================ */
+.core{
+  position:fixed;top:36px;left:42px;z-index:10;
+  display:flex;align-items:center;gap:12px;font-weight:600;font-size:13px;
+  letter-spacing:.04em;color:var(--ink-soft);
+}
+.core .pulse{
+  width:9px;height:9px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 12px var(--cyan), 0 0 24px rgba(0,184,230,.4);
+  animation:breathe 3.5s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:scale(.85);opacity:.6;box-shadow:0 0 8px var(--cyan)}
+  50%{transform:scale(1.15);opacity:1;box-shadow:0 0 18px var(--cyan-2),0 0 38px rgba(0,212,255,.6)}
+}
+.core .label{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-dim)}
+
+/* Progress bar at the very bottom — single cyan line that grows */
+.progress-track{
+  position:fixed;left:0;right:0;bottom:0;height:2px;
+  background:rgba(0,184,230,.08);z-index:10;
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--cyan),var(--cyan-2));
+  width:0%;transition:width .6s cubic-bezier(.65,0,.35,1);
+  box-shadow:0 0 12px var(--cyan-2);
+}
+
+/* ============================================================
+   Stage — the main content area, full screen, centered
+   ============================================================ */
+main{position:relative;z-index:5;height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 40px}
+.scene{width:100%;max-width:680px;text-align:center}
+.scene.left{text-align:left}
+
+/* All steps stack on top of each other; only the active one is visible.
+   align-items:safe center keeps content centered when it fits, but lets
+   it scroll WITHOUT cutting off the top when content is taller than the
+   viewport (e.g. when the "Other" input expands and adds height). */
+.step{
+  position:absolute;inset:0;display:flex;
+  align-items:safe center;justify-content:center;
+  padding:80px 40px;opacity:0;transform:translateY(20px);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.65,0,.35,1);
+  pointer-events:none;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.step.on{opacity:1;transform:translateY(0);pointer-events:auto}
+
+/* Typography */
+.eyebrow{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--cyan);font-weight:600;margin-bottom:18px;
+  display:inline-block;padding:5px 12px;
+  border:1px solid var(--line);border-radius:999px;
+  background:rgba(0,184,230,.04);
+}
+h1{
+  font-size:clamp(34px,5.5vw,58px);font-weight:300;letter-spacing:-.025em;
+  line-height:1.05;color:#fff;margin-bottom:18px;
+}
+h1 b{font-weight:700;background:linear-gradient(180deg,#fff,var(--cyan-3));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+h1 i{font-style:italic;color:var(--cyan-2);font-weight:400}
+p.lede{
+  font-size:18px;color:var(--ink-soft);max-width:520px;margin:0 auto 36px;
+  line-height:1.6;font-weight:400;
+}
+.scene.left p.lede{margin-left:0}
+
+/* Input — large floating-label */
+.field{
+  position:relative;max-width:480px;margin:0 auto 30px;text-align:left;
+}
+.field input{
+  width:100%;padding:18px 18px;font-size:22px;font-weight:500;
+  font-family:inherit;color:#fff;background:rgba(255,255,255,.04);
+  border:1px solid var(--line);border-radius:14px;outline:none;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.field input:focus{
+  border-color:var(--cyan);background:rgba(0,184,230,.06);
+  box-shadow:0 0 0 4px rgba(0,184,230,.12), 0 0 30px -10px rgba(0,212,255,.4);
+}
+/* Field labels removed — the H1 question above each input already says
+   what to type, and the previous overlay-style label collided with
+   typed text. Clean empty input box is the cleanest UX. */
+.field label{display:none}
+
+/* Choice cards — large, glowing-when-selected */
+.choices{display:flex;flex-direction:column;gap:12px;max-width:520px;margin:0 auto}
+.choice{
+  display:flex;gap:14px;align-items:flex-start;padding:18px 20px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line);
+  border-radius:14px;cursor:pointer;text-align:left;
+  transition:background .2s, border-color .2s, transform .15s, box-shadow .2s;
+}
+.choice:hover{background:rgba(0,184,230,.06);transform:translateY(-2px)}
+.choice.sel{
+  background:rgba(0,184,230,.10);border-color:var(--cyan);
+  box-shadow:0 0 0 1px var(--cyan), 0 12px 40px -15px rgba(0,212,255,.6);
+}
+.choice .indicator{
+  flex:0 0 18px;height:18px;border-radius:50%;
+  border:2px solid var(--ink-dim);margin-top:3px;
+  transition:all .2s;position:relative;
+}
+.choice.sel .indicator{
+  border-color:var(--cyan);background:var(--cyan-2);
+  box-shadow:0 0 10px var(--cyan);
+}
+.choice.sel .indicator::after{
+  content:"";position:absolute;left:3px;top:5px;width:8px;height:4px;
+  border-left:2px solid var(--navy-3);border-bottom:2px solid var(--navy-3);
+  transform:rotate(-45deg);
+}
+.choice.square .indicator{border-radius:5px}
+.choice.square.sel .indicator{border-radius:5px}
+
+/* Inline "Other" text input inside a choice card — hidden until card selected */
+.other-input{
+  display:none;width:100%;margin-top:10px;
+  padding:11px 14px;font-size:15px;font-family:inherit;
+  background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:9px;
+  color:#fff;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.other-input:focus{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px rgba(0,184,230,.15);
+}
+.other-card.sel .other-input{display:block}
+.other-card.sel .other-input::placeholder{color:var(--ink-dim)}
+.choice b{display:block;font-size:16px;color:#fff;font-weight:600;margin-bottom:3px}
+.choice span{font-size:14px;color:var(--ink-soft);line-height:1.5;font-weight:400}
+
+/* Live message preview */
+.preview{
+  margin:24px auto 0;max-width:520px;padding:18px 22px;
+  background:linear-gradient(180deg, rgba(0,184,230,.08), rgba(0,184,230,.02));
+  border:1px solid var(--line);border-radius:14px;
+  text-align:left;position:relative;
+}
+.preview::before{
+  content:"";position:absolute;left:24px;top:-1px;width:80px;height:2px;
+  background:var(--cyan-2);box-shadow:0 0 10px var(--cyan);
+}
+.preview .ph{
+  font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--cyan);font-weight:700;margin-bottom:10px;
+  font-family:'JetBrains Mono',monospace;
+}
+.preview .msg{font-size:15px;color:var(--ink);line-height:1.6;font-weight:400;min-height:90px}
+.preview .msg .cursor{display:inline-block;width:2px;height:18px;background:var(--cyan-2);
+  vertical-align:middle;animation:blink 1s infinite;margin-left:2px}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+/* Action row */
+.actions{margin-top:36px;display:flex;justify-content:center;gap:14px;align-items:center}
+.scene.left .actions{justify-content:flex-start}
+.btn{
+  padding:15px 28px;border:0;cursor:pointer;font-family:inherit;font-weight:600;
+  font-size:15px;border-radius:12px;letter-spacing:.01em;
+  transition:transform .1s, box-shadow .2s, background .2s;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{
+  background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:var(--navy-3);
+  box-shadow:0 10px 30px -10px rgba(0,212,255,.6), 0 0 0 1px rgba(255,255,255,.1) inset;
+  font-weight:700;
+}
+.btn-primary:hover{box-shadow:0 14px 40px -10px rgba(0,212,255,.8)}
+.btn-primary[disabled]{opacity:.35;pointer-events:none;background:#2a4567;color:#5a7090;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.btn-ghost:hover{background:rgba(255,255,255,.04);color:#fff}
+.btn-skip{background:transparent;color:var(--ink-dim);font-size:13px;padding:8px 12px;text-decoration:underline;text-underline-offset:3px}
+.btn-skip:hover{color:var(--cyan-2)}
+
+.kbhint{
+  margin-top:18px;font-size:12px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;
+}
+.kbhint kbd{
+  background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:5px;
+  padding:2px 7px;font-family:inherit;font-size:11px;color:var(--ink-soft);
+}
+
+/* ============================================================
+   Searchable business-type picker (last wizard step)
+   ============================================================ */
+.btype-wrap{max-width:540px;margin:0 auto;position:relative;text-align:left}
+.btype-input-row{position:relative}
+.btype-input-row input{
+  width:100%;padding:16px 44px 16px 18px;font-size:16px;font-weight:400;
+  font-family:inherit;color:#fff;background:rgba(255,255,255,.04);
+  border:1px solid var(--line);border-radius:14px;outline:none;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.btype-input-row input:focus{
+  border-color:var(--cyan);background:rgba(0,184,230,.06);
+  box-shadow:0 0 0 4px rgba(0,184,230,.12);
+}
+.btype-clear{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);
+  color:#fff;font-size:18px;line-height:1;display:flex;align-items:center;
+  justify-content:center;border:none;cursor:pointer;
+}
+.btype-clear:hover{background:rgba(255,255,255,.18)}
+
+.btype-dropdown{
+  margin-top:8px;max-height:340px;overflow-y:auto;
+  background:rgba(8,25,58,.85);backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+  padding:6px;
+}
+.btype-row{
+  padding:11px 14px;border-radius:9px;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  transition:background .12s;
+}
+.btype-row:hover, .btype-row.kbhi{background:rgba(0,184,230,.12)}
+.btype-row b{color:#fff;font-weight:600;font-size:15px}
+.btype-row .cat{color:var(--ink-soft);font-size:12.5px;font-weight:400;white-space:nowrap}
+.btype-row.notlisted{border-top:1px solid var(--line);margin-top:4px;padding-top:14px;color:var(--cyan-2)}
+.btype-row.notlisted b{color:var(--cyan-2)}
+.btype-empty{padding:18px 14px;text-align:center;color:var(--ink-soft);font-size:13.5px}
+.btype-examples-hd{
+  padding:8px 12px 6px;font-size:11.5px;color:var(--ink-dim);
+  text-transform:uppercase;letter-spacing:.05em;font-weight:500;
+  border-bottom:1px solid var(--line);margin-bottom:4px;
+}
+
+.btype-selected{
+  margin-top:10px;padding:14px 16px;border-radius:14px;
+  background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.4);
+}
+.btype-selected-name{color:#fff;font-weight:600;font-size:16px}
+.btype-selected-cat{color:var(--ink-soft);font-size:13px;margin-top:2px}
+
+#btype_custom{
+  width:100%;padding:14px 16px;font-size:15px;font-family:inherit;color:#fff;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:12px;outline:none;
+}
+#btype_custom:focus{border-color:var(--cyan);background:rgba(0,184,230,.06)}
+
+/* ============================================================
+   STEP 0 — Boot sequence (cinematic open)
+   ============================================================ */
+#boot{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.boot-dot{
+  width:14px;height:14px;border-radius:50%;background:var(--cyan-2);
+  box-shadow:0 0 30px var(--cyan-2), 0 0 80px var(--cyan);
+  animation:bootPulse 2s ease-in-out infinite;margin-bottom:60px;
+}
+.boot-logo{
+  width:130px;height:auto;display:block;margin-bottom:54px;
+  filter:drop-shadow(0 0 40px rgba(0,212,255,.55));
+  animation:bootPulse 2.6s ease-in-out infinite;
+}
+@keyframes bootPulse{
+  0%,100%{transform:scale(.88);opacity:.78}
+  50%{transform:scale(1.06);opacity:1;filter:drop-shadow(0 0 60px rgba(0,212,255,.85))}
+}
+.boot-line{
+  font-size:48px;font-weight:200;color:#fff;letter-spacing:-.01em;
+  opacity:0;transition:opacity 1s;font-family:inherit;
+  height:60px;line-height:60px;
+}
+.boot-line.on{opacity:1}
+.boot-line.fade{opacity:0}
+
+.scene .device-glow{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle, rgba(0,184,230,.15) 0%, transparent 60%);
+  pointer-events:none;animation:slowGlow 6s ease-in-out infinite;
+}
+@keyframes slowGlow{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* ============================================================
+   FINAL — done screen
+   ============================================================ */
+#done-screen{text-align:center}
+.checkmark-wrap{
+  position:relative;width:110px;height:110px;margin:0 auto 40px;
+}
+.checkmark{
+  width:100%;height:100%;border-radius:50%;
+  background:linear-gradient(160deg, var(--cyan-2), var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 80px var(--cyan-2), 0 0 160px rgba(0,212,255,.4);
+  animation:checkPop .8s cubic-bezier(.34,1.56,.64,1);
+}
+.checkmark svg{width:55px;height:55px;stroke:var(--navy-3);stroke-width:4;
+  fill:none;stroke-linecap:round;stroke-linejoin:round}
+.checkmark svg path{stroke-dasharray:50;stroke-dashoffset:50;
+  animation:drawCheck .6s .4s ease forwards}
+@keyframes checkPop{0%{transform:scale(0) rotate(-180deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes drawCheck{to{stroke-dashoffset:0}}
+.checkmark-wrap::after{
+  content:"";position:absolute;inset:-30px;border-radius:50%;
+  border:1px solid var(--cyan);opacity:0;animation:checkRing 1.4s 1.2s ease forwards;
+}
+@keyframes checkRing{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.5);opacity:0}}
+
+@media (max-width:600px){
+  h1{font-size:32px}
+  .core{top:24px;left:20px}
+  main{padding:60px 20px}
+  .step{padding:60px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="particles"></div>
+
+<div class="core">
+  <div class="pulse"></div>
+  <div>
+    <div style="color:#fff;font-weight:600;font-size:14px;letter-spacing:-.005em">ADAPT 1.0</div>
+    <div class="label">first boot</div>
+  </div>
+</div>
+
+<div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+
+<main>
+
+  <!-- ===================== STEP 0: BOOT ===================== -->
+  <div class="step on" data-step="0" id="boot">
+    <div class="device-glow"></div>
+    <img src="/static/adapix_mark.svg" alt="Adapix" class="boot-logo" />
+    <div class="boot-line" id="boot-text">Hi.</div>
+  </div>
+
+  <!-- ===================== STEP 1: CREATE vs CONTINUE FORK ===================== -->
+  <!-- Picks the entire path Adapix takes from here. "existing" runs the
+       same 5-step config wizard we've always had. "new" tells the rest of
+       the system that the user is *starting* a business and Adapix should
+       act as a co-founder, not just a follow-up assistant. -->
+  <div class="step" data-step="1">
+    <div class="scene">
+      <span class="eyebrow">Before we begin</span>
+      <h1>Are you <b>starting</b> or <b>running</b> a business?</h1>
+      <p class="lede">This changes everything about how I help you. Pick the one that fits — you can switch later in settings.</p>
+
+      <div class="choices">
+        <div class="choice sel" data-mode="existing" onclick="pickMode(this)">
+          <div class="indicator"></div>
+          <div><b>I'm running a business — help me run it</b>
+            <span>You already have customers, a team, the basics. I take follow-up, scheduling, and the messages nobody has time for off your plate.</span></div>
+        </div>
+        <div class="choice" data-mode="new" onclick="pickMode(this)">
+          <div class="indicator"></div>
+          <div><b>I'm starting a business — help me build it</b>
+            <span>You have an idea (or just a feeling). I help you name it, shape the offer, set pricing, find your first customers, and stand up the basics so you can actually open.</span></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+      </div>
+      <div class="kbhint">Press <kbd>Enter</kbd> to continue</div>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 2: NAME OF PRACTICE ===================== -->
+  <div class="step" data-step="2">
+    <div class="scene">
+      <span class="eyebrow" id="step2-eyebrow">First — your business</span>
+      <h1 id="step2-h1">What should I <b>call your business</b>?</h1>
+      <p class="lede" id="step2-lede">Every customer I reach out to, I'll introduce myself the same way your team would. Let's start there.</p>
+      <div class="field">
+        <label>Business name</label>
+        <input id="f_name" type="text" autocomplete="off" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" data-needs="f_name" onclick="goNext()">Continue →</button>
+      </div>
+      <div class="kbhint">Press <kbd>Enter</kbd> to continue</div>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 3: OWNER NAME ===================== -->
+  <div class="step" data-step="3">
+    <div class="scene">
+      <span class="eyebrow">Got it</span>
+      <h1>And who's the <b>business owner</b>?</h1>
+      <p class="lede">I'll always refer to them by name with customers. "Sarah from the team," "Sarah held a spot for you," that kind of thing.</p>
+      <div class="field">
+        <label>Owner's full name</label>
+        <input id="f_doctor" type="text" autocomplete="off" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" data-needs="f_doctor" onclick="goNext()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 4: VOICE & TONE ===================== -->
+  <div class="step" data-step="4">
+    <div class="scene">
+      <span class="eyebrow">Now — how I sound</span>
+      <h1>Pick the voice that <b>fits your office</b>.</h1>
+      <p class="lede">Watch the message preview update as you choose. Pick the one closest to how you'd want a customer texted.</p>
+
+      <div class="choices">
+        <div class="choice sel" data-tone="warm_professional" onclick="pickTone(this)">
+          <div class="indicator"></div>
+          <div><b>Warm Professional</b>
+            <span>Friendly but never casual. The default for most businesses.</span></div>
+        </div>
+        <div class="choice" data-tone="casual_friendly" onclick="pickTone(this)">
+          <div class="indicator"></div>
+          <div><b>Casual Friendly</b>
+            <span>Like a text from someone you know. Good for younger customer bases.</span></div>
+        </div>
+        <div class="choice" data-tone="clinical_formal" onclick="pickTone(this)">
+          <div class="indicator"></div>
+          <div><b>Direct &amp; Formal</b>
+            <span>Plain, precise, and to the point. For law firms, finance, or any business where customers expect a buttoned-up voice.</span></div>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="ph">Sample outreach Adapt would send</div>
+        <div class="msg" id="tone-preview"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 5: REAL PROBLEMS ===================== -->
+  <div class="step" data-step="5">
+    <div class="scene">
+      <span class="eyebrow">Step 4 of 5 — your real problems</span>
+      <h1>What can I <b>take off your plate</b>?</h1>
+      <p class="lede">Now the real conversation. <b style="color:#aef0ff">Describe the problems your business is dealing with — in your own words.</b> The customer outreach nobody has time for. The follow-ups that always slip through. The recurring headache you wish would just go away. The more specific you are, the better I get at solving them.</p>
+
+      <div class="field">
+        <label>What's frustrating you right now?</label>
+        <textarea id="f_problems" rows="6"
+          style="width:100%;padding:18px 18px 14px;font-size:16px;font-weight:400;font-family:inherit;color:#fff;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;outline:none;resize:vertical;line-height:1.55;min-height:140px;transition:border-color .2s, background .2s, box-shadow .2s;"></textarea>
+      </div>
+      <div style="color:var(--ink-dim);font-size:12.5px;margin:-18px auto 24px;max-width:480px;text-align:left;line-height:1.55">
+        <b style="color:var(--ink-soft);font-weight:600">Examples to spark ideas:</b><br/>
+        "Leads ghost after the first reply and we never circle back."<br/>
+        "Half our quotes go cold because we forget to follow up in week two."<br/>
+        "Same five questions hit our inbox every day and nobody has time to answer them."<br/>
+        "Customers churn quietly — we only notice once they're already gone."
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 6 — Business type (searchable) ===================== -->
+  <!-- The dropdown is populated from the BUSINESS_TYPES list defined in the
+       wizard's JS. The user MUST click a result to enable Continue — free-
+       typed text is not accepted unless they explicitly click "Not listed"
+       at the bottom of the dropdown. -->
+  <div class="step" data-step="6">
+    <div class="scene">
+      <span class="eyebrow">Step 5 of 5 — your business type</span>
+      <h1>What <b>exactly</b> is your business?</h1>
+      <p class="lede">Start typing — coffee shop, oral surgeon, plumber, law firm. Pick the closest match from the list. This is how I learn what words to use, what your customers expect, and what kind of help you actually need.</p>
+
+      <div class="btype-wrap">
+        <div class="btype-input-row">
+          <input
+            id="btype_search"
+            type="text"
+            autocomplete="off"
+            placeholder="Search business type..."
+            oninput="onTypeSearch()"
+            onfocus="onTypeSearch()"
+            onkeydown="onTypeKey(event)" />
+          <button
+            type="button"
+            id="btype_clear"
+            class="btype-clear"
+            onclick="clearTypePick()"
+            aria-label="Clear selection"
+            hidden>×</button>
+        </div>
+        <div id="btype_dropdown" class="btype-dropdown" hidden></div>
+        <div id="btype_selected" class="btype-selected" hidden>
+          <div class="btype-selected-name" id="btype_selected_name"></div>
+          <div class="btype-selected-cat" id="btype_selected_cat"></div>
+        </div>
+        <!-- "Not listed" custom input — appears only when the user explicitly
+             picks the "Don't see your business?" row from the dropdown. -->
+        <div id="btype_custom_wrap" hidden style="margin-top:14px">
+          <label style="display:block;color:var(--ink-soft);font-size:13px;margin-bottom:6px">Describe it in your own words:</label>
+          <input
+            id="btype_custom"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. 'SaaS startup helping nonprofits with grant writing'"
+            oninput="refreshButtons()" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" id="btype_finish" disabled onclick="finish()">Finish setup →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== DONE ===================== -->
+  <div class="step" data-step="7" id="done-screen">
+    <div class="scene">
+      <div class="checkmark-wrap">
+        <div class="checkmark">
+          <svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10"/></svg>
+        </div>
+      </div>
+      <h1>I'm <b>yours</b>, <i id="done-doctor">friend</i>.</h1>
+      <p class="lede">Adapix is configured for <span id="done-practice" style="color:#fff;font-weight:600">your business</span>. Voice is set, workflows are armed, escalation rules are live. Let's get to work.</p>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="finalLaunch()">Open dashboard →</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function(){
+  const data = {
+    practice: {},
+    tone: 'warm_professional',
+    workflows: ['case_acceptance'],
+    workflow_custom: '',
+    // The "what problems are you facing" textarea — free-form, becomes
+    // the most important field the AI uses to adapt to this practice.
+    practice_problems: '',
+    // Escalation rules used to be a wizard step; we removed it and will
+    // collect them through a chatbot in the dashboard later. Send sane
+    // defaults so the classifier still has something to work with.
+    escalations: ['emergency','complaint','callback_request','pricing_question'],
+    escalation_custom: '',
+  };
+  // Practice type starts empty — the searchable picker on step 6 forces
+  // the user to pick (no preselection). Finish button stays disabled
+  // until practice_type is set.
+  data.practice_type = '';
+  data.practice_type_label = '';
+  data.practice_type_custom = '';
+  // Which branch the user picked at step 1. "existing" = run an existing
+  // business, "new" = start a new one. Default lines up with the pre-selected
+  // card on render.
+  data.mode = 'existing';
+  const TOTAL_STEPS = 8;
+  let step = 0;
+
+  // Boot sequence
+  const bootText = document.getElementById('boot-text');
+  const lines = ["Hi.", "I'm Adapix.", "Let's set you up."];
+  let li = 0;
+  function showBootLine(){
+    if (li < lines.length) {
+      bootText.classList.remove('fade');
+      bootText.textContent = lines[li];
+      bootText.classList.add('on');
+      setTimeout(()=>{
+        bootText.classList.add('fade');
+        bootText.classList.remove('on');
+        li++;
+        setTimeout(showBootLine, 700);
+      }, 1500);
+    } else {
+      goNext();
+    }
+  }
+  setTimeout(showBootLine, 600);
+
+  function show(n){
+    document.querySelectorAll('.step').forEach(el=>{
+      el.classList.toggle('on', parseInt(el.dataset.step) === n);
+    });
+    step = n;
+    const pct = n === 0 ? 0 : Math.min(100, (n / (TOTAL_STEPS - 1)) * 100);
+    document.getElementById('prog').style.width = pct + '%';
+    setTimeout(()=>{
+      const inp = document.querySelector('.step[data-step="' + n + '"] input:not(.other-input)');
+      if (inp) inp.focus();
+    }, 400);
+    refreshButtons();
+  }
+  window.goNext = ()=>{
+    // Step 1 is the create-vs-continue fork. data.mode is already set by
+    // pickMode() — no extra validation needed.
+    if (step === 2) {
+      const v = document.getElementById('f_name').value.trim();
+      if (!v) return;
+      data.practice.name = v;
+    }
+    if (step === 3) {
+      const v = document.getElementById('f_doctor').value.trim();
+      if (!v) return;
+      data.practice.doctor = v;
+    }
+    show(step + 1);
+  };
+  window.goBack = ()=> show(Math.max(1, step - 1));
+
+  // Step 1 fork picker. Also rewrites the step-2 prompt so users in
+  // "new business" mode see "what do you WANT to call it?" instead of
+  // "what should I call your business?" — small but meaningful tone shift.
+  window.pickMode = (el)=>{
+    document.querySelectorAll('[data-mode]').forEach(c=>c.classList.remove('sel'));
+    el.classList.add('sel');
+    data.mode = el.dataset.mode;
+    const eyebrow = document.getElementById('step2-eyebrow');
+    const h1 = document.getElementById('step2-h1');
+    const lede = document.getElementById('step2-lede');
+    if (!eyebrow || !h1 || !lede) return;
+    if (data.mode === 'new') {
+      eyebrow.textContent = "Let's give it a name";
+      h1.innerHTML = "What do you want to <b>call it</b>?";
+      lede.textContent = "Working name is fine — we can change it later. Even \"the bakery thing\" works. I just need something to call your business while we build it together.";
+    } else {
+      eyebrow.textContent = "First — your business";
+      h1.innerHTML = "What should I <b>call your business</b>?";
+      lede.textContent = "Every customer I reach out to, I'll introduce myself the same way your team would. Let's start there.";
+    }
+  };
+
+  document.querySelectorAll('input').forEach(i=>{
+    if (i.classList.contains('other-input')) return;
+    i.addEventListener('keydown', e=>{ if (e.key === 'Enter') { e.preventDefault(); goNext(); }});
+    i.addEventListener('input', refreshButtons);
+  });
+  function refreshButtons(){
+    document.querySelectorAll('.btn-primary[data-needs]').forEach(b=>{
+      const id = b.dataset.needs;
+      const inp = document.getElementById(id);
+      b.disabled = !inp || !inp.value.trim();
+    });
+    // Step 6: business-type picker. Finish is enabled when the user has
+    // either picked a real type from the dropdown OR explicitly chose
+    // "Not listed" and typed something into the custom field.
+    const finishBtn = document.getElementById('btype_finish');
+    if (finishBtn) {
+      const picked = data.practice_type && data.practice_type !== 'other';
+      const customOk = data.practice_type === 'other'
+        && document.getElementById('btype_custom')?.value?.trim();
+      finishBtn.disabled = !(picked || customOk);
+    }
+  }
+
+  const previews = {
+    warm_professional: "Hi Maria, this is the team at your business. Just checking in to see if you'd like to set up that follow-up we talked about. Want me to find a time that works?",
+    casual_friendly:   "Hey Maria! Just checking in from our team. You still interested in setting something up? Happy to find a time that works for you :)",
+    clinical_formal:   "Maria — this is the office of [Owner Name] at [Business Name]. We are following up regarding our previous conversation. Please contact us at (412) 555-0100 to schedule the next step.",
+  };
+  let typeTimer = null;
+  function typewriter(target, text){
+    if (typeTimer) clearTimeout(typeTimer);
+    let i = 0;
+    target.innerHTML = '<span class="cursor"></span>';
+    function tick(){
+      i++;
+      target.innerHTML = text.slice(0, i) + '<span class="cursor"></span>';
+      if (i < text.length) typeTimer = setTimeout(tick, 14);
+      else target.innerHTML = text;
+    }
+    tick();
+  }
+  window.pickTone = (el)=>{
+    document.querySelectorAll('[data-tone]').forEach(c=>c.classList.remove('sel'));
+    el.classList.add('sel');
+    data.tone = el.dataset.tone;
+    const personalized = previews[data.tone]
+      .replace(/\[Owner Name\]/g, data.practice.doctor || 'the owner')
+      .replace(/\[Business Name\]/g, data.practice.name || 'your business');
+    typewriter(document.getElementById('tone-preview'), personalized);
+  };
+  // ===================================================================
+  // Step 6 — searchable business-type picker
+  // ===================================================================
+  // Catalog of specific business types. Each entry has a slug id, a
+  // human-readable name, and a broad category (used as a secondary label
+  // and a search keyword). The list is intentionally specific — generic
+  // categories don't tell Adapix anything useful. When adding to it, keep
+  // names short (1–3 words) and put the discriminating word first so
+  // typing matches quickly.
+  const BUSINESS_TYPES = [
+    // Healthcare
+    {id:'general_dentist', name:'General dentist', cat:'Healthcare'},
+    {id:'oral_surgeon', name:'Oral surgeon', cat:'Healthcare'},
+    {id:'orthodontist', name:'Orthodontist', cat:'Healthcare'},
+    {id:'periodontist', name:'Periodontist', cat:'Healthcare'},
+    {id:'endodontist', name:'Endodontist', cat:'Healthcare'},
+    {id:'pediatric_dentist', name:'Pediatric dentist', cat:'Healthcare'},
+    {id:'family_doctor', name:'Family doctor', cat:'Healthcare'},
+    {id:'pediatrician', name:'Pediatrician', cat:'Healthcare'},
+    {id:'internist', name:'Internist', cat:'Healthcare'},
+    {id:'dermatologist', name:'Dermatologist', cat:'Healthcare'},
+    {id:'cardiologist', name:'Cardiologist', cat:'Healthcare'},
+    {id:'ob_gyn', name:'OB/GYN', cat:'Healthcare'},
+    {id:'ophthalmologist', name:'Ophthalmologist', cat:'Healthcare'},
+    {id:'optometrist', name:'Optometrist', cat:'Healthcare'},
+    {id:'ent', name:'ENT (otolaryngologist)', cat:'Healthcare'},
+    {id:'urgent_care', name:'Urgent care clinic', cat:'Healthcare'},
+    {id:'psychiatrist', name:'Psychiatrist', cat:'Healthcare'},
+    {id:'psychologist', name:'Psychologist', cat:'Healthcare'},
+    {id:'therapist', name:'Therapist / counselor', cat:'Healthcare'},
+    {id:'chiropractor', name:'Chiropractor', cat:'Healthcare'},
+    {id:'physical_therapist', name:'Physical therapist', cat:'Healthcare'},
+    {id:'occupational_therapist', name:'Occupational therapist', cat:'Healthcare'},
+    {id:'speech_therapist', name:'Speech therapist', cat:'Healthcare'},
+    {id:'audiologist', name:'Audiologist', cat:'Healthcare'},
+    {id:'plastic_surgeon', name:'Plastic surgeon', cat:'Healthcare'},
+    {id:'med_spa', name:'Med spa / aesthetic clinic', cat:'Healthcare'},
+    {id:'acupuncturist', name:'Acupuncturist', cat:'Healthcare'},
+    {id:'naturopath', name:'Naturopath', cat:'Healthcare'},
+    {id:'veterinarian', name:'Veterinarian / animal hospital', cat:'Healthcare'},
+    {id:'sleep_clinic', name:'Sleep clinic', cat:'Healthcare'},
+    {id:'fertility_clinic', name:'Fertility clinic', cat:'Healthcare'},
+    {id:'home_health', name:'Home health / in-home care', cat:'Healthcare'},
+    // Wellness & fitness
+    {id:'gym', name:'Gym', cat:'Wellness & Fitness'},
+    {id:'crossfit', name:'CrossFit box', cat:'Wellness & Fitness'},
+    {id:'yoga_studio', name:'Yoga studio', cat:'Wellness & Fitness'},
+    {id:'pilates_studio', name:'Pilates studio', cat:'Wellness & Fitness'},
+    {id:'barre_studio', name:'Barre studio', cat:'Wellness & Fitness'},
+    {id:'spin_studio', name:'Spin / cycling studio', cat:'Wellness & Fitness'},
+    {id:'martial_arts', name:'Martial arts dojo', cat:'Wellness & Fitness'},
+    {id:'personal_trainer', name:'Personal trainer', cat:'Wellness & Fitness'},
+    {id:'nutritionist', name:'Nutritionist / dietitian', cat:'Wellness & Fitness'},
+    {id:'health_coach', name:'Health / life coach', cat:'Wellness & Fitness'},
+    {id:'massage_therapist', name:'Massage therapist', cat:'Wellness & Fitness'},
+    {id:'day_spa', name:'Day spa', cat:'Wellness & Fitness'},
+    // Beauty
+    {id:'hair_salon', name:'Hair salon', cat:'Beauty'},
+    {id:'barber_shop', name:'Barber shop', cat:'Beauty'},
+    {id:'nail_salon', name:'Nail salon', cat:'Beauty'},
+    {id:'lash_studio', name:'Lash studio', cat:'Beauty'},
+    {id:'brow_bar', name:'Brow bar', cat:'Beauty'},
+    {id:'waxing_studio', name:'Waxing studio', cat:'Beauty'},
+    {id:'tattoo_studio', name:'Tattoo studio', cat:'Beauty'},
+    {id:'piercing_studio', name:'Piercing studio', cat:'Beauty'},
+    {id:'makeup_artist', name:'Makeup artist', cat:'Beauty'},
+    {id:'esthetician', name:'Esthetician', cat:'Beauty'},
+    // Trades & home services
+    {id:'plumber', name:'Plumber', cat:'Home Services'},
+    {id:'electrician', name:'Electrician', cat:'Home Services'},
+    {id:'hvac', name:'HVAC contractor', cat:'Home Services'},
+    {id:'general_contractor', name:'General contractor', cat:'Home Services'},
+    {id:'roofer', name:'Roofer', cat:'Home Services'},
+    {id:'painter', name:'Painter', cat:'Home Services'},
+    {id:'flooring', name:'Flooring installer', cat:'Home Services'},
+    {id:'carpenter', name:'Carpenter / cabinetry', cat:'Home Services'},
+    {id:'handyman', name:'Handyman', cat:'Home Services'},
+    {id:'landscaper', name:'Landscaper / lawn care', cat:'Home Services'},
+    {id:'tree_service', name:'Tree service / arborist', cat:'Home Services'},
+    {id:'pool_service', name:'Pool service', cat:'Home Services'},
+    {id:'pest_control', name:'Pest control', cat:'Home Services'},
+    {id:'house_cleaning', name:'House cleaning / maid service', cat:'Home Services'},
+    {id:'carpet_cleaning', name:'Carpet cleaning', cat:'Home Services'},
+    {id:'pressure_washing', name:'Pressure washing', cat:'Home Services'},
+    {id:'window_washing', name:'Window washing', cat:'Home Services'},
+    {id:'locksmith', name:'Locksmith', cat:'Home Services'},
+    {id:'garage_door', name:'Garage door service', cat:'Home Services'},
+    {id:'junk_removal', name:'Junk removal', cat:'Home Services'},
+    {id:'moving_company', name:'Moving company', cat:'Home Services'},
+    {id:'septic_service', name:'Septic / well service', cat:'Home Services'},
+    // Auto
+    {id:'auto_repair', name:'Auto repair / mechanic', cat:'Auto'},
+    {id:'body_shop', name:'Body shop', cat:'Auto'},
+    {id:'detailing', name:'Auto detailing', cat:'Auto'},
+    {id:'car_wash', name:'Car wash', cat:'Auto'},
+    {id:'tire_shop', name:'Tire shop', cat:'Auto'},
+    {id:'towing', name:'Towing service', cat:'Auto'},
+    {id:'auto_glass', name:'Auto glass repair', cat:'Auto'},
+    {id:'dealership', name:'Car dealership', cat:'Auto'},
+    {id:'window_tinting', name:'Window tinting', cat:'Auto'},
+    // Professional services
+    {id:'lawyer_general', name:'Lawyer (general practice)', cat:'Professional Services'},
+    {id:'lawyer_pi', name:'Personal injury lawyer', cat:'Professional Services'},
+    {id:'lawyer_criminal', name:'Criminal defense lawyer', cat:'Professional Services'},
+    {id:'lawyer_family', name:'Family lawyer', cat:'Professional Services'},
+    {id:'lawyer_immigration', name:'Immigration lawyer', cat:'Professional Services'},
+    {id:'lawyer_estate', name:'Estate planning lawyer', cat:'Professional Services'},
+    {id:'lawyer_business', name:'Business lawyer', cat:'Professional Services'},
+    {id:'accountant', name:'Accountant / CPA', cat:'Professional Services'},
+    {id:'bookkeeper', name:'Bookkeeper', cat:'Professional Services'},
+    {id:'tax_preparer', name:'Tax preparer', cat:'Professional Services'},
+    {id:'financial_advisor', name:'Financial advisor', cat:'Professional Services'},
+    {id:'insurance_agent', name:'Insurance agent', cat:'Professional Services'},
+    {id:'mortgage_broker', name:'Mortgage broker', cat:'Professional Services'},
+    {id:'architect', name:'Architect', cat:'Professional Services'},
+    {id:'engineer', name:'Engineer (civil / structural)', cat:'Professional Services'},
+    {id:'surveyor', name:'Land surveyor', cat:'Professional Services'},
+    {id:'marketing_agency', name:'Marketing agency', cat:'Professional Services'},
+    {id:'ad_agency', name:'Ad agency', cat:'Professional Services'},
+    {id:'seo_agency', name:'SEO agency', cat:'Professional Services'},
+    {id:'pr_firm', name:'PR firm', cat:'Professional Services'},
+    {id:'web_design', name:'Web design studio', cat:'Professional Services'},
+    {id:'software_dev', name:'Software / app dev shop', cat:'Professional Services'},
+    {id:'it_consultant', name:'IT consultant / managed IT', cat:'Professional Services'},
+    {id:'graphic_designer', name:'Graphic designer / branding studio', cat:'Professional Services'},
+    {id:'video_producer', name:'Video production company', cat:'Professional Services'},
+    {id:'photographer', name:'Photographer', cat:'Professional Services'},
+    {id:'business_consultant', name:'Business consultant', cat:'Professional Services'},
+    {id:'hr_consultant', name:'HR consultant', cat:'Professional Services'},
+    {id:'recruiter', name:'Recruiter / staffing agency', cat:'Professional Services'},
+    {id:'virtual_assistant', name:'Virtual assistant', cat:'Professional Services'},
+    {id:'notary', name:'Notary service', cat:'Professional Services'},
+    {id:'translator', name:'Translator / interpreter', cat:'Professional Services'},
+    // Real estate
+    {id:'real_estate_agent', name:'Real estate agent', cat:'Real Estate'},
+    {id:'real_estate_brokerage', name:'Real estate brokerage', cat:'Real Estate'},
+    {id:'property_manager', name:'Property manager', cat:'Real Estate'},
+    {id:'str_host', name:'Short-term rental / Airbnb host', cat:'Real Estate'},
+    {id:'title_company', name:'Title company', cat:'Real Estate'},
+    {id:'home_inspector', name:'Home inspector', cat:'Real Estate'},
+    // Retail
+    {id:'clothing_boutique', name:'Clothing boutique', cat:'Retail'},
+    {id:'shoe_store', name:'Shoe store', cat:'Retail'},
+    {id:'jewelry_store', name:'Jewelry store', cat:'Retail'},
+    {id:'bookstore', name:'Bookstore', cat:'Retail'},
+    {id:'florist', name:'Florist', cat:'Retail'},
+    {id:'gift_shop', name:'Gift shop', cat:'Retail'},
+    {id:'home_decor', name:'Home decor / furniture store', cat:'Retail'},
+    {id:'hardware_store', name:'Hardware store', cat:'Retail'},
+    {id:'toy_store', name:'Toy store', cat:'Retail'},
+    {id:'bike_shop', name:'Bike shop', cat:'Retail'},
+    {id:'optical_shop', name:'Optical shop / eyewear', cat:'Retail'},
+    {id:'pet_store', name:'Pet store', cat:'Retail'},
+    {id:'liquor_store', name:'Liquor / wine store', cat:'Retail'},
+    {id:'cannabis_dispensary', name:'Cannabis dispensary', cat:'Retail'},
+    {id:'mattress_store', name:'Mattress store', cat:'Retail'},
+    {id:'antique_store', name:'Antique store', cat:'Retail'},
+    {id:'specialty_grocery', name:'Specialty grocery / market', cat:'Retail'},
+    // Food & beverage
+    {id:'restaurant', name:'Restaurant', cat:'Food & Beverage'},
+    {id:'fine_dining', name:'Fine dining restaurant', cat:'Food & Beverage'},
+    {id:'pizza_place', name:'Pizza place', cat:'Food & Beverage'},
+    {id:'sushi_restaurant', name:'Sushi restaurant', cat:'Food & Beverage'},
+    {id:'taqueria', name:'Taqueria / Mexican restaurant', cat:'Food & Beverage'},
+    {id:'bbq_joint', name:'BBQ joint', cat:'Food & Beverage'},
+    {id:'sandwich_shop', name:'Sandwich shop / deli', cat:'Food & Beverage'},
+    {id:'coffee_shop', name:'Coffee shop / café', cat:'Food & Beverage'},
+    {id:'bakery', name:'Bakery', cat:'Food & Beverage'},
+    {id:'donut_shop', name:'Donut shop', cat:'Food & Beverage'},
+    {id:'ice_cream_shop', name:'Ice cream / gelato shop', cat:'Food & Beverage'},
+    {id:'juice_bar', name:'Juice / smoothie bar', cat:'Food & Beverage'},
+    {id:'bar', name:'Bar', cat:'Food & Beverage'},
+    {id:'cocktail_bar', name:'Cocktail bar', cat:'Food & Beverage'},
+    {id:'wine_bar', name:'Wine bar', cat:'Food & Beverage'},
+    {id:'sports_bar', name:'Sports bar', cat:'Food & Beverage'},
+    {id:'brewery', name:'Brewery / brewpub', cat:'Food & Beverage'},
+    {id:'distillery', name:'Distillery', cat:'Food & Beverage'},
+    {id:'winery', name:'Winery / vineyard', cat:'Food & Beverage'},
+    {id:'food_truck', name:'Food truck', cat:'Food & Beverage'},
+    {id:'catering', name:'Catering company', cat:'Food & Beverage'},
+    {id:'butcher', name:'Butcher shop', cat:'Food & Beverage'},
+    // Hospitality & events
+    {id:'hotel', name:'Hotel / motel', cat:'Hospitality'},
+    {id:'bed_breakfast', name:'Bed & breakfast', cat:'Hospitality'},
+    {id:'event_venue', name:'Event / wedding venue', cat:'Hospitality'},
+    {id:'wedding_planner', name:'Wedding planner', cat:'Hospitality'},
+    {id:'event_planner', name:'Event planner', cat:'Hospitality'},
+    {id:'dj', name:'DJ', cat:'Hospitality'},
+    {id:'party_rental', name:'Party / equipment rental', cat:'Hospitality'},
+    // Education & kids
+    {id:'tutor', name:'Tutor / test prep', cat:'Education'},
+    {id:'music_school', name:'Music school / instructor', cat:'Education'},
+    {id:'art_school', name:'Art / pottery studio', cat:'Education'},
+    {id:'dance_studio', name:'Dance studio', cat:'Education'},
+    {id:'language_school', name:'Language school', cat:'Education'},
+    {id:'driving_school', name:'Driving school', cat:'Education'},
+    {id:'daycare', name:'Daycare / preschool', cat:'Education'},
+    {id:'after_school', name:'After-school program', cat:'Education'},
+    {id:'coding_bootcamp', name:'Coding bootcamp', cat:'Education'},
+    {id:'online_course', name:'Online course creator', cat:'Education'},
+    // Pet services
+    {id:'pet_groomer', name:'Pet groomer', cat:'Pet Services'},
+    {id:'dog_walker', name:'Dog walker', cat:'Pet Services'},
+    {id:'dog_trainer', name:'Dog trainer', cat:'Pet Services'},
+    {id:'pet_boarding', name:'Pet boarding / sitting', cat:'Pet Services'},
+    {id:'dog_daycare', name:'Dog daycare', cat:'Pet Services'},
+    // Tech / SaaS / creative
+    {id:'saas', name:'SaaS / software startup', cat:'Tech'},
+    {id:'ecommerce', name:'E-commerce business', cat:'Tech'},
+    {id:'mobile_app', name:'Mobile app studio', cat:'Tech'},
+    {id:'subscription_box', name:'Subscription box', cat:'Tech'},
+    {id:'podcast', name:'Podcast producer', cat:'Tech'},
+    {id:'content_creator', name:'Content creator / influencer', cat:'Tech'},
+    {id:'newsletter', name:'Newsletter publisher', cat:'Tech'},
+    {id:'game_studio', name:'Indie game studio', cat:'Tech'},
+    // Nonprofit & community
+    {id:'nonprofit', name:'Nonprofit / charity', cat:'Nonprofit'},
+    {id:'religious_org', name:'Religious organization', cat:'Nonprofit'},
+    {id:'community_center', name:'Community center', cat:'Nonprofit'},
+    {id:'animal_shelter', name:'Animal shelter / rescue', cat:'Nonprofit'},
+    // Manufacturing & wholesale
+    {id:'manufacturer', name:'Manufacturer / factory', cat:'Manufacturing'},
+    {id:'machine_shop', name:'Machine / fab shop', cat:'Manufacturing'},
+    {id:'woodshop', name:'Custom woodshop', cat:'Manufacturing'},
+    {id:'3d_printing', name:'3D printing service', cat:'Manufacturing'},
+    {id:'wholesale_distributor', name:'Wholesale distributor', cat:'Manufacturing'},
+    // Logistics & transport
+    {id:'courier', name:'Courier / delivery service', cat:'Logistics'},
+    {id:'trucking', name:'Trucking company', cat:'Logistics'},
+    {id:'limo', name:'Limo / car service', cat:'Logistics'},
+    // Agriculture
+    {id:'farm', name:'Farm / ranch', cat:'Agriculture'},
+    {id:'orchard', name:'Orchard / CSA', cat:'Agriculture'},
+    {id:'plant_nursery', name:'Plant nursery', cat:'Agriculture'},
+  ];
+
+  // ---- searchable picker state + render ----
+  const btypeIn = ()=> document.getElementById('btype_search');
+  const btypeDD = ()=> document.getElementById('btype_dropdown');
+  let btypeFiltered = [];
+  let btypeKbIdx = 0;
+  let btypeShowingDefaults = false;   // true when dropdown is the empty-state mix
+
+  // Diverse cross-industry default shown when the search field is empty —
+  // chosen to hint at the breadth of the catalog instead of dumping the
+  // first 8 entries (which are all healthcare because of how the catalog
+  // is grouped). Order is intentional: most-common-first across categories.
+  const DEFAULT_SUGGESTIONS = [
+    'restaurant', 'coffee_shop', 'hair_salon', 'plumber',
+    'real_estate_agent', 'general_dentist', 'auto_repair', 'lawyer_general',
+  ];
+
+  function fuzzyScore(item, q){
+    const n = item.name.toLowerCase();
+    const c = item.cat.toLowerCase();
+    if (n.startsWith(q)) return 1000;
+    const ni = n.indexOf(q);
+    if (ni >= 0) return 800 - ni;
+    const ci = c.indexOf(q);
+    if (ci >= 0) return 400 - ci;
+    return -1;
+  }
+
+  window.onTypeSearch = ()=>{
+    const q = btypeIn().value.trim().toLowerCase();
+    // If a selection is locked in and the user starts typing again, clear it
+    if (data.practice_type && data.practice_type !== 'other' && q && q !== data.practice_type_label?.toLowerCase()) {
+      data.practice_type = '';
+      data.practice_type_label = '';
+      document.getElementById('btype_selected').hidden = true;
+      document.getElementById('btype_clear').hidden = true;
+      document.getElementById('btype_custom_wrap').hidden = true;
+    }
+    if (!q) {
+      // Empty state — show the curated cross-industry mix so the user
+      // sees that this is a search field for any business, not a dental list.
+      btypeShowingDefaults = true;
+      btypeFiltered = DEFAULT_SUGGESTIONS
+        .map(id => BUSINESS_TYPES.find(b => b.id === id))
+        .filter(Boolean);
+    } else {
+      btypeShowingDefaults = false;
+      btypeFiltered = BUSINESS_TYPES
+        .map(it => ({it, s: fuzzyScore(it, q)}))
+        .filter(x => x.s >= 0)
+        .sort((a,b) => b.s - a.s)
+        .slice(0, 8)
+        .map(x => x.it);
+    }
+    btypeKbIdx = 0;
+    renderTypeDD();
+  };
+
+  function renderTypeDD(){
+    const dd = btypeDD();
+    const rows = btypeFiltered.map((it, i) => `
+      <div class="btype-row ${i===btypeKbIdx?'kbhi':''}" data-id="${it.id}"
+           onclick="pickTypeFromList('${it.id}')">
+        <b>${it.name}</b><span class="cat">${it.cat}</span>
+      </div>`).join('');
+    const notListed = `
+      <div class="btype-row notlisted" onclick="pickNotListed()">
+        <b>Not listed — describe it yourself</b><span class="cat">free text</span>
+      </div>`;
+    // Tiny header strip in the empty state so users know these are just
+    // examples — the catalog has ~200 entries spanning every industry.
+    const examplesHeader = btypeShowingDefaults ? `
+      <div class="btype-examples-hd">A few examples — start typing to search 200+ business types</div>` : '';
+    if (btypeFiltered.length === 0) {
+      dd.innerHTML = `<div class="btype-empty">No matches. Try a different word, or pick "Not listed" below.</div>${notListed}`;
+    } else {
+      dd.innerHTML = examplesHeader + rows + notListed;
+    }
+    dd.hidden = false;
+  }
+
+  window.pickTypeFromList = (id)=>{
+    const it = BUSINESS_TYPES.find(x => x.id === id);
+    if (!it) return;
+    data.practice_type = it.id;
+    data.practice_type_label = it.name;
+    data.practice_type_custom = '';
+    btypeIn().value = it.name;
+    document.getElementById('btype_selected_name').textContent = it.name;
+    document.getElementById('btype_selected_cat').textContent = it.cat;
+    document.getElementById('btype_selected').hidden = false;
+    document.getElementById('btype_clear').hidden = false;
+    document.getElementById('btype_custom_wrap').hidden = true;
+    btypeDD().hidden = true;
+    refreshButtons();
+  };
+
+  window.pickNotListed = ()=>{
+    data.practice_type = 'other';
+    data.practice_type_label = '';
+    document.getElementById('btype_selected').hidden = true;
+    document.getElementById('btype_clear').hidden = false;
+    document.getElementById('btype_custom_wrap').hidden = false;
+    btypeDD().hidden = true;
+    setTimeout(()=> document.getElementById('btype_custom').focus(), 80);
+    refreshButtons();
+  };
+
+  window.clearTypePick = ()=>{
+    data.practice_type = '';
+    data.practice_type_label = '';
+    data.practice_type_custom = '';
+    btypeIn().value = '';
+    document.getElementById('btype_selected').hidden = true;
+    document.getElementById('btype_clear').hidden = true;
+    document.getElementById('btype_custom_wrap').hidden = true;
+    document.getElementById('btype_custom').value = '';
+    btypeIn().focus();
+    onTypeSearch();
+    refreshButtons();
+  };
+
+  window.onTypeKey = (e)=>{
+    if (btypeDD().hidden) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      btypeKbIdx = Math.min(btypeFiltered.length, btypeKbIdx + 1);
+      renderTypeDD();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      btypeKbIdx = Math.max(0, btypeKbIdx - 1);
+      renderTypeDD();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (btypeKbIdx < btypeFiltered.length) {
+        pickTypeFromList(btypeFiltered[btypeKbIdx].id);
+      } else {
+        pickNotListed();
+      }
+    } else if (e.key === 'Escape') {
+      btypeDD().hidden = true;
+    }
+  };
+
+  // Hide dropdown on outside-click
+  document.addEventListener('click', (e)=>{
+    const wrap = document.querySelector('.btype-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      const dd = btypeDD();
+      if (dd) dd.hidden = true;
+    }
+  });
+
+  window.pickMulti = (el, key)=>{
+    if (el.classList.contains('locked')) return;
+    el.classList.toggle('sel');
+    if (el.classList.contains('other-card') && el.classList.contains('sel')) {
+      setTimeout(()=>{
+        const i = el.querySelector('.other-input');
+        if (i) i.focus();
+        // Keep the Continue button visible by scrolling the action row
+        // into view inside the scrollable step container.
+        const actions = el.closest('.step')?.querySelector('.actions');
+        if (actions) actions.scrollIntoView({behavior:'smooth', block:'end'});
+      }, 120);
+    }
+    const attr = key === 'wf' ? 'wf' : 'esc';
+    const arr = Array.from(document.querySelectorAll('[data-' + attr + '].sel')).map(x=>x.dataset[attr]);
+    if (key === 'wf') data.workflows = arr; else data.escalations = arr;
+  };
+
+  function captureOtherText(){
+    const wfOther = document.querySelector('[data-wf="other"].sel .other-input');
+    data.workflow_custom = wfOther && wfOther.value.trim() ? wfOther.value.trim() : "";
+    // (escalation_custom kept as empty for now — collected later via dashboard chatbot)
+    data.escalation_custom = "";
+    // Capture the free-form "problems you're facing" textarea
+    const probs = document.getElementById('f_problems');
+    data.practice_problems = probs && probs.value.trim() ? probs.value.trim() : "";
+    // Capture the custom practice-type text from the searchable picker's
+    // "Not listed" custom input. Only used if practice_type === 'other'.
+    const ptCustom = document.getElementById('btype_custom');
+    data.practice_type_custom = ptCustom && ptCustom.value.trim() ? ptCustom.value.trim() : "";
+  }
+
+  window.finish = async (ev)=>{
+    captureOtherText();
+    const btn = ev ? ev.target : document.querySelector('.btn-primary[onclick*=finish]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+    try {
+      const res = await fetch('/api/v1/setup/save', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data), credentials:'include',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Finish setup →'; }
+      alert('Could not save: ' + e.message);
+      return;
+    }
+    document.getElementById('done-doctor').textContent = data.practice.doctor || 'friend';
+    document.getElementById('done-practice').textContent = data.practice.name || 'your business';
+    show(7);
+  };
+
+  window.finalLaunch = ()=>{
+    document.body.style.transition = 'opacity .5s';
+    document.body.style.opacity = '0';
+    setTimeout(()=> window.location = '/app', 500);
+  };
+
+  // Auto-fill tone preview when the voice step opens (now data-step="4")
+  const obs = new MutationObserver(()=>{
+    const onVoiceStep = document.querySelector('.step[data-step="4"].on');
+    if (onVoiceStep && !document.getElementById('tone-preview').textContent) {
+      pickTone(document.querySelector('[data-tone="warm_professional"]'));
+    }
+  });
+  obs.observe(document.body, { attributes:true, subtree:true, attributeFilter:['class'] });
+})();
+</script>
+</body>
+</html>

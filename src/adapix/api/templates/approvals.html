@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adapix - Approvals</title>
+  <style>
+    :root { --fg:#111; --muted:#666; --line:#eee; --bg:#fff; --pill:#f1f1f1; --accent:#0f6cff; --good:#198038; --bad:#c01818; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; color: var(--fg); background: var(--bg); }
+    header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); display:flex; align-items:baseline; gap:1rem; }
+    header h1 { font-size: 1.4rem; margin: 0; }
+    header .lead { color: var(--muted); font-size: 0.95rem; }
+    header nav { margin-left: auto; }
+    header nav a { color: var(--accent); text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; }
+    header nav a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 2rem; max-width: 1100px; }
+    h2 { margin-top: 0.5rem; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); }
+    .empty { color: var(--muted); font-style: italic; padding: 2rem; text-align: center; border: 1px dashed var(--line); border-radius: 8px; background: #fafafa; }
+    .card { border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; background: #fff; }
+    .card-head { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: baseline; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--line); }
+    .card-head .who { font-weight: 600; }
+    .card-head .meta { font-size: 0.85rem; color: var(--muted); }
+    .card-head .pill { background: var(--pill); padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; }
+    .card-head .pill.sms { background: #e6f1ff; color: var(--accent); }
+    .card-head .pill.email { background: #f4ecff; color: #6b3fc4; }
+    .subject-row { font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+    textarea { width: 100%; min-height: 140px; padding: 0.75rem; font-family: -apple-system, system-ui, sans-serif; font-size: 0.95rem; line-height: 1.5; border: 1px solid var(--line); border-radius: 6px; resize: vertical; box-sizing: border-box; }
+    textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15,108,255,0.1); }
+    .actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    button { padding: 0.55rem 1rem; border-radius: 6px; border: 1px solid transparent; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    button.approve { background: var(--good); color: #fff; }
+    button.approve:hover { background: #146024; }
+    button.reject { background: #fff; color: var(--bad); border-color: #f3c5c5; }
+    button.reject:hover { background: #fde7e7; }
+    .tip { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; }
+    .count-pill { background: var(--accent); color: #fff; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.85rem; margin-left: 0.5rem; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Adapix</h1>
+    <span class="lead">Approval queue</span>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/approvals">Approvals</a>
+    </nav>
+  </header>
+  <main>
+    <h2>Pending review <span class="count-pill">{{ pending|length }}</span></h2>
+    <p class="tip">Edit the message body if you want, then click Approve to send it. Reject discards the message - the campaign continues to the next step.</p>
+
+    {% if pending %}
+      {% for m in pending %}
+      <div class="card">
+        <div class="card-head">
+          <span class="who">{{ m.patient_name }}</span>
+          <span class="meta">{{ m.practice_id }} / {{ m.workflow_id }}</span>
+          <span class="meta">Day {{ m.day_in_campaign or '?' }}</span>
+          <span class="pill {{ m.channel }}">{{ m.channel }}</span>
+          <span class="meta">to {{ m.patient_phone if m.channel == 'sms' else m.patient_email }}</span>
+        </div>
+
+        <form method="post" action="/approvals/{{ m.id }}/approve">
+          {% if m.subject %}
+          <div class="subject-row">Subject: {{ m.subject }}</div>
+          {% endif %}
+          <textarea name="edited_body">{{ m.body }}</textarea>
+          <div class="actions">
+            <button type="submit" class="approve">Approve &amp; send</button>
+          </div>
+        </form>
+
+        <form method="post" action="/approvals/{{ m.id }}/reject" style="margin-top: 0.5rem;">
+          <div class="actions">
+            <button type="submit" class="reject">Reject</button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No messages waiting for approval. The queue is clear.</div>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Adapix device render">
+  <title>Adapix device — Tile design</title>
+  <defs>
+    <!-- Top face gradient: subtle navy with light catching the upper-left -->
+    <linearGradient id="topGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a4a8a"/>
+      <stop offset="45%" stop-color="#0d2c5d"/>
+      <stop offset="100%" stop-color="#08193a"/>
+    </linearGradient>
+
+    <!-- Front face gradient: darker, slight light from above -->
+    <linearGradient id="frontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a2249"/>
+      <stop offset="100%" stop-color="#06122a"/>
+    </linearGradient>
+
+    <!-- Right face gradient: similar but slightly different to suggest depth -->
+    <linearGradient id="rightGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a2249"/>
+      <stop offset="100%" stop-color="#04101f"/>
+    </linearGradient>
+
+    <!-- Specular highlight along the top edge -->
+    <linearGradient id="edgeShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a6db5" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#3a6db5" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Cyan LED glow -->
+    <radialGradient id="ledGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#aef0ff" stop-opacity="1"/>
+      <stop offset="35%" stop-color="#00d4ff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#00b8e6" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Chamfer-edge LED light pipe -->
+    <linearGradient id="lightPipeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="50%" stop-color="#00b8e6"/>
+      <stop offset="100%" stop-color="#0090b8"/>
+    </linearGradient>
+
+    <!-- Drop shadow under the device -->
+    <radialGradient id="shadowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000814" stop-opacity="0.42"/>
+      <stop offset="60%" stop-color="#000814" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#000814" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Ambient occlusion under top edge -->
+    <linearGradient id="aoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Engraved Circuit-A: deep recessed shadow gradient -->
+    <linearGradient id="engraveShade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#020714" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0a1d3d" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <!-- Filter: soft glow for the LED -->
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Filter: very subtle blur for shadows -->
+    <filter id="shadowBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <!-- Drop shadow on the surface -->
+  <ellipse cx="300" cy="510" rx="240" ry="36" fill="url(#shadowGrad)"/>
+
+  <!-- ============================================================
+       3D TILE — projected as 3 quadrilateral faces (top + front + right)
+       The footprint is a chamfered square. Camera is dimetric:
+       slight tilt from above (30°) and rotated 20° around vertical.
+       ============================================================ -->
+
+  <!-- RIGHT FACE — the side wall with USB-C and HDMI cutouts -->
+  <path d="M 482 215 L 558 270 L 558 410 L 482 380 Z"
+        fill="url(#rightGrad)" stroke="#04101f" stroke-width="1"/>
+
+  <!-- USB-C port -->
+  <rect x="500" y="305" width="14" height="6" rx="2" fill="#020714"/>
+  <!-- HDMI 0 -->
+  <rect x="520" y="307" width="11" height="6" rx="1" fill="#020714"/>
+  <!-- HDMI 1 -->
+  <rect x="538" y="309" width="11" height="6" rx="1" fill="#020714"/>
+
+  <!-- FRONT FACE — the angled face with LED + button + (chamfer is on the LEFT side here) -->
+  <!-- The chamfer corner is the front-left of the device. In our 3/4 view,
+       the chamfered face is visible as a small angled strip on the left of the front face. -->
+  <path d="M 110 290 L 482 215 L 482 380 L 198 462 Z"
+        fill="url(#frontGrad)" stroke="#04101f" stroke-width="1"/>
+
+  <!-- AO shadow under top edge -->
+  <path d="M 110 290 L 482 215 L 482 235 L 110 310 Z"
+        fill="url(#aoGrad)" opacity="0.7"/>
+
+  <!-- Front-face button -->
+  <circle cx="280" cy="380" r="6.5" fill="#0a1d3d" stroke="#1a4a8a" stroke-width="1"/>
+  <circle cx="280" cy="380" r="2.5" fill="#3a5e95"/>
+
+  <!-- Front-face status LED -->
+  <circle cx="370" cy="368" r="14" fill="url(#ledGlow)" filter="url(#softGlow)" opacity="0.85"/>
+  <circle cx="370" cy="368" r="6" fill="url(#ledGlow)"/>
+  <circle cx="370" cy="368" r="2.5" fill="#ffffff" opacity="0.85"/>
+
+  <!-- CHAMFERED FACE — small angled strip visible on the front-left -->
+  <!-- The chamfer cuts the corner at ~70°. From this camera angle it looks
+       like a thin angled wedge between the front face and the (hidden) left face. -->
+  <path d="M 90 240 L 110 290 L 198 462 L 158 372 Z"
+        fill="#04132e" stroke="#020714" stroke-width="1" opacity="0.9"/>
+
+  <!-- Chamfer LED light pipe — embedded glowing strip along the chamfer edge -->
+  <path d="M 96 250 L 110 285 L 198 458 L 188 437 L 105 268 Z"
+        fill="url(#lightPipeGrad)" opacity="0.85" filter="url(#softGlow)"/>
+  <path d="M 100 258 L 195 451"
+        stroke="#aef0ff" stroke-width="1.5" opacity="0.9"/>
+
+  <!-- TOP FACE — the chamfered tile lid -->
+  <!-- Project the 160×160 chamfered footprint with corner cut at front-left.
+       Vertices in screen space (CCW from front-right):
+         FR (482, 215)   - front-right rounded corner
+         BR (568, 100)   - back-right rounded corner
+         BL (242, 38)    - back-left rounded corner
+         CL (90, 100)    - chamfer top point (was front-left)
+         CL2 (110, 290)  - chamfer bottom point (was front-left)
+   -->
+  <path d="M 482 215
+           L 568 100
+           Q 575 90, 558 84
+           L 242 38
+           Q 226 36, 222 50
+           L 92 96
+           Q 84 110, 92 124
+           L 110 290
+           L 482 215 Z"
+        fill="url(#topGrad)" stroke="#06122a" stroke-width="1.5"/>
+
+  <!-- Specular sheen along upper-left edge -->
+  <path d="M 92 96 L 222 50 Q 226 36, 242 38 L 568 100 L 540 105 L 240 50 L 105 100 Z"
+        fill="url(#edgeShine)" opacity="0.55"/>
+
+  <!-- ============================================================
+       ENGRAVED CIRCUIT-A LOGO ON TOP
+       Stylized recreation positioned offset toward the chamfered corner.
+       The "A" is italic with cyan circuit traces and node dots.
+       ============================================================ -->
+  <g transform="translate(225 145) scale(1.3)">
+    <!-- Recessed background (engraved depth) -->
+    <ellipse cx="60" cy="55" rx="78" ry="48" fill="url(#engraveShade)" opacity="0.55"/>
+
+    <!-- Italic A — left stem -->
+    <path d="M 36 100 L 60 16 L 72 16 L 50 100 Z"
+          fill="#020714" opacity="0.92"/>
+    <!-- Italic A — right stem -->
+    <path d="M 84 100 L 60 16 L 72 16 L 96 100 Z"
+          fill="#020714" opacity="0.92"/>
+    <!-- Crossbar -->
+    <path d="M 50 64 L 86 64 L 84 72 L 52 72 Z" fill="#020714" opacity="0.92"/>
+
+    <!-- Cyan circuit traces overlaid on the engraving (the brand mark) -->
+    <g stroke="#00b8e6" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.95">
+      <path d="M 44 92 L 52 72"/>
+      <path d="M 80 92 L 76 72"/>
+      <path d="M 60 16 L 60 56"/>
+      <circle cx="60" cy="68" r="3.5" fill="#08193a" stroke="#00d4ff" stroke-width="2"/>
+      <circle cx="44" cy="92" r="2.5" fill="#08193a" stroke="#00d4ff" stroke-width="1.8"/>
+      <circle cx="80" cy="92" r="2.5" fill="#08193a" stroke="#00d4ff" stroke-width="1.8"/>
+    </g>
+  </g>
+
+  <!-- BACK-WALL PORTS visible in perspective on the right side of the top face's far edge -->
+  <!-- Showing tiny dark slots so the viewer knows ports exist on the back -->
+  <g opacity="0.6">
+    <rect x="490" y="90" width="14" height="3" fill="#020714"/>
+    <rect x="510" y="92" width="14" height="3" fill="#020714"/>
+    <rect x="532" y="94" width="16" height="3" fill="#020714"/>
+  </g>
+
+  <!-- Subtle reflection on top face suggesting a polished matte surface -->
+  <path d="M 250 60 Q 320 130, 480 200"
+        stroke="#5a8acc" stroke-width="1.2" fill="none" opacity="0.18"/>
+
+  <!-- Tiny "Adapix" wordmark below the device (optional, very subtle) -->
+  <text x="300" y="555" text-anchor="middle"
+        font-family="Inter, system-ui, sans-serif"
+        font-size="11" font-weight="600"
+        fill="#475569" letter-spacing="0.18em">
+    A D A P I X
+  </text>
+</svg>

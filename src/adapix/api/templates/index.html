@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adapix Admin</title>
+  <style>
+    :root { --fg:#111; --muted:#666; --line:#eee; --bg:#fff; --pill:#f1f1f1; --accent:#0f6cff; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; color: var(--fg); background: var(--bg); }
+    header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); display:flex; align-items:baseline; gap:1rem; }
+    header h1 { font-size: 1.4rem; margin: 0; }
+    header .lead { color: var(--muted); font-size: 0.95rem; }
+    main { padding: 1.5rem 2rem; max-width: 1200px; }
+    .stats { display:flex; gap:2rem; margin-bottom: 2rem; }
+    .stat { font-size: 0.85rem; color: var(--muted); }
+    .stat strong { display:block; font-size: 1.6rem; color: var(--fg); margin-bottom: 0.1rem; }
+    h2 { margin-top: 2.5rem; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border-bottom: 1px solid var(--line); padding: 0.6rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fafafa; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .pill { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; background: var(--pill); }
+    .pill.active { background:#e6f1ff; color: var(--accent); }
+    .pill.completed { background:#e7f7ed; color:#198038; }
+    .pill.failed { background:#fde7e7; color:#c01818; }
+    .empty { color: var(--muted); font-style: italic; padding: 0.75rem 0.5rem; }
+    .body-preview { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Adapix</h1>
+    <span class="lead">Adaptive AI operator — admin view</span>
+    <nav style="margin-left:auto;">
+      <a href="/" style="color:#0f6cff;text-decoration:none;margin-left:1.5rem;font-size:0.9rem;">Dashboard</a>
+      <a href="/approvals" style="color:#0f6cff;text-decoration:none;margin-left:1.5rem;font-size:0.9rem;">
+        Approvals{% if counts.pending_approvals %} <span style="background:#0f6cff;color:#fff;padding:0.1rem 0.5rem;border-radius:999px;font-size:0.75rem;">{{ counts.pending_approvals }}</span>{% endif %}
+      </a>
+    </nav>
+  </header>
+  <main>
+    <div class="stats">
+      <div class="stat"><strong>{{ counts.patients }}</strong>patients</div>
+      <div class="stat"><strong>{{ counts.campaigns }}</strong>campaigns</div>
+      <div class="stat"><strong>{{ counts.messages }}</strong>messages</div>
+      <div class="stat"><strong>{{ counts.open_escalations }}</strong>open escalations</div>
+      <div class="stat"><strong>{{ counts.pending_approvals or 0 }}</strong>pending approvals</div>
+    </div>
+
+    {% if escalations %}
+    <h2>Open escalations — needs human attention</h2>
+    <table>
+      <tr><th>When</th><th>Campaign</th><th>Category</th><th>Confidence</th><th>Reasoning</th><th>Suggested action</th></tr>
+      {% for e in escalations %}
+      <tr>
+        <td>{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>#{{ e.campaign_id }}</td>
+        <td><span class="pill failed">{{ e.category }}</span></td>
+        <td>{{ e.confidence }}</td>
+        <td>{{ e.reasoning }}</td>
+        <td>{{ e.suggested_action }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    <h2>Recent patients</h2>
+    {% if patients %}
+    <table>
+      <tr><th>Practice</th><th>Patient</th><th>Parent</th><th>Phone</th><th>Email</th><th>Status</th></tr>
+      {% for p in patients %}
+      <tr>
+        <td>{{ p.practice_id }}</td>
+        <td>{{ p.first_name }} {{ p.last_name }}</td>
+        <td>{{ (p.parent_first_name or '') }} {{ (p.parent_last_name or '') }}</td>
+        <td>{{ p.phone or '—' }}</td>
+        <td>{{ p.email or '—' }}</td>
+        <td><span class="pill">{{ p.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<div class="empty">No patients yet. Run <code>adapix.cli ingest</code>.</div>{% endif %}
+
+    <h2>Active &amp; recent campaigns</h2>
+    {% if campaigns %}
+    <table>
+      <tr><th>Practice</th><th>Workflow</th><th>Patient</th><th>Started</th><th>Last step</th><th>Status</th></tr>
+      {% for c in campaigns %}
+      <tr>
+        <td>{{ c.practice_id }}</td>
+        <td>{{ c.workflow_id }}</td>
+        <td>#{{ c.patient_id }}</td>
+        <td>{{ c.started_at.strftime('%Y-%m-%d') }}</td>
+        <td>Day {{ c.last_step_completed }}</td>
+        <td><span class="pill {{ c.status }}">{{ c.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<div class="empty">No campaigns yet. Run <code>adapix.cli start-campaigns</code>.</div>{% endif %}
+
+    <h2>Recent messages</h2>
+    {% if messages %}
+    <table>
+      <tr><th>When</th><th>Channel</th><th>Day</th><th>Subject / preview</th><th>Status</th></tr>
+      {% for m in messages %}
+      <tr>
+        <td>{{ m.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ m.channel }}</td>
+        <td>{{ m.day_in_campaign or '—' }}</td>
+        <td>
+          {% if m.subject %}<strong>{{ m.subject }}</strong><br>{% endif %}
+          <span class="body-preview">{{ m.body[:120] }}{% if m.body|length > 120 %}…{% endif %}</span>
+        </td>
+        <td><span class="pill {{ m.status }}">{{ m.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<div class="empty">No messages yet. Run <code>adapix.cli run</code>.</div>{% endif %}
+  </main>
+</body>
+</html>

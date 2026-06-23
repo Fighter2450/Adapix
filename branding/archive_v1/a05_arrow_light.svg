@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none">
+  <path d="M 32 6 L 12 58 L 22 58 L 26 44 L 38 44 L 42 58 L 52 58 Z M 28 36 L 36 36 L 32 18 Z"
+        fill="#0d1322" fill-rule="evenodd"/>
+  <circle cx="32" cy="10" r="3" fill="#4dd0ff"/>
+  <text x="80" y="46" font-family="Inter, system-ui, sans-serif" font-weight="700"
+        font-size="44" fill="#0d1322" letter-spacing="-1.6">adapix</text>
+</svg>

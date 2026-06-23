@@ -1,0 +1,4 @@
+external_id,first_name,last_name,parent_first_name,parent_last_name,phone,email,preferred_channel,consult_date,treatment_type,treatment_plan_amount,notes
+P-1001,Lily,Hoffman,Megan,Hoffman,+14125550101,megan.hoffman@example.com,sms,2026-04-30,Clear aligners (~18 months),5800,Asked about cost twice; husband not at consult; mentioned Lily is hesitant
+P-1002,Owen,Park,Daniel,Park,+14125550102,d.park@example.com,sms,2026-04-28,Traditional braces (~24 months),6200,Wants to start in summer; insurance benefits questions
+P-1003,Aria,Singh,Priya,Singh,+14125550103,priya.singh@example.com,email,2026-04-25,Clear aligners (~14 months),4900,Comparing with another practice
