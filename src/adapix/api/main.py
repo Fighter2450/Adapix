@@ -16,6 +16,8 @@ auth is disabled (dev convenience).
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -26,9 +28,11 @@ from fastapi.templating import Jinja2Templates
 from ..approval import ApprovalManager
 from ..db import get_session, init_db
 from ..models import Campaign, EscalationEvent, Message, Patient
-from .app_routes import router as app_router
+from .app_routes import router as app_router, run_all_campaigns
 from .auth import verify_admin
 from .webhooks import router as webhooks_router
+
+log = logging.getLogger("adapix.scheduler")
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
@@ -53,8 +57,24 @@ def create_app() -> FastAPI:
     app.include_router(app_router)
 
     @app.on_event("startup")
-    def _startup() -> None:
+    async def _startup() -> None:
         init_db()
+        asyncio.create_task(_campaign_loop())
+
+    async def _campaign_loop() -> None:
+        """Run campaigns every 5 minutes in the background — this is what
+        makes Adapix 'never sleep'. First run fires after a short delay so
+        the server is fully up before hitting the DB."""
+        await asyncio.sleep(10)
+        while True:
+            try:
+                log.info("Running scheduled campaign pass...")
+                result = run_all_campaigns()
+                total = sum(r.get("composed", 0) for r in result.get("results", []))
+                log.info(f"Campaign pass complete — {total} messages composed.")
+            except Exception as exc:
+                log.error(f"Campaign scheduler error: {exc}")
+            await asyncio.sleep(300)  # every 5 minutes
 
     # ------------------------------------------------------------------
     # Admin dashboard (auth required)

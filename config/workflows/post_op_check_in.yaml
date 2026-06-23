@@ -1,0 +1,46 @@
+id: post_op_check_in
+name: "Post-Treatment Check-In"
+description: "Follow-up for patients who have started treatment to ensure comfort and retention."
+version: 1
+
+target:
+  patient_status: "treatment_started"
+
+objective: |
+  Check in with the patient after treatment has begun. Ensure they are comfortable,
+  answer questions about what to expect, and reinforce healthy habits. Build long-term
+  loyalty. Flag any concerns for the doctor immediately.
+
+voice:
+  warmth: high
+  formality: low
+  audience: "patient or parent of patient currently in active treatment"
+  forbidden_phrases:
+    - "as per our last message"
+    - "per our records"
+
+cadence:
+  - day: 3
+    channel: sms
+    intent: "Quick check-in — how are they feeling after starting treatment? Any soreness or questions?"
+  - day: 7
+    channel: sms
+    intent: "Remind about care tips (foods to avoid, cleaning routine). Ask how they're adjusting."
+  - day: 14
+    channel: email
+    intent: "Encourage progress. Share what to expect over the next few weeks. Mention upcoming appointment."
+
+escalation:
+  - trigger: "patient reports pain, swelling, or an issue with appliance"
+    action: "flag immediately for clinical staff; do not attempt to advise"
+  - trigger: "patient wants to cancel or pause treatment"
+    action: "flag for office manager; send reassurance that someone will call"
+
+knowledge_required:
+  - practice_name
+  - doctor_name
+  - office_phone
+  - office_hours
+
+success_metric:
+  primary: "patient remains in active treatment and attends scheduled appointments"

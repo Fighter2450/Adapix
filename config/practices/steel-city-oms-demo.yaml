@@ -1,0 +1,17 @@
+id: steel-city-oms-demo
+name: "Steel City Orthodontics (Demo)"
+doctor_name: "Dr. Sarah Bennett"
+office_phone: "(412) 555-0142"
+office_hours: "Monday-Thursday 8am-5pm, Friday 8am-2pm"
+typical_treatment_duration: "18-24 months for braces, 12-18 months for clear aligners"
+financing_options:
+  - "0% interest in-house payment plans up to 24 months"
+  - "CareCredit financing accepted"
+  - "Flexible HSA/FSA payments welcome"
+additional_knowledge:
+  common_concerns:
+    - "Cost — always mention the in-house 0% plan first"
+    - "Timing — school schedule, sports season, photos"
+    - "Child hesitation — frame as confidence builder"
+  booking_link: "https://steelcityortho.com/schedule"
+approval_mode: required

@@ -1146,3 +1146,46 @@ def api_sms_test(body: TestSmsBody, _user: str = Depends(verify_admin)):
         "provider_id": result.provider_id,
         "error":       result.error,
     }
+
+
+@router.post("/api/v1/campaigns/run")
+def api_run_campaigns(_user: str = Depends(verify_admin)) -> dict[str, Any]:
+    """Manually trigger the campaign runner across all configured practices
+    and workflows. Composes due messages and queues them for approval."""
+    return run_all_campaigns()
+
+
+def run_all_campaigns() -> dict[str, Any]:
+    """Run campaigns for every practice+workflow pair that has a config file.
+    Called both from the API endpoint and the background scheduler."""
+    from ..campaign import CampaignRunner
+    from ..config import list_practices, list_workflows
+
+    practices = list_practices()
+    workflows = list_workflows()
+    results: list[dict[str, Any]] = []
+    errors: list[str] = []
+
+    for practice_id in practices:
+        for workflow_id in workflows:
+            try:
+                runner = CampaignRunner(practice_id, workflow_id)
+                started = runner.start_campaigns_for_eligible_patients()
+                composed = runner.run_due_messages()
+                results.append({
+                    "practice": practice_id,
+                    "workflow": workflow_id,
+                    "started": started,
+                    "composed": composed,
+                })
+            except FileNotFoundError:
+                pass  # practice/workflow combo doesn't exist — skip silently
+            except Exception as exc:
+                errors.append(f"{practice_id}/{workflow_id}: {exc}")
+
+    return {
+        "ok": True,
+        "ran_at": datetime.utcnow().isoformat(),
+        "results": results,
+        "errors": errors,
+    }
