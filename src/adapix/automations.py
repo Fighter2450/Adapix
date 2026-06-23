@@ -109,35 +109,170 @@ def fetch_page_text(
     return text or ""
 
 
-def extract_with_claude(page_text: str, task: str, url: str) -> str:
-    """Ask Claude to extract exactly what the task asks for from the page text."""
+def _get_page_snapshot(page) -> tuple[str, list[dict]]:
+    """Return (visible_text, links) from a Playwright page."""
+    text = page.evaluate("""() => {
+        ['script','style','nav','footer','header'].forEach(t =>
+            document.querySelectorAll(t).forEach(el => el.remove()));
+        return document.body.innerText;
+    }""") or ""
+    links = page.evaluate("""() => {
+        const seen = new Set();
+        return Array.from(document.querySelectorAll('a[href]'))
+            .map(a => ({ text: a.innerText.trim().slice(0, 80), href: a.href }))
+            .filter(l => l.href.startsWith('http') && l.text && !seen.has(l.href) && seen.add(l.href))
+            .slice(0, 60);
+    }""") or []
+    return text, links
+
+
+def _decide_next_step(client, model: str, task: str, current_url: str,
+                      page_text: str, links: list[dict], step: int) -> dict:
+    """Ask Claude whether to extract from this page or navigate somewhere else.
+    Returns {'action': 'extract', 'data': '...'} or {'action': 'navigate', 'url': '...'}."""
+    links_block = "\n".join(f"- {l['text']}: {l['href']}" for l in links[:40]) or "(no links found)"
+    prompt = f"""You are an AI browser agent. A user wants you to: {task}
+
+You are currently on: {current_url}
+This is step {step + 1} of up to 5.
+
+PAGE CONTENT (first 6000 chars):
+{page_text[:6000]}
+
+LINKS ON THIS PAGE:
+{links_block}
+
+Decide what to do:
+1. If this page already contains the data needed to complete the task, respond with:
+   ACTION: extract
+   DATA: [the extracted data, well-formatted]
+
+2. If you need to navigate to a different page to find the data, respond with:
+   ACTION: navigate
+   URL: [the full URL to navigate to — must be one of the links listed above or a logical variation of the current URL]
+   REASON: [one sentence why]
+
+Respond in exactly that format. Do not add any other text before ACTION:."""
+
+    msg = client.messages.create(
+        model=model,
+        max_tokens=2048,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = msg.content[0].text.strip()
+
+    if text.startswith("ACTION: extract") or "ACTION: extract" in text:
+        data_marker = "DATA:"
+        idx = text.find(data_marker)
+        data = text[idx + len(data_marker):].strip() if idx >= 0 else text
+        return {"action": "extract", "data": data}
+
+    if "ACTION: navigate" in text:
+        url_marker = "URL:"
+        idx = text.find(url_marker)
+        url_line = text[idx + len(url_marker):].split("\n")[0].strip() if idx >= 0 else ""
+        if url_line:
+            return {"action": "navigate", "url": url_line}
+
+    # Fallback: if Claude didn't follow the format, just extract what's there
+    return {"action": "extract", "data": text}
+
+
+def navigate_and_extract(
+    url: str,
+    task: str,
+    *,
+    login_url: str | None = None,
+    login_username: str | None = None,
+    login_email: str | None = None,
+    login_password: str | None = None,
+    max_steps: int = 5,
+) -> tuple[str, str]:
+    """Open a browser, navigate up to max_steps pages to find the data,
+    and return (final_url, extracted_data)."""
     import anthropic
+    from playwright.sync_api import sync_playwright
     from .config import Settings
 
     settings = Settings()
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-    prompt = f"""You are a data extraction assistant. A user set up an automation to visit this URL:
-{url}
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-Their task: {task}
+        # Handle login
+        if login_password and (login_username or login_email):
+            login_dest = login_url or url
+            log.info(f"Logging in at {login_dest}")
+            page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_timeout(1500)
+            identifier = login_username or login_email or ""
+            for sel in ['input[type="email"]', 'input[name="email"]',
+                        'input[name="username"]', 'input[type="text"]']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.fill(identifier)
+                    break
+            for sel in ['input[type="password"]', 'input[name="password"]']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.fill(login_password)
+                    break
+            submitted = False
+            for sel in ['button[type="submit"]', 'input[type="submit"]',
+                        'button:has-text("Log in")', 'button:has-text("Sign in")']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.click()
+                    submitted = True
+                    break
+            if not submitted:
+                page.keyboard.press("Enter")
+            page.wait_for_load_state("domcontentloaded", timeout=15_000)
+            page.wait_for_timeout(2000)
+            if url != login_dest:
+                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                page.wait_for_timeout(2000)
+        else:
+            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_timeout(2000)
 
-Below is the visible text content of that page. Extract exactly what the task asks for.
-Be precise and well-organized. If the data forms a table, format it as a table.
-If it's a list, format it as a list. Include all relevant numbers, names, and values.
-Do not include navigation menus, ads, footers, or unrelated content.
+        final_url = page.url
+        extracted = ""
 
-PAGE CONTENT:
-{page_text[:40000]}
+        for step in range(max_steps):
+            log.info(f"Agent step {step + 1}: {page.url}")
+            page_text, links = _get_page_snapshot(page)
+            decision = _decide_next_step(client, settings.adapix_model,
+                                         task, page.url, page_text, links, step)
 
-Extracted data:"""
+            if decision["action"] == "extract":
+                final_url = page.url
+                extracted = decision["data"]
+                log.info(f"Agent extracted data at step {step + 1} from {final_url}")
+                break
 
-    msg = client.messages.create(
-        model=settings.adapix_model,
-        max_tokens=4096,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return msg.content[0].text.strip()
+            nav_url = decision.get("url", "")
+            if not nav_url:
+                # No URL to navigate to — extract from current page
+                extracted = page_text[:8000]
+                break
+            log.info(f"Agent navigating to: {nav_url}")
+            try:
+                page.goto(nav_url, wait_until="domcontentloaded", timeout=30_000)
+                page.wait_for_timeout(2000)
+            except Exception as nav_err:
+                log.warning(f"Navigation failed: {nav_err} — extracting from current page")
+                page_text, _ = _get_page_snapshot(page)
+                extracted = page_text[:8000]
+                break
+        else:
+            # Hit max_steps — extract whatever is on screen
+            final_url = page.url
+            page_text, _ = _get_page_snapshot(page)
+            extracted = page_text[:8000]
+
+        browser.close()
+
+    return final_url, extracted
 
 
 # ---------------------------------------------------------------------------
@@ -241,25 +376,23 @@ def run_automation(automation_id: int) -> dict[str, Any]:
         login_password = auto.login_password
 
     try:
-        log.info(f"Automation {automation_id} ({name}): fetching {url}")
-        page_text = fetch_page_text(
+        log.info(f"Automation {automation_id} ({name}): starting agent at {url}")
+        final_url, data = navigate_and_extract(
             url,
+            task,
             login_url=login_url,
             login_username=login_username,
             login_email=login_email,
             login_password=login_password,
         )
 
-        log.info(f"Automation {automation_id}: extracting data with Claude")
-        data = extract_with_claude(page_text, task, url)
-
         log.info(f"Automation {automation_id}: saving {fmt}")
         if fmt == "txt":
-            path = save_as_txt(name, url, task, data, run_id)
+            path = save_as_txt(name, final_url, task, data, run_id)
         elif fmt == "json":
-            path = save_as_json(name, url, task, data, run_id)
+            path = save_as_json(name, final_url, task, data, run_id)
         else:
-            path = save_as_docx(name, url, task, data, run_id)
+            path = save_as_docx(name, final_url, task, data, run_id)
 
         now = datetime.now(UTC).replace(tzinfo=None)
         with get_session(settings) as s:
