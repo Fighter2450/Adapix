@@ -295,24 +295,24 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 
 /* RESERVE */
 .reserve{padding:120px 22px;background:var(--bg);text-align:center}
-.reserve .wrap{max-width:560px}
-.reserve .h2{margin:0 auto 16px;max-width:14ch}
-.reserve .kicker{margin:0 auto 36px;max-width:36ch}
+.reserve .wrap{max-width:640px}
+.reserve .h2{margin:0 auto 48px;max-width:16ch}
+.reserve-steps{display:flex;align-items:flex-start;gap:0;margin-bottom:52px;text-align:left}
+@media(max-width:680px){.reserve-steps{flex-direction:column;gap:24px}.step-arrow{display:none}}
+.reserve-step{flex:1;display:flex;gap:16px;align-items:flex-start}
+.step-num{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.01em}
+.step-body{padding-top:4px}
+.step-title{font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
+.step-desc{font-size:14px;color:var(--ink-2);line-height:1.5;max-width:18ch}
+.step-arrow{font-size:20px;color:var(--ink-3);padding:8px 10px;flex-shrink:0;align-self:flex-start;margin-top:6px}
 .reserve-form{display:flex;flex-direction:column;gap:12px}
 .reserve-form input{height:52px;padding:0 18px;border-radius:14px;background:var(--bg-card);border:1px solid var(--line);font-family:inherit;font-size:16px;color:var(--ink);letter-spacing:-.005em;transition:border-color .15s,box-shadow .15s}
 .reserve-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,113,227,.12)}
 .reserve-form .btn{align-self:center;margin-top:8px}
-.reserve-next{margin-top:20px;font-size:14px;color:var(--ink-3);line-height:1.6}
-.reserve-next strong{color:var(--ink);font-weight:500}
-.reserve-divider{display:flex;align-items:center;gap:16px;margin:24px 0;color:var(--ink-3);font-size:13px}
-.reserve-divider::before,.reserve-divider::after{content:'';flex:1;height:1px;background:var(--line)}
-.demo-cta{display:flex;flex-direction:column;align-items:center;gap:8px}
-.demo-cta p{font-size:15px;color:var(--ink-2)}
-.reserve-success{background:var(--bg-card);border-radius:18px;padding:36px 24px;font-size:17px;color:var(--ink);border:1px solid var(--line)}
+.reserve-fine{margin-top:20px;font-size:13px;color:var(--ink-3);line-height:1.6}
+.reserve-fine a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.reserve-success{background:var(--bg-card);border-radius:18px;padding:36px 24px;font-size:17px;color:var(--ink);border:1px solid var(--line);margin-top:24px}
 .reserve-success b{color:var(--good)}
-.reserve-success .next-steps{margin-top:18px;text-align:left;font-size:15px;color:var(--ink-2);line-height:1.8}
-.reserve-success .next-steps li{list-style:none;display:flex;align-items:flex-start;gap:10px;padding:4px 0}
-.reserve-success .next-steps li::before{content:"→";color:var(--accent);font-weight:600;flex-shrink:0}
 
 /* FOOTER */
 .footer{background:var(--bg);padding:48px 22px 32px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--line)}
@@ -706,41 +706,56 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 
 <section class="reserve" id="reserve">
   <div class="wrap">
-    <div class="eyebrow reveal">Reserve</div>
-    <h2 class="h2 reveal">Bring AI to your practice.</h2>
-    <p class="kicker reveal">First batch ships Q3 2026. No payment now. $799 device, then pay only for what you send — we'll walk you through everything.</p>
+    <div class="eyebrow reveal">Get started</div>
+    <h2 class="h2 reveal">Here's exactly<br><span class="lite">how it works.</span></h2>
+
+    <div class="reserve-steps reveal">
+      <div class="reserve-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Fill out the form</div>
+          <div class="step-desc">No payment. 30 seconds. Just your name, email, and what your business does.</div>
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="reserve-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">We call you within 48 hours</div>
+          <div class="step-desc">Quick conversation. We learn your business, configure Adapix for you, and answer any questions.</div>
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="reserve-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Your device ships</div>
+          <div class="step-desc">Plug it in. We walk you through the 10-minute setup. Adapix is running the same day.</div>
+        </div>
+      </div>
+    </div>
+
     <form class="reserve-form reveal" name="reserve" method="POST" data-netlify="true" onsubmit="handleReserve(event)">
       <input type="hidden" name="form-name" value="reserve" />
       <input type="text"  name="name"     placeholder="Your name" required />
       <input type="email" name="email"    placeholder="Work email" required />
-      <input type="text"  name="practice" placeholder="Practice name" />
-      <input type="text"  name="pms"      placeholder="Practice management software (optional)" />
-      <button type="submit" class="btn btn-primary btn-lg">Reserve Adapt 1.0 — No payment now</button>
+      <input type="text"  name="business" placeholder="Business name" />
+      <input type="text"  name="industry" placeholder="What does your business do? (optional)" />
+      <button type="submit" class="btn btn-primary btn-lg">Reserve my spot — no payment now</button>
     </form>
-    <p class="reserve-next reveal">
-      <strong>What happens next:</strong> We'll email you within 48 hours. Pilot applicants get a call with the founders.
-      Hardware return policy: 30 days, no questions asked.
-    </p>
-    <div class="reserve-divider reveal">or</div>
-    <div class="demo-cta reveal">
-      <p>Rather talk to a human first?</p>
-      <a href="mailto:hello@adapixai.com?subject=Demo+Request" class="btn btn-outline btn-lg">Book a 15-min demo</a>
-    </div>
+
+    <p class="reserve-fine reveal">First batch ships Q3 2026 &nbsp;·&nbsp; $799 device &nbsp;·&nbsp; 30-day return policy &nbsp;·&nbsp; <a href="mailto:hello@adapixai.com?subject=Demo+Request">Prefer a demo first?</a></p>
+
     <div id="reserveDone" class="reserve-success" style="display:none">
-      <b>You're on the list.</b> We'll be in touch within 48 hours.
-      <ul class="next-steps">
-        <li>Check your inbox — confirmation coming shortly</li>
-        <li>We'll reach out to discuss your practice and pilot fit</li>
-        <li>If selected: hardware ships free, 60-day evaluation</li>
-        <li>Questions? Reply to our email or write <a href="mailto:hello@adapixai.com" style="color:var(--accent)">hello@adapixai.com</a></li>
-      </ul>
+      <b>You're on the list.</b><br>
+      We'll reach out within 48 hours to set up your call. Questions in the meantime? Write us at <a href="mailto:hello@adapixai.com" style="color:var(--accent)">hello@adapixai.com</a>.
     </div>
   </div>
 </section>
 
 <footer class="footer">
   <div class="wrap">
-    <div>© 2026 Adapix. Built for practices that actually follow up.</div>
+    <div>© 2026 Adapix. Built for businesses that actually follow up.</div>
     <div class="footer-links">
       <a href="mailto:hello@adapixai.com">hello@adapixai.com</a>
       <a href="#story">Story</a>
