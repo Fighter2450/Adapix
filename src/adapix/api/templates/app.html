@@ -1763,7 +1763,12 @@ a{color:inherit;text-decoration:none}
     });
     container.querySelectorAll('.auto-dl-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        window.open('/api/v1/automations/'+btn.dataset.id+'/download', '_blank');
+        const a = document.createElement('a');
+        a.href = '/api/v1/automations/'+btn.dataset.id+'/download';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       });
     });
     container.querySelectorAll('.auto-pause-btn').forEach(btn => {
