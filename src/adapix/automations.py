@@ -128,54 +128,76 @@ def _get_page_snapshot(page) -> tuple[str, list[dict]]:
 
 def _decide_next_step(client, model: str, task: str, current_url: str,
                       page_text: str, links: list[dict], step: int) -> dict:
-    """Ask Claude whether to extract from this page or navigate somewhere else.
+    """Two-phase decision: first ask if the page has the data, then act.
     Returns {'action': 'extract', 'data': '...'} or {'action': 'navigate', 'url': '...'}."""
     links_block = "\n".join(f"- {l['text']}: {l['href']}" for l in links[:40]) or "(no links found)"
-    prompt = f"""You are an AI browser agent. A user wants you to: {task}
 
-You are currently on: {current_url}
-This is step {step + 1} of up to 5.
+    # Phase 1: strict YES/NO — does this page have what we need?
+    check_prompt = f"""You are a browser agent deciding whether a web page contains the answer to a task.
 
-PAGE CONTENT (first 6000 chars):
-{page_text[:6000]}
+TASK: {task}
+CURRENT PAGE: {current_url}
+PAGE CONTENT (first 5000 chars):
+{page_text[:5000]}
 
-LINKS ON THIS PAGE:
+Does this page contain the specific data needed to complete the task?
+Answer with only YES or NO. Do not explain."""
+
+    check_msg = client.messages.create(
+        model=model,
+        max_tokens=5,
+        messages=[{"role": "user", "content": check_prompt}],
+    )
+    has_data = "YES" in check_msg.content[0].text.upper()
+
+    if has_data:
+        # Phase 2a: extract
+        extract_prompt = f"""Extract the following from this page:
+TASK: {task}
+PAGE: {current_url}
+
+PAGE CONTENT:
+{page_text[:40000]}
+
+Be precise and well-organized. Use tables where appropriate. Only include data relevant to the task."""
+        extract_msg = client.messages.create(
+            model=model,
+            max_tokens=4096,
+            messages=[{"role": "user", "content": extract_prompt}],
+        )
+        return {"action": "extract", "data": extract_msg.content[0].text.strip()}
+
+    # Phase 2b: navigate — page doesn't have the data
+    if step >= 4:
+        # Last step — extract best effort
+        extract_msg = client.messages.create(
+            model=model,
+            max_tokens=2048,
+            messages=[{"role": "user", "content": f"Extract whatever is most relevant to '{task}' from this page:\n\n{page_text[:20000]}"}],
+        )
+        return {"action": "extract", "data": extract_msg.content[0].text.strip()}
+
+    nav_prompt = f"""You are a browser agent. The current page does NOT have the data needed.
+
+TASK: {task}
+CURRENT PAGE: {current_url}
+
+LINKS AVAILABLE:
 {links_block}
 
-Decide what to do:
-1. If this page already contains the data needed to complete the task, respond with:
-   ACTION: extract
-   DATA: [the extracted data, well-formatted]
+Which link should you click to find the data? Respond with ONLY the full URL — nothing else."""
 
-2. If you need to navigate to a different page to find the data, respond with:
-   ACTION: navigate
-   URL: [the full URL to navigate to — must be one of the links listed above or a logical variation of the current URL]
-   REASON: [one sentence why]
-
-Respond in exactly that format. Do not add any other text before ACTION:."""
-
-    msg = client.messages.create(
+    nav_msg = client.messages.create(
         model=model,
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
+        max_tokens=256,
+        messages=[{"role": "user", "content": nav_prompt}],
     )
-    text = msg.content[0].text.strip()
+    nav_url = nav_msg.content[0].text.strip().split("\n")[0].strip()
+    if nav_url.startswith("http"):
+        return {"action": "navigate", "url": nav_url}
 
-    if text.startswith("ACTION: extract") or "ACTION: extract" in text:
-        data_marker = "DATA:"
-        idx = text.find(data_marker)
-        data = text[idx + len(data_marker):].strip() if idx >= 0 else text
-        return {"action": "extract", "data": data}
-
-    if "ACTION: navigate" in text:
-        url_marker = "URL:"
-        idx = text.find(url_marker)
-        url_line = text[idx + len(url_marker):].split("\n")[0].strip() if idx >= 0 else ""
-        if url_line:
-            return {"action": "navigate", "url": url_line}
-
-    # Fallback: if Claude didn't follow the format, just extract what's there
-    return {"action": "extract", "data": text}
+    # Fallback: best effort extract
+    return {"action": "extract", "data": page_text[:8000]}
 
 
 def navigate_and_extract(
