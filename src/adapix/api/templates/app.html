@@ -1805,11 +1805,10 @@ a{color:inherit;text-decoration:none}
 
   function buildCron(){
     const freq = document.getElementById('am-freq').value;
-    const hr12 = parseInt(document.getElementById('am-hour').value);
-    const min  = document.getElementById('am-min').value;
+    let hr12 = Math.min(12, Math.max(1, parseInt(document.getElementById('am-hour').value) || 9));
+    let m    = Math.min(59, Math.max(0, parseInt(document.getElementById('am-min').value)  || 0));
     const ampm = document.getElementById('am-ampm').value;
     let hr24 = ampm === 'PM' ? (hr12 === 12 ? 12 : hr12 + 12) : (hr12 === 12 ? 0 : hr12);
-    const m = parseInt(min);
     if (freq === 'daily')    return `${m} ${hr24} * * *`;
     if (freq === 'weekdays') return `${m} ${hr24} * * 1-5`;
     if (freq === 'weekly')   return `${m} ${hr24} * * ${document.getElementById('am-weekday').value}`;
@@ -1855,8 +1854,9 @@ a{color:inherit;text-decoration:none}
       +   '</div>'
       +   '<div style="display:flex;gap:8px;align-items:center">'
       +     '<span style="font-size:12px;color:var(--slate-2);white-space:nowrap">at</span>'
-      +     '<select id="am-hour" style="flex:1">'+hourOpts+'</select>'
-      +     '<select id="am-min" style="flex:1">'+minOpts+'</select>'
+      +     '<input id="am-hour" type="number" min="1" max="12" value="'+p.hour+'" style="flex:1;width:0" placeholder="9">'
+      +     '<span style="font-size:13px;color:var(--slate-3)">:</span>'
+      +     '<input id="am-min" type="number" min="0" max="59" value="'+p.minute+'" style="flex:1;width:0" placeholder="00">'
       +     '<select id="am-ampm" style="flex:1">'
       +       '<option value="AM"'+(p.ampm==='AM'?' selected':'')+'>AM</option>'
       +       '<option value="PM"'+(p.ampm==='PM'?' selected':'')+'>PM</option>'
