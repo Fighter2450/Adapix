@@ -34,8 +34,12 @@ src/vapid_keys.json
 # Local databases (have user data)
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # Python
 __pycache__/
