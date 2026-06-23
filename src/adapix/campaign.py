@@ -16,10 +16,14 @@ Idempotent: already-completed steps are not redone.
 """
 from __future__ import annotations
 
+import logging
+import time
 from datetime import datetime
 from typing import Any
 
 from .agent import AdapixAgent
+
+log = logging.getLogger("adapix.campaign")
 from .channels import EmailChannel, SmsChannel
 from .config import PracticeConfig, Settings, WorkflowConfig, load_practice, load_workflow
 from .db import get_session
@@ -107,9 +111,12 @@ class CampaignRunner:
                     patient = s.get(Patient, c.patient_id)
                     if patient is None:
                         continue
-                    self._compose_step(s, c, step, patient)
-                    c.last_step_completed = step.day
-                    sent += 1
+                    try:
+                        self._compose_step_with_retry(s, c, step, patient)
+                        c.last_step_completed = step.day
+                        sent += 1
+                    except Exception as exc:
+                        log.warning(f"Skipping step day={step.day} for campaign {c.id}: {exc}")
                 if c.last_step_completed >= max_day and max_day > 0:
                     c.status = CampaignStatus.completed.value
         return sent
@@ -117,6 +124,20 @@ class CampaignRunner:
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
+
+    def _compose_step_with_retry(self, session, campaign: Campaign, step, patient: Patient, *, retries: int = 3) -> None:
+        delay = 5
+        for attempt in range(retries):
+            try:
+                return self._compose_step(session, campaign, step, patient)
+            except Exception as exc:
+                is_overload = "529" in str(exc) or "overloaded" in str(exc).lower()
+                if is_overload and attempt < retries - 1:
+                    log.info(f"Claude overloaded, retrying in {delay}s (attempt {attempt+1}/{retries})")
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise
 
     def _compose_step(self, session, campaign: Campaign, step, patient: Patient) -> None:
         history = self._conversation_history(session, campaign)
