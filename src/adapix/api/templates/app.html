@@ -1873,7 +1873,7 @@ a{color:inherit;text-decoration:none}
       +   '</select></div>'
 
       // Login credentials (collapsible)
-      + '<details style="margin-top:8px;margin-bottom:8px" '+(isEdit&&(existing.login_username||existing.login_email)?'open':')+'>'
+      + '<details style="margin-top:8px;margin-bottom:8px" '+(isEdit&&(existing.login_username||existing.login_email)?'open':'')+' >'
       + '<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-2);letter-spacing:.06em;text-transform:uppercase;padding:8px 0;list-style:none;display:flex;align-items:center;gap:8px">'
       +   '<span style="border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-size:10px">+</span> Login credentials <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate-3)">(optional — for sites that require sign-in)</span>'
       + '</summary>'
