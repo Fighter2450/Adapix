@@ -1201,6 +1201,10 @@ class AutomationBody(BaseModel):
     task: str
     schedule: str = "0 9 * * *"
     output_format: str = "docx"
+    login_url: str | None = None
+    login_username: str | None = None
+    login_password: str | None = None
+    login_email: str | None = None
 
 
 @router.get("/api/v1/automations")
@@ -1232,6 +1236,10 @@ def api_list_automations(_user: str = Depends(verify_admin)) -> dict[str, Any]:
                 "last_error": a.last_error,
                 "has_result": bool(a.last_result_path),
                 "run_count": s.query(AutomationRun).filter(AutomationRun.automation_id == a.id).count(),
+                "login_url": a.login_url,
+                "login_username": a.login_username,
+                "login_email": a.login_email,
+                # never return password to the client
             })
     return {"automations": items}
 
@@ -1249,6 +1257,10 @@ def api_create_automation(body: AutomationBody, _user: str = Depends(verify_admi
             task=body.task,
             schedule=body.schedule,
             output_format=body.output_format,
+            login_url=body.login_url or None,
+            login_username=body.login_username or None,
+            login_password=body.login_password or None,
+            login_email=body.login_email or None,
         )
         s.add(a)
         s.flush()
@@ -1285,6 +1297,10 @@ def api_update_automation(aid: int, body: AutomationBody, _user: str = Depends(v
         a.task = body.task
         a.schedule = body.schedule
         a.output_format = body.output_format
+        a.login_url = body.login_url or None
+        a.login_username = body.login_username or None
+        a.login_password = body.login_password or None
+        a.login_email = body.login_email or None
     return {"ok": True}
 
 

@@ -132,6 +132,10 @@ class Automation(Base):
     schedule: Mapped[str] = mapped_column(String(64), default="0 9 * * *")  # cron expression
     output_format: Mapped[str] = mapped_column(String(16), default="docx")  # docx | txt | json
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)  # active | paused
+    login_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    login_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    login_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    login_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_run_status: Mapped[str | None] = mapped_column(String(32), nullable=True)  # ok | error
     last_result_path: Mapped[str | None] = mapped_column(Text, nullable=True)

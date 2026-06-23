@@ -1786,28 +1786,111 @@ a{color:inherit;text-decoration:none}
     });
   }
 
+  // Parse an existing cron string into {freq, weekday, monthday, hour, minute, ampm}
+  function parseCron(cron){
+    try {
+      const [min, hr, dom, , dow] = (cron||'0 9 * * *').split(' ');
+      const h = parseInt(hr), m = parseInt(min);
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      let freq = 'daily';
+      if (dow === '1-5') freq = 'weekdays';
+      else if (dow !== '*') freq = 'weekly';
+      else if (dom !== '*') freq = 'monthly';
+      return { freq, weekday: dow === '*' || dow === '1-5' ? '1' : dow,
+               monthday: dom === '*' ? '1' : dom,
+               hour: String(hour12), minute: m === 0 ? '00' : String(m), ampm };
+    } catch(_){ return { freq:'daily', weekday:'1', monthday:'1', hour:'9', minute:'00', ampm:'AM' }; }
+  }
+
+  function buildCron(){
+    const freq = document.getElementById('am-freq').value;
+    const hr12 = parseInt(document.getElementById('am-hour').value);
+    const min  = document.getElementById('am-min').value;
+    const ampm = document.getElementById('am-ampm').value;
+    let hr24 = ampm === 'PM' ? (hr12 === 12 ? 12 : hr12 + 12) : (hr12 === 12 ? 0 : hr12);
+    const m = parseInt(min);
+    if (freq === 'daily')    return `${m} ${hr24} * * *`;
+    if (freq === 'weekdays') return `${m} ${hr24} * * 1-5`;
+    if (freq === 'weekly')   return `${m} ${hr24} * * ${document.getElementById('am-weekday').value}`;
+    if (freq === 'monthly')  return `${m} ${hr24} ${document.getElementById('am-monthday').value} * *`;
+    return `${m} ${hr24} * * *`;
+  }
+
   function showAutoModal(existing){
     const isEdit = !!existing;
+    const p = parseCron(isEdit ? existing.schedule : '0 9 * * *');
+
+    const hourOpts  = [1,2,3,4,5,6,7,8,9,10,11,12].map(h=>`<option value="${h}"${p.hour==h?' selected':''}>${h}</option>`).join('');
+    const minOpts   = ['00','15','30','45'].map(m=>`<option value="${m}"${p.minute===m?' selected':''}>${m}</option>`).join('');
+    const dayOpts   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+      .map((d,i)=>`<option value="${i+1}"${p.weekday==i+1?' selected':''}>${d}</option>`).join('');
+    const mdayOpts  = Array.from({length:28},(_,i)=>i+1)
+      .map(d=>`<option value="${d}"${p.monthday==d?' selected':''}>${d}</option>`).join('');
+
     const backdrop = document.createElement('div');
     backdrop.className = 'auto-modal-backdrop';
-    backdrop.innerHTML = '<div class="auto-modal">'
+    backdrop.innerHTML = '<div class="auto-modal" style="max-height:90vh;overflow-y:auto">'
       + '<h2>'+(isEdit ? 'Edit automation' : 'New automation')+'</h2>'
+
+      // Basic info
       + '<div class="auto-field"><label>Name</label>'
       +   '<input id="am-name" placeholder="e.g. Daily competitor pricing" value="'+escapeHTML(isEdit?existing.name:'')+'"></div>'
       + '<div class="auto-field"><label>Website URL</label>'
       +   '<input id="am-url" placeholder="https://example.com/pricing" value="'+escapeHTML(isEdit?existing.url:'')+'"></div>'
       + '<div class="auto-field"><label>What to extract</label>'
       +   '<textarea id="am-task" placeholder="Find all product prices and their names. Include any discounts or sale prices shown.">'+escapeHTML(isEdit?existing.task:'')+'</textarea></div>'
-      + '<div class="auto-field"><label>Schedule (cron)</label>'
-      +   '<input id="am-schedule" placeholder="0 9 * * *" value="'+escapeHTML(isEdit?existing.schedule:'0 9 * * *')+'">'
-      +   '<div class="cron-hint">Examples: <b>0 9 * * *</b> = every day at 9am &nbsp;·&nbsp; <b>0 9 * * 1</b> = every Monday 9am &nbsp;·&nbsp; <b>0 9 * * 1-5</b> = weekdays 9am</div>'
+
+      // Schedule builder
+      + '<div class="auto-field"><label>Schedule</label>'
+      +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+      +     '<select id="am-freq" style="width:100%">'
+      +       '<option value="daily"'+(p.freq==='daily'?' selected':'')+'>Every day</option>'
+      +       '<option value="weekdays"'+(p.freq==='weekdays'?' selected':'')+'>Every weekday (Mon–Fri)</option>'
+      +       '<option value="weekly"'+(p.freq==='weekly'?' selected':'')+'>Every week on…</option>'
+      +       '<option value="monthly"'+(p.freq==='monthly'?' selected':'')+'>Every month on day…</option>'
+      +     '</select>'
+      +     '<select id="am-weekday" style="width:100%;display:'+(p.freq==='weekly'?'block':'none')+'">'+dayOpts+'</select>'
+      +     '<select id="am-monthday" style="width:100%;display:'+(p.freq==='monthly'?'block':'none')+'">'+mdayOpts+'</select>'
+      +   '</div>'
+      +   '<div style="display:flex;gap:8px;align-items:center">'
+      +     '<span style="font-size:12px;color:var(--slate-2);white-space:nowrap">at</span>'
+      +     '<select id="am-hour" style="flex:1">'+hourOpts+'</select>'
+      +     '<select id="am-min" style="flex:1">'+minOpts+'</select>'
+      +     '<select id="am-ampm" style="flex:1">'
+      +       '<option value="AM"'+(p.ampm==='AM'?' selected':'')+'>AM</option>'
+      +       '<option value="PM"'+(p.ampm==='PM'?' selected':'')+'>PM</option>'
+      +     '</select>'
+      +   '</div>'
       + '</div>'
+
+      // Output format
       + '<div class="auto-field"><label>Output format</label>'
       +   '<select id="am-format">'
       +     '<option value="docx"'+(isEdit&&existing.output_format==='docx'?' selected':'')+'>Word document (.docx)</option>'
       +     '<option value="txt"'+(isEdit&&existing.output_format==='txt'?' selected':'')+'>Plain text (.txt)</option>'
       +     '<option value="json"'+(isEdit&&existing.output_format==='json'?' selected':'')+'>JSON (.json)</option>'
       +   '</select></div>'
+
+      // Login credentials (collapsible)
+      + '<details style="margin-top:8px;margin-bottom:8px" '+(isEdit&&(existing.login_username||existing.login_email)?'open':')+'>'
+      + '<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-2);letter-spacing:.06em;text-transform:uppercase;padding:8px 0;list-style:none;display:flex;align-items:center;gap:8px">'
+      +   '<span style="border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-size:10px">+</span> Login credentials <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate-3)">(optional — for sites that require sign-in)</span>'
+      + '</summary>'
+      + '<div style="padding-top:12px;display:flex;flex-direction:column;gap:12px">'
+      +   '<div class="auto-field" style="margin:0"><label>Login page URL</label>'
+      +     '<input id="am-login-url" placeholder="https://example.com/login (leave blank to use the same URL)" value="'+escapeHTML(isEdit&&existing.login_url?existing.login_url:'')+'"></div>'
+      +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +     '<div class="auto-field" style="margin:0"><label>Username</label>'
+      +       '<input id="am-login-user" placeholder="your username" value="'+escapeHTML(isEdit&&existing.login_username?existing.login_username:'')+'"></div>'
+      +     '<div class="auto-field" style="margin:0"><label>Email</label>'
+      +       '<input id="am-login-email" type="email" placeholder="your@email.com" value="'+escapeHTML(isEdit&&existing.login_email?existing.login_email:'')+'"></div>'
+      +   '</div>'
+      +   '<div class="auto-field" style="margin:0"><label>Password</label>'
+      +     '<input id="am-login-pass" type="password" placeholder="••••••••"></div>'
+      + '</div>'
+      + '</details>'
+
       + '<div class="auto-modal-actions">'
       +   '<button class="auto-btn" id="am-cancel">Cancel</button>'
       +   '<button class="auto-btn primary" id="am-save">'+(isEdit?'Save changes':'Create automation')+'</button>'
@@ -1815,25 +1898,33 @@ a{color:inherit;text-decoration:none}
       + '</div>';
     document.body.appendChild(backdrop);
 
+    // Show/hide day pickers based on frequency
+    document.getElementById('am-freq').addEventListener('change', function(){
+      document.getElementById('am-weekday').style.display  = this.value === 'weekly'  ? 'block' : 'none';
+      document.getElementById('am-monthday').style.display = this.value === 'monthly' ? 'block' : 'none';
+    });
+
     document.getElementById('am-cancel').addEventListener('click', ()=>backdrop.remove());
     backdrop.addEventListener('click', e => { if(e.target===backdrop) backdrop.remove(); });
 
     document.getElementById('am-save').addEventListener('click', async () => {
       const body = {
-        name:    document.getElementById('am-name').value.trim(),
-        url:     document.getElementById('am-url').value.trim(),
-        task:    document.getElementById('am-task').value.trim(),
-        schedule:document.getElementById('am-schedule').value.trim() || '0 9 * * *',
+        name:          document.getElementById('am-name').value.trim(),
+        url:           document.getElementById('am-url').value.trim(),
+        task:          document.getElementById('am-task').value.trim(),
+        schedule:      buildCron(),
         output_format: document.getElementById('am-format').value,
+        login_url:     document.getElementById('am-login-url').value.trim() || null,
+        login_username:document.getElementById('am-login-user').value.trim() || null,
+        login_email:   document.getElementById('am-login-email').value.trim() || null,
+        login_password:document.getElementById('am-login-pass').value || null,
       };
       if (!body.name || !body.url || !body.task){
         toast('Name, URL, and task are required.'); return;
       }
-      const url = isEdit
-        ? '/api/v1/automations/'+existing.id
-        : '/api/v1/automations';
-      const method = isEdit ? 'PATCH' : 'POST';
-      const r = await fetch(url, {method, credentials:'include',
+      const endpoint = isEdit ? '/api/v1/automations/'+existing.id : '/api/v1/automations';
+      const method   = isEdit ? 'PATCH' : 'POST';
+      const r = await fetch(endpoint, {method, credentials:'include',
         headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
       if (r.ok){
         backdrop.remove();

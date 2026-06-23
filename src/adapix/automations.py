@@ -36,17 +36,70 @@ def _results_dir() -> Path:
 # Browser + extraction
 # ---------------------------------------------------------------------------
 
-def fetch_page_text(url: str) -> str:
-    """Use Playwright to load the page and return its visible text content."""
+def fetch_page_text(
+    url: str,
+    *,
+    login_url: str | None = None,
+    login_username: str | None = None,
+    login_email: str | None = None,
+    login_password: str | None = None,
+) -> str:
+    """Use Playwright to load the page and return its visible text content.
+    If login credentials are provided, navigates to the login page first,
+    fills the username/email and password fields, submits, then goes to the
+    target URL."""
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-        page.wait_for_timeout(2000)  # let JS render
+
+        # Log in if credentials provided
+        if login_password and (login_username or login_email):
+            login_dest = login_url or url
+            log.info(f"Logging in at {login_dest}")
+            page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_timeout(1500)
+
+            identifier = login_username or login_email or ""
+            # Try common username/email field selectors
+            for sel in ['input[type="email"]', 'input[name="email"]',
+                        'input[name="username"]', 'input[name="user"]',
+                        'input[type="text"]']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.fill(identifier)
+                    break
+
+            # Fill password
+            for sel in ['input[type="password"]', 'input[name="password"]']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.fill(login_password)
+                    break
+
+            # Submit — try button first, then Enter
+            submitted = False
+            for sel in ['button[type="submit"]', 'input[type="submit"]',
+                        'button:has-text("Log in")', 'button:has-text("Sign in")',
+                        'button:has-text("Login")', 'button:has-text("Continue")']:
+                if page.locator(sel).count() > 0:
+                    page.locator(sel).first.click()
+                    submitted = True
+                    break
+            if not submitted:
+                page.keyboard.press("Enter")
+
+            page.wait_for_load_state("domcontentloaded", timeout=15_000)
+            page.wait_for_timeout(2000)
+
+            # Navigate to target if different from login page
+            if url != login_dest:
+                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                page.wait_for_timeout(2000)
+        else:
+            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_timeout(2000)
+
         text = page.evaluate("""() => {
-            // Remove nav, footer, scripts, styles to cut noise
             ['script','style','nav','footer','header'].forEach(tag => {
                 document.querySelectorAll(tag).forEach(el => el.remove());
             });
@@ -182,10 +235,20 @@ def run_automation(automation_id: int) -> dict[str, Any]:
         url = auto.url
         task = auto.task
         fmt = auto.output_format or "docx"
+        login_url = auto.login_url
+        login_username = auto.login_username
+        login_email = auto.login_email
+        login_password = auto.login_password
 
     try:
         log.info(f"Automation {automation_id} ({name}): fetching {url}")
-        page_text = fetch_page_text(url)
+        page_text = fetch_page_text(
+            url,
+            login_url=login_url,
+            login_username=login_username,
+            login_email=login_email,
+            login_password=login_password,
+        )
 
         log.info(f"Automation {automation_id}: extracting data with Claude")
         data = extract_with_claude(page_text, task, url)
