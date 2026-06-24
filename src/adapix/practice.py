@@ -26,45 +26,47 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 TONE_GUIDANCE = {
     "warm_professional": (
-        "Tone: WARM PROFESSIONAL. Friendly but never casual. Use the patient's "
+        "Tone: WARM PROFESSIONAL. Friendly but never casual. Use the customer's "
         "first name. Short sentences, polite. No emojis except a single :) when "
         "delivering good news. Use contractions ('we're', 'that's')."
     ),
     "casual_friendly": (
-        "Tone: CASUAL FRIENDLY. Like a text from someone the patient knows. "
+        "Tone: CASUAL FRIENDLY. Like a text from someone the customer knows. "
         "First name, contractions, occasional :) is fine. Keep it light but "
         "always respectful. Never slang that could read as unprofessional."
     ),
     "clinical_formal": (
-        "Tone: CLINICAL FORMAL. Use the patient's full name (first + last). "
+        "Tone: DIRECT & FORMAL. Use the customer's full name (first + last). "
         "Precise, direct, no contractions. No emojis. State facts in complete "
-        "sentences. Appropriate for academic centers and high-acuity care."
+        "sentences. Appropriate for professional services and formal industries."
     ),
 }
 
 # Human-readable labels for each workflow ID — used in dashboard + prompts.
 WORKFLOW_LABELS = {
-    "case_acceptance":     "Follow up on unscheduled referrals",
-    "recall_6mo":          "6-month recall reminders",
-    "post_op_check_in":    "Post-op check-ins",
-    "financing_followup":  "Treatment-plan financing follow-ups",
+    "case_acceptance":     "Follow up on unscheduled leads",
+    "recall_6mo":          "Periodic follow-up reminders",
+    "recall_reminders":    "Follow-up / recall reminders",
+    "post_op_check_in":    "Post-service check-ins",
+    "no_show_recovery":    "No-show / missed appointment recovery",
+    "financing_followup":  "Financing and payment follow-ups",
 }
 
 # Human-readable labels + classifier hints for each escalation category.
 ESCALATION_LABELS = {
     "emergency": (
-        "Patient mentions an emergency, severe pain, bleeding, swelling, "
-        "or anything urgent."
+        "Customer mentions an urgent situation, safety concern, or anything "
+        "that requires immediate human attention."
     ),
     "clinical_question": (
-        "Patient asks a question that requires a clinician to answer "
-        "(treatment specifics, side effects, dosing, what's normal)."
+        "Customer asks a question that requires an expert staff member to "
+        "answer (technical specifics, service details, professional advice)."
     ),
     "callback_request": (
-        "Patient explicitly asks for a phone call or wants to talk to someone."
+        "Customer explicitly asks for a phone call or wants to speak to someone."
     ),
     "pricing_question": (
-        "Patient asks about cost, insurance, financing, or what they will owe."
+        "Customer asks about cost, pricing, payment plans, or what they will owe."
     ),
 }
 
@@ -120,7 +122,7 @@ class PracticeProfile:
         """Plain-language description of every workflow this practice has
         enabled. Pasted into the agent's system prompt so Claude knows what
         Adapix is *supposed* to be doing for this practice."""
-        lines = ["This practice has Adapix configured to handle:"]
+        lines = ["This business has Adapix configured to handle:"]
         for wf in self.workflows:
             if wf == "other":
                 continue   # custom handled below
@@ -153,20 +155,19 @@ class PracticeProfile:
                 lines.append(f"  - {esc!r}: (no description available)")
         if self.escalation_custom:
             lines.append(
-                f"  - CUSTOM ESCALATION (in the practice's own words): "
+                f"  - CUSTOM ESCALATION (in the business's own words): "
                 f"{self.escalation_custom!r}"
             )
             lines.append(
                 "    Treat this as its own category. When triggered, use the "
                 "exact text above as the escalation category name so the "
-                "surgeon sees it labeled the same way they wrote it."
+                "owner sees it labeled the same way they wrote it."
             )
         # emergency is always on regardless of what the user selected
         if "emergency" not in self.escalations:
             lines.append(
-                "  - 'emergency': Patient mentions an emergency, severe pain, "
-                "bleeding, swelling, or anything urgent. (ALWAYS ON — required "
-                "for patient safety.)"
+                "  - 'emergency': Customer mentions an urgent situation or "
+                "safety concern. (ALWAYS ON.)"
             )
         return "\n".join(lines)
 
@@ -222,11 +223,11 @@ class PracticeProfile:
     def agent_system_prompt_fragment(self) -> str:
         """Combined fragment for the message-composing agent."""
         parts = [
-            f"PRACTICE PROFILE\n"
-            f"  Practice name: {self.practice_name}\n"
-            f"  Lead doctor:   {self.doctor}\n"
-            f"  Office phone:  {self.phone or '(not configured)'}\n"
-            f"  Office hours:  {self.hours or '(not configured)'}",
+            f"BUSINESS PROFILE\n"
+            f"  Business name: {self.practice_name}\n"
+            f"  Owner/Manager: {self.doctor}\n"
+            f"  Phone:         {self.phone or '(not configured)'}\n"
+            f"  Hours:         {self.hours or '(not configured)'}",
             self.practice_type_fragment(),
             self.tone_guidance(),
             self.workflow_prompt_fragment(),
@@ -283,7 +284,7 @@ def load_profile() -> PracticeProfile:
     practice = raw.get("practice") or {}
     return PracticeProfile(
         practice_name=practice.get("name") or "your practice",
-        doctor=practice.get("doctor") or "Dr.",
+        doctor=practice.get("owner") or practice.get("doctor") or "there",
         phone=practice.get("phone") or "",
         hours=practice.get("hours") or "",
         tone=raw.get("tone") or "warm_professional",

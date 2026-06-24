@@ -96,20 +96,20 @@ def missing_topics(profile: PracticeProfile, history: list[dict]) -> list[str]:
     if not profile.escalations and "escalat" not in transcript and "handoff" not in transcript:
         candidates.append("escalation_rules")
 
-    # Multiple doctors at the practice
-    if "other doctor" not in transcript and "another doctor" not in transcript:
-        candidates.append("other_doctors")
+    # Other team members / staff
+    if "other staff" not in transcript and "team member" not in transcript and "another person" not in transcript:
+        candidates.append("other_staff")
 
     # Office address / timezone
     if "address" not in transcript and "timezone" not in transcript and "city" not in transcript:
         candidates.append("address_timezone")
 
-    # Specialty / patient demographics
-    if "specialty" not in transcript and "patient mix" not in transcript:
+    # Business specialty / customer demographics
+    if "specialty" not in transcript and "customer mix" not in transcript and "client mix" not in transcript:
         candidates.append("specialty")
 
-    # Custom escalation criteria (specific to this practice)
-    if "language barrier" not in transcript and "pregnant" not in transcript:
+    # Custom escalation criteria (specific to this business)
+    if "language barrier" not in transcript and "vip" not in transcript and "custom" not in transcript:
         candidates.append("custom_escalation")
 
     return candidates
@@ -122,32 +122,32 @@ SUGGESTION_BANK = {
     "escalation_rules": [
         "Tell me when to hand off to a human",
         "I'll handle pricing questions myself",
-        "When should you NOT message a patient",
+        "When should you NOT message a customer",
     ],
-    "other_doctors": [
-        "We have multiple doctors — let me list them",
-        "Just one doctor for now",
+    "other_staff": [
+        "We have multiple team members — let me list them",
+        "Just one person handling this for now",
     ],
     "address_timezone": [
         "We're in the Eastern timezone",
         "Our address is...",
     ],
     "specialty": [
-        "We specialize in oral surgery",
-        "We're a general dentistry practice",
-        "Most of our patients are seniors",
+        "We mostly serve small businesses",
+        "Most of our customers are local",
+        "Our typical customer is...",
     ],
     "custom_escalation": [
-        "If a patient mentions cash payment, ping me",
-        "Flag any message in Spanish",
+        "Flag any message asking for a refund",
+        "If a customer mentions a complaint, ping me",
     ],
 }
 
 DEFAULT_SUGGESTIONS = [
-    "How do you handle no-shows?",
+    "How do you handle missed appointments?",
     "Show me a sample message you'd send",
     "Tell me when to hand off to a human",
-    "What if a patient asks something off-topic?",
+    "What if a customer asks something off-topic?",
 ]
 
 
@@ -166,25 +166,25 @@ def build_system_prompt(profile: PracticeProfile, missing: list[str]) -> str:
     current practice profile and what info is still missing."""
     missing_descriptions = {
         "escalation_rules": (
-            "When the practice wants Adapix to STOP handling a conversation "
-            "and route it to a real human on their team (clinical questions, "
+            "When the business wants Adapix to STOP handling a conversation "
+            "and route it to a real human on their team (complaints, "
             "emergencies, callback requests, pricing questions, etc.)."
         ),
-        "other_doctors": (
-            "Whether the practice has more than one doctor/surgeon, and what "
-            "to call each of them in patient messages."
+        "other_staff": (
+            "Whether the business has more than one team member, and what "
+            "to call each of them in customer messages."
         ),
         "address_timezone": (
-            "Where the practice is physically located, especially the timezone "
-            "so the AI doesn't text patients at 3am their time."
+            "Where the business is physically located, especially the timezone "
+            "so the AI doesn't text customers at 3am their time."
         ),
         "specialty": (
-            "What kind of practice this is (oral surgery, orthodontics, general "
-            "dentistry, etc.) so Adapix can pitch correctly to patients."
+            "What kind of customers this business serves and what makes them "
+            "unique, so Adapix can tailor its messaging appropriately."
         ),
         "custom_escalation": (
-            "Any practice-specific situation that should ALWAYS get a human "
-            "(language barriers, billing edge cases, VIP patients, etc.)."
+            "Any business-specific situation that should ALWAYS get a human "
+            "(language barriers, billing edge cases, VIP customers, etc.)."
         ),
     }
 
@@ -240,24 +240,53 @@ def build_system_prompt(profile: PracticeProfile, missing: list[str]) -> str:
     else:
         role = (
             "You are Adapix, the AI follow-up assistant deployed at this "
-            "business. The person you are talking to is the owner or the "
-            "office manager who is TUNING you to their business's "
-            "specific needs. You are NOT a customer-facing agent here — "
-            "you are in an internal admin chat surface."
+            "business. The person you are talking to is the owner or "
+            "manager. You are in an internal admin chat surface — your job "
+            "here is to be immediately and concretely useful to them."
         )
         goals = (
-            "  1. Be warm, concise, and concrete. Sound like a junior "
-            "employee on day 4 who has read the welcome packet and wants "
-            "to learn the business better.\n"
-            "  2. Ask about ONE missing topic at a time. Wait for their "
-            "answer.\n"
-            "  3. When the owner teaches you something, repeat it back in "
-            "your own words to confirm you got it.\n"
-            "  4. Also answer questions the owner asks YOU (e.g., \"how "
-            "would you handle a no-show?\"). Be specific based on what "
-            "you already know.\n"
-            "  5. NEVER ask more than two questions in a single message."
+            "  1. LEAD WITH VALUE. Your first move is always to show what "
+            "you can do for this specific business — concrete offers, "
+            "real examples, specific things you'll handle. Never open "
+            "with a question.\n"
+            "  2. When the owner asks what you can do, give a direct, "
+            "specific answer based on their setup. Then offer to do one "
+            "of those things right now.\n"
+            "  3. Only ask ONE question per message, and only AFTER "
+            "you've been helpful. Never lead with data-collection.\n"
+            "  4. When the owner teaches you something new, confirm it "
+            "back in plain language: 'Got it — so I'll…'\n"
+            "  5. NEVER ask more than one question in a single message."
         )
+
+    capabilities_block = """\
+WHAT ADAPIX ACTUALLY DOES (use these when the owner asks what you can do —
+lead with these, not with generic follow-up talk):
+  1. Runs the FULL follow-up cycle automatically — first outreach to final
+     nudge, while the office is closed, overnight, on weekends. Nothing
+     falls through the cracks.
+  2. Sends from YOUR OWN email and phone number — not a generic chatbot
+     address. Customers see a message from the business they know.
+  3. Human approval before EVERY send — Adapix drafts, you tap approve.
+     You're in charge of every word. Drafts you reject cost nothing.
+  4. Handles inbound replies automatically — classifies them, escalates
+     the urgent ones to a real human immediately, keeps the rest moving.
+  5. Every morning you get a clear desk — see what happened overnight,
+     approve the drafts in the queue, then close the tab.
+  6. On-device storage — data never leaves the building. HIPAA-ready
+     architecture with BAA available for regulated industries.
+  7. Plug-and-play setup — no IT team, no developers, up and running in
+     10 minutes. Works with your existing email and phone number.
+  8. Pricing that makes sense — $29/mo base + $0.20 per approved message
+     sent. You only pay when Adapix actually does something.
+
+When the owner asks "what can you do?", lead with the 2-3 capabilities
+most relevant to their business type and the problems they described.
+Give concrete examples — e.g. "I'll send a follow-up the moment a lead
+goes quiet for 48 hours, draft a message in your tone, and put it in your
+approval queue. You tap approve and it's gone."
+Do NOT talk about lead qualification, CRM features, or analytics unless
+they ask. Stick to what Adapix actually does."""
 
     return f"""\
 {role}
@@ -265,10 +294,12 @@ def build_system_prompt(profile: PracticeProfile, missing: list[str]) -> str:
 GOALS, in priority order:
 {goals}
 
+{capabilities_block}
+
 {profile_block}
 
-STILL MISSING (in priority order — ask about the first one if the user
-hasn't already volunteered information about it):
+STILL MISSING (in priority order — only ask about these AFTER you've been
+helpful, one at a time, never as the opener):
 {missing_block}
 
 {skills_block}
@@ -293,10 +324,12 @@ def generate_opener() -> dict:
     history = load_history()
     missing = missing_topics(profile, history)
     sys = build_system_prompt(profile, missing) + (
-        "\n\nThis is your FIRST message in this chat. Open warmly, address the "
-        f"doctor by name ({profile.doctor}), reference one thing they already "
-        f"told you during setup (workflows, problems, or tone), then ask about "
-        "ONE thing from the missing-topics list. ~80 words."
+        "\n\nThis is your FIRST message in this chat. Lead with 2-3 specific, "
+        "concrete things you can do for this business RIGHT NOW based on their "
+        f"setup (workflows enabled, problems they described, business type). "
+        f"Address the owner as {profile.doctor}. Be direct and useful — "
+        "show your value immediately. End with ONE brief question only if "
+        "genuinely needed. ~80-100 words. Do NOT open with a question."
     )
     settings = Settings()
     client = Anthropic(api_key=settings.anthropic_api_key)
