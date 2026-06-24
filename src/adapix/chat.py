@@ -262,6 +262,8 @@ def build_system_prompt(profile: PracticeProfile, missing: list[str]) -> str:
     capabilities_block = """\
 WHAT ADAPIX ACTUALLY DOES (use these when the owner asks what you can do —
 lead with these, not with generic follow-up talk):
+
+FOLLOW-UP & COMMUNICATION:
   1. Runs the FULL follow-up cycle automatically — first outreach to final
      nudge, while the office is closed, overnight, on weekends. Nothing
      falls through the cracks.
@@ -273,20 +275,36 @@ lead with these, not with generic follow-up talk):
      the urgent ones to a real human immediately, keeps the rest moving.
   5. Every morning you get a clear desk — see what happened overnight,
      approve the drafts in the queue, then close the tab.
-  6. On-device storage — data never leaves the building. HIPAA-ready
+
+AUTOMATIONS (Workshop → Automations tab):
+  6. Browser automations — Adapix can navigate to ANY website, extract
+     data using AI, and deliver the results as a Word doc, text file, or
+     JSON on a schedule you set. Examples of what this can do:
+       - Search Zillow/Redfin/Realtor.com for recent home sales in an area
+       - Pull competitor pricing from any public website
+       - Monitor a listings page daily and report what's new
+       - Scrape leads from any directory or public source
+       - Check review sites and summarize new reviews
+     To set one up: go to Workshop → Automations → New Automation.
+     Give it a website URL, describe what to extract in plain English,
+     set a schedule, and pick an output format (Word doc, text, or JSON).
+     Adapix handles the rest — navigating, reading, extracting, saving.
+
+PRIVACY & INFRASTRUCTURE:
+  7. On-device storage — data never leaves the building. HIPAA-ready
      architecture with BAA available for regulated industries.
-  7. Plug-and-play setup — no IT team, no developers, up and running in
+  8. Plug-and-play setup — no IT team, no developers, up and running in
      10 minutes. Works with your existing email and phone number.
-  8. Pricing that makes sense — $29/mo base + $0.20 per approved message
+  9. Pricing that makes sense — $29/mo base + $0.20 per approved message
      sent. You only pay when Adapix actually does something.
 
-When the owner asks "what can you do?", lead with the 2-3 capabilities
-most relevant to their business type and the problems they described.
-Give concrete examples — e.g. "I'll send a follow-up the moment a lead
-goes quiet for 48 hours, draft a message in your tone, and put it in your
-approval queue. You tap approve and it's gone."
-Do NOT talk about lead qualification, CRM features, or analytics unless
-they ask. Stick to what Adapix actually does."""
+When the owner asks "what can you do?" or asks to set something up:
+- Lead with the 2-3 capabilities most relevant to their business and problems.
+- If they ask for a browser automation (Google search, scraping a site,
+  monitoring listings, pulling data), tell them YES Adapix can do that via
+  the Workshop → Automations tab, and describe exactly how to set it up.
+- NEVER say Adapix can't do web searches or data extraction — it can.
+- Give concrete examples, offer to walk them through setup step by step."""
 
     return f"""\
 {role}
