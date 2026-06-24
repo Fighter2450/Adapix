@@ -9,9 +9,12 @@ Each Automation row in the DB defines:
   - schedule     — cron expression (e.g. "0 9 * * *" = every day at 9am)
   - output_format — docx | txt | json
 
-The engine uses Playwright (headless Chromium) for rendering and Claude for
-understanding the page content. No CSS selectors required — Claude reads the
-page like a human would and pulls out exactly what the task asks for.
+The engine uses browser-use / Playwright async API (headless Chromium) for
+rendering and Claude for understanding the page content. No CSS selectors
+required — Claude reads the page like a human would and pulls out exactly
+what the task asks for.
+
+Uses async_playwright (not sync_playwright) so there is no greenlet dependency.
 """
 from __future__ import annotations
 
@@ -44,79 +47,78 @@ def fetch_page_text(
     login_email: str | None = None,
     login_password: str | None = None,
 ) -> str:
-    """Use Playwright to load the page and return its visible text content.
+    """Use Playwright (async API) to load the page and return its visible text.
     If login credentials are provided, navigates to the login page first,
     fills the username/email and password fields, submits, then goes to the
-    target URL."""
-    from playwright.sync_api import sync_playwright
+    target URL. Uses async_playwright so greenlet/VC++ DLLs are not required."""
+    import asyncio
+    from playwright.async_api import async_playwright
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    async def _run() -> str:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-        # Log in if credentials provided
-        if login_password and (login_username or login_email):
-            login_dest = login_url or url
-            log.info(f"Logging in at {login_dest}")
-            page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
-            page.wait_for_timeout(1500)
+            if login_password and (login_username or login_email):
+                login_dest = login_url or url
+                log.info(f"Logging in at {login_dest}")
+                await page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_timeout(1500)
 
-            identifier = login_username or login_email or ""
-            # Try common username/email field selectors
-            for sel in ['input[type="email"]', 'input[name="email"]',
-                        'input[name="username"]', 'input[name="user"]',
-                        'input[type="text"]']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(identifier)
-                    break
+                identifier = login_username or login_email or ""
+                for sel in ['input[type="email"]', 'input[name="email"]',
+                            'input[name="username"]', 'input[name="user"]',
+                            'input[type="text"]']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.fill(identifier)
+                        break
 
-            # Fill password
-            for sel in ['input[type="password"]', 'input[name="password"]']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(login_password)
-                    break
+                for sel in ['input[type="password"]', 'input[name="password"]']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.fill(login_password)
+                        break
 
-            # Submit — try button first, then Enter
-            submitted = False
-            for sel in ['button[type="submit"]', 'input[type="submit"]',
-                        'button:has-text("Log in")', 'button:has-text("Sign in")',
-                        'button:has-text("Login")', 'button:has-text("Continue")']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.click()
-                    submitted = True
-                    break
-            if not submitted:
-                page.keyboard.press("Enter")
+                submitted = False
+                for sel in ['button[type="submit"]', 'input[type="submit"]',
+                            'button:has-text("Log in")', 'button:has-text("Sign in")',
+                            'button:has-text("Login")', 'button:has-text("Continue")']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.click()
+                        submitted = True
+                        break
+                if not submitted:
+                    await page.keyboard.press("Enter")
 
-            page.wait_for_load_state("domcontentloaded", timeout=15_000)
-            page.wait_for_timeout(2000)
+                await page.wait_for_load_state("domcontentloaded", timeout=15_000)
+                await page.wait_for_timeout(2000)
 
-            # Navigate to target if different from login page
-            if url != login_dest:
-                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                page.wait_for_timeout(2000)
-        else:
-            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            page.wait_for_timeout(2000)
+                if url != login_dest:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                    await page.wait_for_timeout(2000)
+            else:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_timeout(2000)
 
-        text = page.evaluate("""() => {
-            ['script','style','nav','footer','header'].forEach(tag => {
-                document.querySelectorAll(tag).forEach(el => el.remove());
-            });
-            return document.body.innerText;
-        }""")
-        browser.close()
-    return text or ""
+            text = await page.evaluate("""() => {
+                ['script','style','nav','footer','header'].forEach(tag => {
+                    document.querySelectorAll(tag).forEach(el => el.remove());
+                });
+                return document.body.innerText;
+            }""")
+            await browser.close()
+            return text or ""
+
+    return asyncio.run(_run())
 
 
-def _get_page_snapshot(page) -> tuple[str, list[dict]]:
-    """Return (visible_text, links) from a Playwright page."""
-    text = page.evaluate("""() => {
+async def _get_page_snapshot(page) -> tuple[str, list[dict]]:
+    """Return (visible_text, links) from an async Playwright page."""
+    text = await page.evaluate("""() => {
         ['script','style','nav','footer','header'].forEach(t =>
             document.querySelectorAll(t).forEach(el => el.remove()));
         return document.body.innerText;
     }""") or ""
-    links = page.evaluate("""() => {
+    links = await page.evaluate("""() => {
         const seen = new Set();
         return Array.from(document.querySelectorAll('a[href]'))
             .map(a => ({ text: a.innerText.trim().slice(0, 80), href: a.href }))
@@ -211,90 +213,91 @@ def navigate_and_extract(
     max_steps: int = 5,
 ) -> tuple[str, str]:
     """Open a browser, navigate up to max_steps pages to find the data,
-    and return (final_url, extracted_data)."""
+    and return (final_url, extracted_data). Uses async_playwright so the
+    greenlet/VC++ DLL dependency is not required."""
+    import asyncio
     import anthropic
-    from playwright.sync_api import sync_playwright
+    from playwright.async_api import async_playwright
     from .config import Settings
 
     settings = Settings()
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    async def _run() -> tuple[str, str]:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-        # Handle login
-        if login_password and (login_username or login_email):
-            login_dest = login_url or url
-            log.info(f"Logging in at {login_dest}")
-            page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
-            page.wait_for_timeout(1500)
-            identifier = login_username or login_email or ""
-            for sel in ['input[type="email"]', 'input[name="email"]',
-                        'input[name="username"]', 'input[type="text"]']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(identifier)
-                    break
-            for sel in ['input[type="password"]', 'input[name="password"]']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(login_password)
-                    break
-            submitted = False
-            for sel in ['button[type="submit"]', 'input[type="submit"]',
-                        'button:has-text("Log in")', 'button:has-text("Sign in")']:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.click()
-                    submitted = True
-                    break
-            if not submitted:
-                page.keyboard.press("Enter")
-            page.wait_for_load_state("domcontentloaded", timeout=15_000)
-            page.wait_for_timeout(2000)
-            if url != login_dest:
-                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                page.wait_for_timeout(2000)
-        else:
-            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            page.wait_for_timeout(2000)
+            if login_password and (login_username or login_email):
+                login_dest = login_url or url
+                log.info(f"Logging in at {login_dest}")
+                await page.goto(login_dest, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_timeout(1500)
+                identifier = login_username or login_email or ""
+                for sel in ['input[type="email"]', 'input[name="email"]',
+                            'input[name="username"]', 'input[type="text"]']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.fill(identifier)
+                        break
+                for sel in ['input[type="password"]', 'input[name="password"]']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.fill(login_password)
+                        break
+                submitted = False
+                for sel in ['button[type="submit"]', 'input[type="submit"]',
+                            'button:has-text("Log in")', 'button:has-text("Sign in")']:
+                    if await page.locator(sel).count() > 0:
+                        await page.locator(sel).first.click()
+                        submitted = True
+                        break
+                if not submitted:
+                    await page.keyboard.press("Enter")
+                await page.wait_for_load_state("domcontentloaded", timeout=15_000)
+                await page.wait_for_timeout(2000)
+                if url != login_dest:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                    await page.wait_for_timeout(2000)
+            else:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_timeout(2000)
 
-        final_url = page.url
-        extracted = ""
-
-        for step in range(max_steps):
-            log.info(f"Agent step {step + 1}: {page.url}")
-            page_text, links = _get_page_snapshot(page)
-            decision = _decide_next_step(client, settings.adapix_model,
-                                         task, page.url, page_text, links, step)
-
-            if decision["action"] == "extract":
-                final_url = page.url
-                extracted = decision["data"]
-                log.info(f"Agent extracted data at step {step + 1} from {final_url}")
-                break
-
-            nav_url = decision.get("url", "")
-            if not nav_url:
-                # No URL to navigate to — extract from current page
-                extracted = page_text[:8000]
-                break
-            log.info(f"Agent navigating to: {nav_url}")
-            try:
-                page.goto(nav_url, wait_until="domcontentloaded", timeout=30_000)
-                page.wait_for_timeout(2000)
-            except Exception as nav_err:
-                log.warning(f"Navigation failed: {nav_err} — extracting from current page")
-                page_text, _ = _get_page_snapshot(page)
-                extracted = page_text[:8000]
-                break
-        else:
-            # Hit max_steps — extract whatever is on screen
             final_url = page.url
-            page_text, _ = _get_page_snapshot(page)
-            extracted = page_text[:8000]
+            extracted = ""
 
-        browser.close()
+            for step in range(max_steps):
+                log.info(f"Agent step {step + 1}: {page.url}")
+                page_text, links = await _get_page_snapshot(page)
+                decision = _decide_next_step(client, settings.adapix_model,
+                                             task, page.url, page_text, links, step)
 
-    return final_url, extracted
+                if decision["action"] == "extract":
+                    final_url = page.url
+                    extracted = decision["data"]
+                    log.info(f"Agent extracted data at step {step + 1} from {final_url}")
+                    break
+
+                nav_url = decision.get("url", "")
+                if not nav_url:
+                    extracted = page_text[:8000]
+                    break
+                log.info(f"Agent navigating to: {nav_url}")
+                try:
+                    await page.goto(nav_url, wait_until="domcontentloaded", timeout=30_000)
+                    await page.wait_for_timeout(2000)
+                except Exception as nav_err:
+                    log.warning(f"Navigation failed: {nav_err} — extracting from current page")
+                    page_text, _ = await _get_page_snapshot(page)
+                    extracted = page_text[:8000]
+                    break
+            else:
+                final_url = page.url
+                page_text, _ = await _get_page_snapshot(page)
+                extracted = page_text[:8000]
+
+            await browser.close()
+            return final_url, extracted
+
+    return asyncio.run(_run())
 
 
 # ---------------------------------------------------------------------------
