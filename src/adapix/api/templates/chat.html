@@ -393,40 +393,81 @@ body{
   // --- Voice (Web Speech API) ---
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
+  const voiceLabel = voiceOverlay ? voiceOverlay.querySelector('.voice-label') : null;
+
+  function voiceError(msg) {
+    if (voiceLabel) voiceLabel.textContent = msg;
+    if (voiceOverlay) {
+      voiceOverlay.removeAttribute('hidden');
+      setTimeout(() => {
+        voiceOverlay.setAttribute('hidden', '');
+        if (voiceLabel) voiceLabel.textContent = 'Listening…';
+      }, 3000);
+    }
+  }
+
+  function stopVoice() {
+    try { if (recognition) recognition.stop(); } catch(_) {}
+    recognition = null;
+    micBtn.dataset.state = 'idle';
+    micBtn.setAttribute('aria-label', 'Voice input');
+    if (voiceOverlay) voiceOverlay.setAttribute('hidden', '');
+    if (voiceLabel) voiceLabel.textContent = 'Listening…';
+  }
 
   if (!SpeechRec) {
-    micBtn.style.display = 'none';
+    micBtn.style.opacity = '0.35';
+    micBtn.style.cursor = 'not-allowed';
+    micBtn.title = 'Voice input not supported in this browser (use Chrome or Edge)';
   } else {
     micBtn.addEventListener('click', () => {
-      if (micBtn.dataset.state === 'listening') { recognition && recognition.stop(); return; }
+      if (micBtn.dataset.state === 'listening') { stopVoice(); return; }
+
       recognition = new SpeechRec();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
+
+      let baseLen = inputEl.value.length;
+      let finalTranscript = '';
+
       micBtn.dataset.state = 'listening';
       micBtn.setAttribute('aria-label', 'Stop recording');
+      if (voiceLabel) voiceLabel.textContent = 'Listening…';
       voiceOverlay.removeAttribute('hidden');
 
       recognition.onresult = (e) => {
-        for (let r of e.results) {
-          if (r.isFinal) inputEl.value += r[0].transcript;
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+          else interim = e.results[i][0].transcript;
         }
+        inputEl.value = inputEl.value.substring(0, baseLen) + finalTranscript + interim;
         inputEl.dispatchEvent(new Event('input'));
       };
+
       recognition.onend = () => {
-        micBtn.dataset.state = 'idle';
-        micBtn.setAttribute('aria-label', 'Voice input');
-        voiceOverlay.setAttribute('hidden', '');
+        if (micBtn.dataset.state === 'listening') stopVoice();
       };
-      recognition.onerror = () => {
-        micBtn.dataset.state = 'idle';
-        voiceOverlay.setAttribute('hidden', '');
+
+      recognition.onerror = (e) => {
+        const MSGS = {
+          'not-allowed':         'Microphone access denied — check browser permissions',
+          'service-not-allowed': 'Speech service blocked — try Chrome on localhost',
+          'no-speech':           'No speech detected — try speaking louder',
+          'network':             'Network error — speech API needs internet',
+          'audio-capture':       'No microphone found',
+        };
+        if (e.error !== 'aborted') voiceError(MSGS[e.error] || `Mic error: ${e.error}`);
+        stopVoice();
       };
-      recognition.start();
+
+      try { recognition.start(); }
+      catch(err) { voiceError('Could not start microphone: ' + err.message); stopVoice(); }
     });
   }
 
-  document.getElementById('voice-stop')?.addEventListener('click', () => recognition && recognition.stop());
+  document.getElementById('voice-stop')?.addEventListener('click', stopVoice);
 
   function timeNow(){
     const d = new Date();

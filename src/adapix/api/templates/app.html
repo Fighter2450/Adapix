@@ -1834,51 +1834,85 @@ a{color:inherit;text-decoration:none}
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     const voiceOverlay = document.getElementById('voice-overlay');
+    const voiceLabel = voiceOverlay ? voiceOverlay.querySelector('.voice-label') : null;
+
+    function voiceError(msg) {
+      if (voiceLabel) voiceLabel.textContent = msg;
+      if (voiceOverlay) {
+        voiceOverlay.removeAttribute('hidden');
+        setTimeout(() => {
+          voiceOverlay.setAttribute('hidden', '');
+          if (voiceLabel) voiceLabel.textContent = 'Listening…';
+        }, 3000);
+      }
+    }
+
+    function stopVoice() {
+      try { if (recognition) recognition.stop(); } catch(_) {}
+      recognition = null;
+      micBtn.dataset.state = 'idle';
+      micBtn.setAttribute('aria-label', 'Voice input');
+      if (voiceOverlay) voiceOverlay.setAttribute('hidden', '');
+      if (voiceLabel) voiceLabel.textContent = 'Listening…';
+    }
 
     if (!SpeechRec) {
-      micBtn.style.display = 'none';
+      micBtn.style.opacity = '0.35';
+      micBtn.style.cursor = 'not-allowed';
+      micBtn.title = 'Voice input not supported in this browser (use Chrome or Edge)';
     } else {
       micBtn.addEventListener('click', () => {
-        if (micBtn.dataset.state === 'listening') {
-          recognition && recognition.stop();
-          return;
-        }
+        if (micBtn.dataset.state === 'listening') { stopVoice(); return; }
+
         recognition = new SpeechRec();
-        recognition.continuous = false;
+        recognition.continuous = true;      // keep listening until user stops
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        let interim = '';
+        let baseLen = input.value.length;  // where to splice in new text
+        let finalTranscript = '';
+
         micBtn.dataset.state = 'listening';
         micBtn.setAttribute('aria-label', 'Stop recording');
+        if (voiceLabel) voiceLabel.textContent = 'Listening…';
         if (voiceOverlay) voiceOverlay.removeAttribute('hidden');
 
         recognition.onresult = (e) => {
-          interim = '';
-          for (let r of e.results) {
-            if (r.isFinal) input.value += r[0].transcript;
-            else interim = r[0].transcript;
+          let interim = '';
+          // Only process new results (from resultIndex onward)
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+            else interim = e.results[i][0].transcript;
           }
+          input.value = input.value.substring(0, baseLen) + finalTranscript + interim;
           input.dispatchEvent(new Event('input'));
         };
+
         recognition.onend = () => {
-          micBtn.dataset.state = 'idle';
-          micBtn.setAttribute('aria-label', 'Voice input');
-          if (voiceOverlay) voiceOverlay.setAttribute('hidden', '');
+          // In continuous mode onend fires on stop() or network drop
+          if (micBtn.dataset.state === 'listening') stopVoice();
         };
-        recognition.onerror = () => {
-          micBtn.dataset.state = 'idle';
-          if (voiceOverlay) voiceOverlay.setAttribute('hidden', '');
+
+        recognition.onerror = (e) => {
+          const MSGS = {
+            'not-allowed':         'Microphone access denied — check browser permissions',
+            'service-not-allowed': 'Speech service blocked — try Chrome on localhost',
+            'no-speech':           'No speech detected — try speaking louder',
+            'network':             'Network error — speech API needs internet',
+            'audio-capture':       'No microphone found',
+          };
+          if (e.error !== 'aborted') voiceError(MSGS[e.error] || `Mic error: ${e.error}`);
+          stopVoice();
         };
-        recognition.start();
+
+        try { recognition.start(); }
+        catch(err) { voiceError('Could not start microphone: ' + err.message); stopVoice(); }
       });
     }
 
     // Voice stop button
     if (voiceOverlay) {
-      voiceOverlay.querySelector('.voice-stop-btn')?.addEventListener('click', () => {
-        recognition && recognition.stop();
-      });
+      voiceOverlay.querySelector('.voice-stop-btn')?.addEventListener('click', stopVoice);
     }
 
     // Auto-resize textarea
