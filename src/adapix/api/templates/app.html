@@ -1135,63 +1135,84 @@ a{color:inherit;text-decoration:none}
 .team-card-desc{font-size:11.5px;color:var(--slate);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Agent chat overlay */
-.agent-chat-overlay{
-  position:fixed;inset:0;background:rgba(4,11,26,.92);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  z-index:200;display:flex;flex-direction:column;
-}
-.agent-chat-header{
-  display:flex;align-items:center;gap:12px;
-  padding:16px 20px;
-  border-bottom:1px solid var(--line);
-  background:rgba(8,18,42,.8);
-  flex-shrink:0;
-}
-.agent-chat-back{font-size:20px;color:var(--slate);cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .15s}
-.agent-chat-back:hover{color:#fff}
-.agent-chat-avatar{width:40px;height:40px;border-radius:10px;background:rgba(0,184,230,.12);border:1px solid rgba(0,184,230,.2);display:flex;align-items:center;justify-content:center;color:var(--cyan);padding:9px;flex-shrink:0}
+.agent-chat-overlay{position:fixed;inset:0;background:rgba(4,11,26,.93);backdrop-filter:blur(16px);z-index:200;display:flex;flex-direction:column}
+.agent-chat-header{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(6,14,34,.9);flex-shrink:0;min-height:64px}
+.agent-chat-back{font-size:18px;color:var(--slate);cursor:pointer;padding:6px 8px;border-radius:8px;transition:color .15s,background .15s;line-height:1;display:flex;align-items:center;justify-content:center}
+.agent-chat-back:hover{color:#fff;background:rgba(255,255,255,.06)}
+.agent-chat-avatar{width:44px;height:44px;border-radius:12px;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.22);display:flex;align-items:center;justify-content:center;color:var(--cyan);padding:10px;flex-shrink:0;position:relative}
 .agent-chat-avatar svg{width:100%;height:100%}
-.agent-chat-info{flex:1}
-.agent-chat-name{font-size:14px;font-weight:700;color:#fff}
-.agent-chat-category{font-size:11px;color:var(--cyan);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-.agent-chat-clear{font-size:11px;color:var(--slate-3);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--line);transition:color .15s,border-color .15s}
-.agent-chat-clear:hover{color:var(--hot);border-color:var(--hot)}
+.agent-chat-avatar::after{content:'';position:absolute;bottom:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid rgba(6,14,34,.9)}
+.agent-chat-info{flex:1;min-width:0}
+.agent-chat-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-chat-category{font-size:10.5px;color:var(--cyan);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+.agent-chat-clear{font-size:11px;color:var(--slate-3);cursor:pointer;padding:5px 10px;border-radius:6px;border:1px solid var(--line);transition:color .15s,border-color .15s,background .15s;white-space:nowrap;flex-shrink:0}
+.agent-chat-clear:hover{color:var(--hot);border-color:rgba(255,68,68,.4);background:rgba(255,68,68,.06)}
 
-.agent-chat-thread{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
-.agent-chat-thread .bubble-wrap{display:flex;flex-direction:column;gap:4px;max-width:82%}
-.agent-chat-thread .bubble-wrap.user{align-self:flex-end;align-items:flex-end}
-.agent-chat-thread .bubble-wrap.agent{align-self:flex-start;align-items:flex-start}
-.agent-chat-thread .bubble{max-width:100%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
-.agent-chat-thread .bubble.user{background:rgba(0,184,230,.18);border:1px solid rgba(0,184,230,.25);border-bottom-right-radius:4px}
-.agent-chat-thread .bubble.agent{background:rgba(255,255,255,.05);border:1px solid var(--line);border-bottom-left-radius:4px}
-.agent-chat-thread .tools-used-bar{font-size:10.5px;color:var(--slate-3);padding:2px 6px;letter-spacing:.02em}
-.agent-chat-thread .doc-download-link{font-size:11.5px;color:var(--cyan);text-decoration:none;padding:4px 8px;border:1px solid rgba(0,184,230,.3);border-radius:6px;display:inline-block}
-.agent-chat-thread .doc-download-link:hover{background:rgba(0,184,230,.1)}
-.agent-chat-thread .typing{align-self:flex-start;color:var(--slate-3);font-size:12px;padding:8px 4px}
+.agent-chat-thread{flex:1;overflow-y:auto;padding:28px 24px;display:flex;flex-direction:column;gap:18px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent}
+.agent-chat-thread::-webkit-scrollbar{width:4px}
+.agent-chat-thread::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+.agent-chat-thread .bubble-wrap{display:flex;flex-direction:column;gap:5px;width:100%;max-width:720px}
+.agent-chat-thread .bubble-wrap.user{align-self:flex-end;align-items:flex-end;max-width:560px}
+.agent-chat-thread .bubble-wrap.agent{align-self:center;align-items:flex-start}
+.agent-chat-thread .bubble{padding:12px 16px;border-radius:16px;font-size:13.5px;line-height:1.6;word-break:break-word}
+.agent-chat-thread .bubble.user{background:rgba(0,184,230,.16);border:1px solid rgba(0,184,230,.24);border-bottom-right-radius:4px;color:#e8f4f8;white-space:pre-wrap}
+.agent-chat-thread .bubble.agent{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-bottom-left-radius:4px;color:#cdd8ee;white-space:normal}
+.agent-chat-thread .bubble.agent h1,.agent-chat-thread .bubble.agent h2,.agent-chat-thread .bubble.agent h3{color:#e8f0fb;font-weight:600;margin:14px 0 6px;line-height:1.35}
+.agent-chat-thread .bubble.agent h1{font-size:15px}
+.agent-chat-thread .bubble.agent h2{font-size:14px}
+.agent-chat-thread .bubble.agent h3{font-size:13.5px}
+.agent-chat-thread .bubble.agent h1:first-child,.agent-chat-thread .bubble.agent h2:first-child,.agent-chat-thread .bubble.agent h3:first-child{margin-top:0}
+.agent-chat-thread .bubble.agent p{margin:0 0 10px}
+.agent-chat-thread .bubble.agent p:last-child{margin-bottom:0}
+.agent-chat-thread .bubble.agent strong,.agent-chat-thread .bubble.agent b{color:#dce8f8;font-weight:600}
+.agent-chat-thread .bubble.agent em,.agent-chat-thread .bubble.agent i{color:#b8cce0;font-style:italic}
+.agent-chat-thread .bubble.agent ul,.agent-chat-thread .bubble.agent ol{margin:6px 0 10px;padding-left:20px}
+.agent-chat-thread .bubble.agent ul:last-child,.agent-chat-thread .bubble.agent ol:last-child{margin-bottom:0}
+.agent-chat-thread .bubble.agent li{margin-bottom:4px;line-height:1.55}
+.agent-chat-thread .bubble.agent li::marker{color:var(--cyan)}
+.agent-chat-thread .bubble.agent code{font-family:ui-monospace,'JetBrains Mono',monospace;font-size:12px;background:rgba(0,184,230,.1);color:#7dd3fc;padding:1px 5px;border-radius:4px;border:1px solid rgba(0,184,230,.15)}
+.agent-chat-thread .bubble.agent pre{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:10px 0}
+.agent-chat-thread .bubble.agent pre:last-child{margin-bottom:0}
+.agent-chat-thread .bubble.agent pre code{background:none;color:#94c6f7;padding:0;border:none;font-size:12px;border-radius:0}
+.agent-chat-thread .bubble.agent hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+.agent-chat-thread .bubble.agent table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
+.agent-chat-thread .bubble.agent th,.agent-chat-thread .bubble.agent td{padding:7px 10px;border:1px solid rgba(255,255,255,.08);text-align:left}
+.agent-chat-thread .bubble.agent th{background:rgba(0,184,230,.08);color:#a8c8e8;font-weight:600;font-size:11.5px;letter-spacing:.03em}
+.agent-chat-thread .bubble.agent td{color:#b8cce0}
+.agent-chat-thread .bubble.agent tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.agent-chat-thread .tools-used-bar{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0}
+.agent-chat-thread .tool-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--slate);letter-spacing:.02em;white-space:nowrap}
+.agent-chat-thread .doc-download-link{font-size:11.5px;color:var(--cyan);text-decoration:none;padding:5px 10px;border:1px solid rgba(0,184,230,.3);border-radius:8px;display:inline-flex;align-items:center;gap:5px;transition:background .15s,border-color .15s}
+.agent-chat-thread .doc-download-link:hover{background:rgba(0,184,230,.1);border-color:rgba(0,184,230,.5)}
+.agent-chat-thread .typing{align-self:flex-start;padding:12px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;border-bottom-left-radius:4px;display:inline-flex;align-items:center;gap:4px}
+.agent-chat-thread .typing span{width:6px;height:6px;border-radius:50%;background:var(--slate-3);display:inline-block;animation:typing-dot 1.4s infinite ease-in-out both}
+.agent-chat-thread .typing span:nth-child(1){animation-delay:0s}
+.agent-chat-thread .typing span:nth-child(2){animation-delay:.2s}
+.agent-chat-thread .typing span:nth-child(3){animation-delay:.4s}
+@keyframes typing-dot{0%,80%,100%{transform:scale(.75);opacity:.4}40%{transform:scale(1);opacity:1}}
 
-.agent-chat-composer{
-  display:flex;align-items:flex-end;gap:10px;
-  padding:14px 20px;border-top:1px solid var(--line);
-  background:rgba(8,18,42,.8);flex-shrink:0;
-}
-.agent-chat-input{
-  flex:1;background:rgba(255,255,255,.05);border:1px solid var(--line);
-  border-radius:12px;padding:10px 14px;color:#fff;font:inherit;
-  font-size:13.5px;resize:none;min-height:40px;max-height:120px;
-  outline:none;transition:border-color .15s;
-}
-.agent-chat-input:focus{border-color:rgba(0,184,230,.4)}
-.agent-chat-send{
-  background:var(--cyan);color:#000;border:0;border-radius:10px;
-  padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;
-  transition:opacity .15s;flex-shrink:0;
-}
-.agent-chat-send:disabled{opacity:.4;cursor:default}
-.agent-empty-thread{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--slate-3);font-size:13px;gap:8px;padding:40px}
-.agent-empty-icon{width:48px;height:48px;color:var(--cyan);opacity:.4}
+.agent-chat-composer{padding:14px 24px 18px;border-top:1px solid var(--line);background:rgba(6,14,34,.9);flex-shrink:0}
+.agent-chat-composer-inner{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:8px 8px 8px 16px;transition:border-color .2s,box-shadow .2s;max-width:720px;margin:0 auto}
+.agent-chat-composer-inner:focus-within{border-color:rgba(0,184,230,.4);box-shadow:0 0 0 3px rgba(0,184,230,.06)}
+.agent-chat-input{flex:1;background:transparent;border:none;padding:4px 0;color:#e0eaf8;font:inherit;font-size:13.5px;resize:none;min-height:26px;max-height:120px;outline:none;line-height:1.6;color-scheme:dark}
+.agent-chat-input::placeholder{color:var(--slate-3)}
+.agent-chat-send{background:var(--cyan);color:#02111e;border:0;border-radius:12px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,transform .1s;flex-shrink:0}
+.agent-chat-send:hover:not(:disabled){opacity:.88;transform:scale(1.05)}
+.agent-chat-send:active:not(:disabled){transform:scale(.95)}
+.agent-chat-send:disabled{opacity:.3;cursor:default}
+.agent-chat-send svg{width:16px;height:16px;stroke:#02111e;stroke-width:2.5;fill:none}
+
+.agent-empty-thread{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:40px 24px}
+.agent-empty-icon{width:64px;height:64px;color:var(--cyan);opacity:.3;margin-bottom:16px}
 .agent-empty-icon svg{width:100%;height:100%}
+.agent-empty-thread>strong{font-size:15px;font-weight:600;color:rgba(255,255,255,.7);margin-bottom:6px;letter-spacing:.01em}
+.agent-empty-thread>p{font-size:13px;color:var(--slate-3);text-align:center;max-width:320px;line-height:1.5;margin:0}
+.agent-empty-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:24px;max-width:480px}
+.agent-empty-chip{font-size:12.5px;color:var(--slate);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:7px 14px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;white-space:nowrap}
+.agent-empty-chip:hover{color:#fff;border-color:rgba(0,184,230,.35);background:rgba(0,184,230,.08)}
 </style>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 </head>
 <body>
 
@@ -1642,16 +1663,50 @@ a{color:inherit;text-decoration:none}
       <div class="agent-chat-thread" id="agent-thread">
         <div class="agent-empty-thread">
           <div class="agent-empty-icon">${agentIconEl(slug)}</div>
-          <div>Ask ${escapeHTML(name)} anything.</div>
+          <strong>${escapeHTML(name)}</strong>
+          <p>Your ${escapeHTML(category)} specialist. Ask anything or pick a prompt below.</p>
+          <div class="agent-empty-chips" id="agent-chips"></div>
         </div>
       </div>
       <div class="agent-chat-composer">
-        <textarea class="agent-chat-input" id="agent-input" rows="1" placeholder="Message ${escapeHTML(name)}…"></textarea>
-        <button class="agent-chat-send" id="agent-send">Send</button>
+        <div class="agent-chat-composer-inner">
+          <textarea class="agent-chat-input" id="agent-input" rows="1" placeholder="Message ${escapeHTML(name)}…"></textarea>
+          <button class="agent-chat-send" id="agent-send">
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
       </div>
     `;
     document.body.appendChild(overlay);
     renderLucide(overlay);
+
+    // Starter chips — category-specific prompts
+    const CHIPS = {
+      'Strategy & Leadership': ['Build a 90-day action plan','Identify our biggest bottleneck','Help me prioritize Q3 goals'],
+      'Marketing':  ['Write a 30-day content calendar','Research our top competitors','Draft a campaign for new patients'],
+      'Sales':      ['Review my sales pipeline','Script a follow-up call','Find customers to re-engage'],
+      'Finance':    ['Summarize our current metrics','Spot cash flow risks','Draft a pricing review'],
+      'Customer':   ['List customers who need follow-up','Draft a re-engagement message','Handle a complaint script'],
+      'HR & People':['Write a job description','Create an onboarding checklist','Draft a team meeting agenda'],
+      'Legal':      ['Check our consent language','Review a client contract clause','Draft a data policy summary'],
+      'Brand & Design':['Describe our brand voice','Write brand guidelines','Create a style brief'],
+      'Product':    ['Prioritize our feature backlog','Write a user story','Summarize customer feedback themes'],
+      'Engineering':['Review this architecture decision','Write a technical spec','Suggest a testing strategy'],
+    };
+    const chipsEl = document.getElementById('agent-chips');
+    if (chipsEl) {
+      (CHIPS[category] || ['What can you help me with?','Give me a quick win','Where should I start?']).forEach(prompt => {
+        const chip = document.createElement('button');
+        chip.className = 'agent-empty-chip';
+        chip.textContent = prompt;
+        chip.addEventListener('click', () => {
+          document.getElementById('agent-input').value = prompt;
+          document.getElementById('agent-input').dispatchEvent(new Event('input'));
+          document.getElementById('agent-input').focus();
+        });
+        chipsEl.appendChild(chip);
+      });
+    }
 
     // Load history
     await loadAgentHistory(slug);
@@ -1668,9 +1723,17 @@ a{color:inherit;text-decoration:none}
       thread.innerHTML = `
         <div class="agent-empty-thread">
           <div class="agent-empty-icon">${agentIconEl(slug)}</div>
-          <div>Ask ${escapeHTML(name)} anything.</div>
+          <strong>${escapeHTML(name)}</strong>
+          <p>Your ${escapeHTML(category)} specialist. Ask anything or pick a prompt below.</p>
+          <div class="agent-empty-chips" id="agent-chips"></div>
         </div>`;
       renderLucide(thread);
+      // Restore chips
+      const chipsEl2 = document.getElementById('agent-chips');
+      if (chipsEl2) {
+        const CHIPS2 = {'Strategy & Leadership':['Build a 90-day action plan','Identify our biggest bottleneck','Help me prioritize Q3 goals'],'Marketing':['Write a 30-day content calendar','Research our top competitors','Draft a campaign for new patients'],'Sales':['Review my sales pipeline','Script a follow-up call','Find customers to re-engage'],'Finance':['Summarize our current metrics','Spot cash flow risks','Draft a pricing review'],'Customer':['List customers who need follow-up','Draft a re-engagement message','Handle a complaint script'],'HR & People':['Write a job description','Create an onboarding checklist','Draft a team meeting agenda'],'Legal':['Check our consent language','Review a client contract clause','Draft a data policy summary'],'Brand & Design':['Describe our brand voice','Write brand guidelines','Create a style brief'],'Product':['Prioritize our feature backlog','Write a user story','Summarize customer feedback themes'],'Engineering':['Review this architecture decision','Write a technical spec','Suggest a testing strategy']};
+        (CHIPS2[category]||['What can you help me with?','Give me a quick win','Where should I start?']).forEach(p=>{const c=document.createElement('button');c.className='agent-empty-chip';c.textContent=p;c.addEventListener('click',()=>{document.getElementById('agent-input').value=p;document.getElementById('agent-input').focus();});chipsEl2.appendChild(c);});
+      }
     });
 
     const input = document.getElementById('agent-input');
@@ -1702,7 +1765,7 @@ a{color:inherit;text-decoration:none}
       // Typing indicator
       const typing = document.createElement('div');
       typing.className = 'typing';
-      typing.textContent = name + ' is thinking…';
+      typing.innerHTML = '<span></span><span></span><span></span>';
       thread.appendChild(typing);
       thread.scrollTop = thread.scrollHeight;
 
@@ -1744,19 +1807,23 @@ a{color:inherit;text-decoration:none}
       wrap.className = 'bubble-wrap ' + role;
       const div = document.createElement('div');
       div.className = 'bubble ' + role;
-      div.textContent = text;
+      if (role === 'agent' && window.marked) {
+        div.innerHTML = marked.parse(text || '');
+      } else {
+        div.textContent = text;
+      }
       wrap.appendChild(div);
       if (role === 'agent' && toolsUsed && toolsUsed.length) {
         const bar = document.createElement('div');
         bar.className = 'tools-used-bar';
-        bar.textContent = 'Used: ' + toolsUsed.join('  ·  ');
+        bar.innerHTML = toolsUsed.map(t => `<span class="tool-tag">${escapeHTML(t)}</span>`).join('');
         wrap.appendChild(bar);
       }
       if (documentPath) {
         const dl = document.createElement('a');
         dl.className = 'doc-download-link';
         dl.href = '/api/v1/team-agents/' + (slug||'') + '/documents/' + encodeURIComponent(documentPath);
-        dl.textContent = '📄 Download ' + documentPath;
+        dl.textContent = '📄 ' + documentPath;
         dl.target = '_blank';
         wrap.appendChild(dl);
       }
