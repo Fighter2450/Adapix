@@ -579,7 +579,33 @@ def _build_system_prompt(agent: TeamAgent) -> str:
     )
 
 
-def send_agent_message(slug: str, user_text: str) -> dict:
+def _build_user_content(user_text: str, attachments: list | None) -> str | list:
+    """Return a string (no files) or a list of content blocks (with images/text files)."""
+    if not attachments:
+        return user_text
+    blocks: list = []
+    if user_text:
+        blocks.append({"type": "text", "text": user_text})
+    for att in attachments:
+        if att["type"] == "image":
+            blocks.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": att["media_type"],
+                    "data": att["data"],
+                },
+            })
+            blocks.append({"type": "text", "text": f"[Attached image: {att['name']}]"})
+        else:
+            blocks.append({
+                "type": "text",
+                "text": f"[Attached file: {att['name']}]\n```\n{att.get('content', '')}\n```",
+            })
+    return blocks
+
+
+def send_agent_message(slug: str, user_text: str, attachments: list | None = None) -> dict:
     """Run the tool-use loop and return {reply, tools_used, document_path}."""
     agent = get_agent(slug)
     if not agent:
@@ -591,7 +617,7 @@ def send_agent_message(slug: str, user_text: str) -> dict:
     system = _build_system_prompt(agent)
 
     messages: list[dict] = [{"role": m["role"], "content": m["content"]} for m in history]
-    messages.append({"role": "user", "content": user_text})
+    messages.append({"role": "user", "content": _build_user_content(user_text, attachments)})
 
     tools_used: list[str] = []
     document_path: str | None = None

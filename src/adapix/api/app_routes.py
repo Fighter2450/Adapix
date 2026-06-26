@@ -26,7 +26,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from typing import List
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -117,19 +118,65 @@ def api_chat_opener(body: OpenerBody | None = None):
         raise HTTPException(status_code=500, detail=f"opener failed: {e}")
 
 
+async def _parse_attachments(files: List[UploadFile]) -> list:
+    """Read uploaded files into attachment dicts for the AI layer."""
+    import base64
+    result = []
+    for f in files:
+        if not f.filename:
+            continue
+        content = await f.read()
+        mime = f.content_type or ""
+        if mime.startswith("image/"):
+            result.append({
+                "type": "image",
+                "name": f.filename,
+                "media_type": mime,
+                "data": base64.b64encode(content).decode(),
+            })
+        elif f.filename.lower().endswith(".pdf"):
+            try:
+                from pypdf import PdfReader
+                import io
+                reader = PdfReader(io.BytesIO(content))
+                text = "\n".join(p.extract_text() or "" for p in reader.pages)
+                result.append({"type": "text", "name": f.filename, "content": text})
+            except Exception:
+                result.append({"type": "text", "name": f.filename,
+                                "content": content.decode("utf-8", errors="replace")})
+        elif f.filename.lower().endswith(".docx"):
+            try:
+                from docx import Document
+                import io
+                doc = Document(io.BytesIO(content))
+                text = "\n".join(p.text for p in doc.paragraphs)
+                result.append({"type": "text", "name": f.filename, "content": text})
+            except Exception:
+                result.append({"type": "text", "name": f.filename,
+                                "content": content.decode("utf-8", errors="replace")})
+        else:
+            result.append({"type": "text", "name": f.filename,
+                            "content": content.decode("utf-8", errors="replace")})
+    return result
+
+
 class ChatSendBody(BaseModel):
     message: str
 
 
 @router.post("/api/v1/chat/send")
-def api_chat_send(body: ChatSendBody):
+async def api_chat_send(
+    message: str = Form(""),
+    files: List[UploadFile] = File(default=[]),
+):
     """User sent a message → return Adapix's reply + any new suggestions."""
     from ..chat import reply_to
-    text = (body.message or "").strip()
-    if not text:
+    text = (message or "").strip()
+    attachments = await _parse_attachments(files)
+    if not text and not attachments:
         raise HTTPException(status_code=400, detail="empty message")
     try:
-        return reply_to(text)
+        return reply_to(text, attachments=attachments or None)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"chat failed: {e}")
 
@@ -1392,9 +1439,15 @@ class AgentMessageBody(BaseModel):
 
 
 @router.post("/api/v1/team-agents/{slug}/chat/send")
-def api_agent_send(slug: str, body: AgentMessageBody, _user: str = Depends(verify_admin)):
+async def api_agent_send(
+    slug: str,
+    message: str = Form(""),
+    files: List[UploadFile] = File(default=[]),
+    _user: str = Depends(verify_admin),
+):
+    attachments = await _parse_attachments(files)
     try:
-        result = send_agent_message(slug, body.message)
+        result = send_agent_message(slug, message, attachments=attachments or None)
         return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

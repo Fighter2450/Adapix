@@ -368,7 +368,29 @@ def generate_opener() -> dict:
     }
 
 
-def reply_to(user_message: str) -> dict:
+def _build_chat_user_content(user_message: str, attachments: list | None) -> str | list:
+    """Return string or content block list depending on whether files were attached."""
+    if not attachments:
+        return user_message
+    blocks: list = []
+    if user_message:
+        blocks.append({"type": "text", "text": user_message})
+    for att in attachments:
+        if att["type"] == "image":
+            blocks.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": att["media_type"], "data": att["data"]},
+            })
+            blocks.append({"type": "text", "text": f"[Attached image: {att['name']}]"})
+        else:
+            blocks.append({
+                "type": "text",
+                "text": f"[Attached file: {att['name']}]\n```\n{att.get('content', '')}\n```",
+            })
+    return blocks
+
+
+def reply_to(user_message: str, attachments: list | None = None) -> dict:
     """Append the user's message + generate Adapix's reply + extract
     any new structured facts from the user's message into memory."""
     append_message("user", user_message)
@@ -406,6 +428,13 @@ def reply_to(user_message: str) -> dict:
     for m in history:
         role = "user" if m["role"] == "user" else "assistant"
         msgs.append({"role": role, "content": m["content"]})
+
+    # Build user content — may include vision blocks if files were attached
+    user_content = _build_chat_user_content(user_message, attachments)
+    if msgs and msgs[-1]["role"] == "user":
+        msgs[-1]["content"] = user_content
+    else:
+        msgs.append({"role": "user", "content": user_content})
 
     settings = Settings()
     client = Anthropic(api_key=settings.anthropic_api_key)
