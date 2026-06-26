@@ -1351,3 +1351,71 @@ def api_download_result(aid: int, _user: str = Depends(verify_admin)):
         ext = path.suffix
         media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if ext == ".docx" else "text/plain"
         return FileResponse(str(path), media_type=media, filename=path.name)
+
+
+# ---------------------------------------------------------------------------
+# AI Team — specialist agent chats
+# ---------------------------------------------------------------------------
+from ..team_agents import (
+    CATEGORY_ORDER, list_agents, get_agent,
+    load_agent_history, send_agent_message, clear_agent_history,
+)
+
+
+@router.get("/api/v1/team-agents")
+def api_team_agents(_user: str = Depends(verify_admin)):
+    agents = list_agents()
+    by_cat: dict[str, list] = {}
+    for a in agents:
+        by_cat.setdefault(a.category, []).append({
+            "slug": a.slug,
+            "name": a.name,
+            "description": a.description,
+            "emoji": a.emoji,
+            "category": a.category,
+        })
+    return {"categories": [
+        {"name": cat, "agents": by_cat[cat]}
+        for cat in CATEGORY_ORDER if cat in by_cat
+    ]}
+
+
+@router.get("/api/v1/team-agents/{slug}/chat/history")
+def api_agent_history(slug: str, _user: str = Depends(verify_admin)):
+    if not get_agent(slug):
+        raise HTTPException(status_code=404, detail="agent not found")
+    return {"messages": load_agent_history(slug)}
+
+
+class AgentMessageBody(BaseModel):
+    message: str
+
+
+@router.post("/api/v1/team-agents/{slug}/chat/send")
+def api_agent_send(slug: str, body: AgentMessageBody, _user: str = Depends(verify_admin)):
+    try:
+        result = send_agent_message(slug, body.message)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/api/v1/team-agents/{slug}/chat/history")
+def api_agent_clear(slug: str, _user: str = Depends(verify_admin)):
+    clear_agent_history(slug)
+    return {"ok": True}
+
+
+@router.get("/api/v1/team-agents/{slug}/documents/{filename}")
+def api_agent_document(slug: str, filename: str, _user: str = Depends(verify_admin)):
+    import os
+    from pathlib import Path
+    doc_dir = Path(os.environ.get("ADAPIX_VAR", ".")) / "agent_documents"
+    # Strip any path traversal attempts
+    safe_name = Path(filename).name
+    path = doc_dir / safe_name
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="Document not found")
+    return FileResponse(str(path), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", filename=safe_name)
