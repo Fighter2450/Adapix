@@ -55,10 +55,16 @@ BRANDING_DIR = Path(__file__).resolve().parents[3] / "branding"
 # ---------------------------------------------------------------------------
 @router.get("/app", response_class=HTMLResponse)
 def app_shell(request: Request):
-    """The PWA shell. Auth happens on the JSON fetches, not on the shell.
-    If the device has not yet been configured (no setup wizard completed),
-    redirect users to /welcome so they don't land in an empty dashboard."""
     from fastapi.responses import RedirectResponse
+    from .auth import COOKIE_NAME, _decode_token
+    from jose import JWTError
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        _decode_token(token)
+    except (JWTError, Exception):
+        return RedirectResponse(url="/login", status_code=302)
     if not CONFIGURED_FLAG.exists():
         return RedirectResponse(url="/welcome", status_code=302)
     return HTMLResponse((TEMPLATE_DIR / "app.html").read_text(encoding="utf-8"))
@@ -79,6 +85,12 @@ PRACTICE_JSON = SETUP_DIR / "practice_profile.json"
 def welcome_page():
     """6-step first-time setup wizard. Runs once per device."""
     return HTMLResponse((TEMPLATE_DIR / "welcome.html").read_text(encoding="utf-8"))
+
+
+@router.get("/calculator", response_class=HTMLResponse)
+def calculator_page():
+    """Revenue gap calculator — public-facing sales tool. No auth required."""
+    return HTMLResponse((TEMPLATE_DIR / "calculator.html").read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -1459,6 +1471,113 @@ async def api_agent_send(
 def api_agent_clear(slug: str, _user: str = Depends(verify_admin)):
     clear_agent_history(slug)
     return {"ok": True}
+
+
+@router.get("/api/v1/patients")
+def api_patients_list(_user: str = Depends(verify_admin)):
+    """Return all patients/contacts for the authenticated org."""
+    with get_session() as s:
+        rows = (s.query(Patient)
+                .filter(Patient.practice_id == _user)
+                .order_by(Patient.created_at.desc())
+                .limit(500)
+                .all())
+        return {
+            "total": len(rows),
+            "patients": [
+                {
+                    "id": p.id,
+                    "first_name": p.first_name,
+                    "last_name": p.last_name,
+                    "phone": p.phone,
+                    "email": p.email,
+                    "preferred_channel": p.preferred_channel,
+                    "status": p.status,
+                    "treatment_type": p.treatment_type,
+                    "treatment_plan_amount": p.treatment_plan_amount,
+                    "consult_date": p.consult_date.isoformat() if p.consult_date else None,
+                }
+                for p in rows
+            ],
+        }
+
+
+@router.get("/api/v1/contacts/template.csv", response_class=PlainTextResponse)
+def api_contacts_template(_user: str = Depends(verify_admin)):
+    """Download a blank CSV template pre-filled with one example row."""
+    headers = "first_name,last_name,phone,email,preferred_channel,consult_date,service_type,deal_value,notes,external_id"
+    example = "Jane,Smith,+14125550100,jane@email.com,sms,2024-01-15,Full Treatment,6000,Interested but needs financing info,EXT-001"
+    return PlainTextResponse(
+        content=f"{headers}\n{example}\n",
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=adapix_contacts_template.csv"},
+    )
+
+
+@router.post("/api/v1/contacts/import")
+async def api_contacts_import(
+    file: UploadFile = File(...),
+    preview: str = Form("false"),
+    _user: str = Depends(verify_admin),
+):
+    """Upload a CSV of contacts. With preview=true returns first 5 rows without inserting."""
+    import csv as csv_mod
+    import io
+    from datetime import datetime as dt
+
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    reader = csv_mod.DictReader(io.StringIO(text))
+    rows = list(reader)
+    columns = list(reader.fieldnames or [])
+
+    if preview.lower() in ("true", "1", "yes"):
+        return {"preview": rows[:5], "total": len(rows), "columns": columns}
+
+    imported = 0
+    skipped = 0
+    errors: list[str] = []
+
+    with get_session() as s:
+        for i, row in enumerate(rows):
+            try:
+                consult_date = None
+                raw_date = row.get("consult_date", "").strip()
+                if raw_date:
+                    consult_date = dt.fromisoformat(raw_date)
+
+                amount = None
+                raw_amount = (row.get("deal_value") or row.get("treatment_plan_amount") or "").strip()
+                if raw_amount:
+                    try:
+                        amount = float(raw_amount)
+                    except ValueError:
+                        pass
+
+                s.add(Patient(
+                    practice_id=_user,
+                    external_id=(row.get("external_id") or "").strip() or None,
+                    first_name=(row.get("first_name") or "").strip(),
+                    last_name=(row.get("last_name") or "").strip(),
+                    phone=(row.get("phone") or "").strip() or None,
+                    email=(row.get("email") or "").strip() or None,
+                    preferred_channel=(row.get("preferred_channel") or "sms").strip(),
+                    consult_date=consult_date,
+                    treatment_type=(row.get("service_type") or row.get("treatment_type") or "").strip() or None,
+                    treatment_plan_amount=amount,
+                    notes=(row.get("notes") or "").strip() or None,
+                    status="consulted_not_started",
+                ))
+                imported += 1
+            except Exception as exc:
+                errors.append(f"Row {i + 2}: {exc}")
+                skipped += 1
+
+    return {"imported": imported, "skipped": skipped, "errors": errors}
 
 
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")

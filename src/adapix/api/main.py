@@ -1,19 +1,4 @@
-"""Adapix admin web interface (FastAPI).
-
-Run with:
-    uvicorn adapix.api.main:app --reload --port 8000
-
-Mounts:
-  GET  /                           - admin dashboard         (auth required)
-  GET  /approvals                  - pending-approval queue  (auth required)
-  POST /approvals/{id}/approve     - approve & send          (auth required)
-  POST /approvals/{id}/reject      - reject                  (auth required)
-  POST /webhooks/twilio/sms        - inbound SMS (Twilio signed, NO admin auth)
-  POST /webhooks/dev/sms           - dev simulator           (NO admin auth)
-
-Auth is HTTP Basic. Admin user/pass come from .env. If both unset,
-auth is disabled (dev convenience).
-"""
+"""Adapix SaaS web application (FastAPI)."""
 from __future__ import annotations
 
 import asyncio
@@ -30,6 +15,7 @@ from ..db import get_session, init_db
 from ..models import Campaign, EscalationEvent, Message, Patient
 from .app_routes import router as app_router, run_all_campaigns
 from .auth import verify_admin
+from .auth_routes import router as auth_router
 from .webhooks import router as webhooks_router
 
 log = logging.getLogger("adapix.scheduler")
@@ -47,13 +33,13 @@ def create_app() -> FastAPI:
     STATIC_DIR.mkdir(exist_ok=True)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-    # Webhooks router has its own (Twilio signature) auth — DO NOT wrap it
-    # with admin Basic auth, or Twilio can't reach it.
+    # Auth routes (signup, login, logout) — public, no auth required
+    app.include_router(auth_router)
+
+    # Webhooks — Twilio signature auth, never wrap with session auth
     app.include_router(webhooks_router)
 
-    # Mobile PWA + JSON API (the surgeon-facing companion app at /app).
-    # Auth is enforced inside app_routes via Depends(verify_admin) on every
-    # JSON endpoint. The HTML shell loads without auth (no PHI in it).
+    # PWA + JSON API
     app.include_router(app_router)
 
     @app.on_event("startup")
@@ -91,47 +77,11 @@ def create_app() -> FastAPI:
             await asyncio.sleep(300)
 
     # ------------------------------------------------------------------
-    # Admin dashboard (auth required)
+    # Root — redirect to app (login redirect handled by app_routes)
     # ------------------------------------------------------------------
     @app.get("/", response_class=HTMLResponse)
-    def index(request: Request, _user: str = Depends(verify_admin)):
-        with get_session() as s:
-            patients = s.query(Patient).order_by(Patient.created_at.desc()).limit(100).all()
-            campaigns = s.query(Campaign).order_by(Campaign.started_at.desc()).limit(100).all()
-            messages = s.query(Message).order_by(Message.created_at.desc()).limit(50).all()
-            escalations = (
-                s.query(EscalationEvent)
-                .filter(EscalationEvent.resolved == False)  # noqa: E712
-                .order_by(EscalationEvent.created_at.desc())
-                .limit(50)
-                .all()
-            )
-            open_count = (
-                s.query(EscalationEvent)
-                .filter(EscalationEvent.resolved == False)  # noqa: E712
-                .count()
-            )
-            pending_count = (
-                s.query(Message).filter(Message.status == "pending_approval").count()
-            )
-            counts = {
-                "patients": s.query(Patient).count(),
-                "campaigns": s.query(Campaign).count(),
-                "messages": s.query(Message).count(),
-                "open_escalations": open_count,
-                "pending_approvals": pending_count,
-            }
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "patients": patients,
-                "campaigns": campaigns,
-                "messages": messages,
-                "escalations": escalations,
-                "counts": counts,
-            },
-        )
+    def index(request: Request):
+        return RedirectResponse(url="/app", status_code=302)
 
     # ------------------------------------------------------------------
     # Approvals (auth required)

@@ -108,12 +108,21 @@ a{color:inherit;text-decoration:none}
 }
 .topnav button:active{transform:scale(.96)}
 .topnav button:hover{background:rgba(255,255,255,.04);color:#fff}
-.topnav button.on{background:rgba(0,184,230,.12);color:var(--cyan-2)}
+.topnav button.on{
+  background:rgba(0,184,230,.12);color:var(--cyan-2);
+  position:relative;
+}
+.topnav button.on::after{
+  content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+  width:20px;height:2px;border-radius:2px 2px 0 0;
+  background:var(--cyan-2);box-shadow:0 0 8px var(--cyan);
+}
 .topnav button .ct{
   display:inline-block;margin-left:5px;font-family:'JetBrains Mono',monospace;
   font-size:10.5px;color:#aef0ff;background:rgba(0,184,230,.15);
-  padding:1px 6px;border-radius:5px;
+  padding:1px 6px;border-radius:5px;transition:color .2s,background .2s;
 }
+.topnav button .ct.hot{color:#F85149;background:rgba(248,81,73,.15)}
 
 .actions{display:flex;gap:8px;align-items:center}
 .icon-btn{
@@ -123,14 +132,22 @@ a{color:inherit;text-decoration:none}
   transition:background .12s,color .12s;
 }
 .icon-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.icon-btn--label{width:auto;padding:0 12px;gap:6px;font-size:13px;font-weight:600}
+.icon-btn--label span{letter-spacing:-.005em}
+.icon-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0}
 .cta{
-  padding:0 14px;height:34px;border-radius:9px;
-  background:linear-gradient(180deg, var(--cyan-2), var(--cyan));color:#04243a;
-  font-weight:700;font-size:12.5px;letter-spacing:.005em;
+  padding:0 16px;height:34px;border-radius:9px;
+  background:linear-gradient(160deg, var(--cyan-2) 0%, var(--cyan) 100%);color:#031428;
+  font-weight:700;font-size:12.5px;letter-spacing:.02em;
   display:flex;align-items:center;gap:6px;
-  box-shadow:0 8px 22px -8px rgba(0,212,255,.6);
+  box-shadow:0 8px 22px -8px rgba(0,212,255,.65),0 0 0 1px rgba(0,212,255,.35) inset;
+  transition:box-shadow .2s,transform .15s;
 }
-.cta:hover{box-shadow:0 12px 28px -6px rgba(0,212,255,.8)}
+.cta:hover{
+  box-shadow:0 14px 30px -6px rgba(0,212,255,.9),0 0 0 1px rgba(174,240,255,.5) inset;
+  transform:translateY(-1px);
+}
+.cta:active{transform:translateY(0)}
 
 /* ================================================================
    3-column body — narrow icon sidebar | main | stats pane
@@ -155,10 +172,13 @@ a{color:inherit;text-decoration:none}
 }
 .leftnav button{
   width:42px;height:42px;border-radius:11px;
-  color:var(--slate-2);font-size:16px;font-weight:600;
+  color:var(--slate-2);
   display:flex;align-items:center;justify-content:center;
   border:1px solid transparent;position:relative;
   transition:background .12s,color .12s,border-color .12s;
+}
+.leftnav button svg,.leftnav .chat-icon svg{
+  width:18px;height:18px;stroke:currentColor;stroke-width:1.75;fill:none;
 }
 .leftnav button:hover{color:#fff;background:rgba(255,255,255,.05)}
 .leftnav button.on{
@@ -173,7 +193,7 @@ a{color:inherit;text-decoration:none}
 .leftnav .spacer{flex:1}
 .leftnav .chat-icon{
   background:linear-gradient(140deg, rgba(0,184,230,.22), rgba(0,184,230,.06));
-  border-color:rgba(0,184,230,.4);color:#fff;font-style:italic;font-weight:900;
+  border-color:rgba(0,184,230,.4);color:#fff;
 }
 
 /* Main column */
@@ -191,7 +211,7 @@ a{color:inherit;text-decoration:none}
 }
 .section-eyebrow::after{
   content:"";flex:1;height:1px;
-  background:linear-gradient(90deg, var(--line), transparent);
+  background:linear-gradient(90deg, rgba(0,184,230,.28) 0%, rgba(0,184,230,.10) 40%, transparent 100%);
 }
 
 /* ================================================================
@@ -218,13 +238,14 @@ a{color:inherit;text-decoration:none}
   border-color:rgba(255,96,88,.4);
 }
 .featured-avatar{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:5px 11px 5px 9px;border-radius:999px;
-  background:rgba(0,212,255,.10);
-  border:1px solid rgba(0,212,255,.25);
-  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 13px 5px 10px;border-radius:999px;
+  background:rgba(0,212,255,.12);
+  border:1px solid rgba(0,212,255,.32);
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;
   text-transform:uppercase;font-weight:700;color:var(--cyan-2);
-  margin-bottom:10px;
+  margin-bottom:14px;
+  box-shadow:0 0 18px -6px rgba(0,212,255,.35);
 }
 .featured-avatar::before{
   content:'';width:7px;height:7px;border-radius:50%;
@@ -243,6 +264,192 @@ a{color:inherit;text-decoration:none}
   70%  {box-shadow:0 0 0 9px rgba(121,224,142,0)}
   100% {box-shadow:0 0 0 0 rgba(121,224,142,0)}
 }
+
+/* ================================================================
+   HOME — mission-control hero card
+   ================================================================ */
+.hero-card{
+  position:relative;overflow:hidden;
+  background:#161B22;
+  border:1px solid rgba(0,212,255,.20);
+  border-radius:14px;padding:24px;margin-bottom:16px;
+  box-shadow:0 0 0 1px rgba(0,212,255,.06),0 6px 24px rgba(0,212,255,.06);
+  transition:border-color .3s,box-shadow .3s;
+}
+.hero-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,#00B8E6 40%,#00D4FF 60%,transparent 100%);
+  opacity:.65;
+}
+.hero-card::after{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(0,212,255,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-card.alert{
+  border-color:rgba(248,81,73,.25);
+  box-shadow:0 0 0 1px rgba(248,81,73,.06),0 6px 24px rgba(248,81,73,.05);
+}
+.hero-card.alert::before{
+  background:linear-gradient(90deg,transparent 0%,#F85149 40%,#ff7875 60%,transparent 100%);
+}
+.hero-card.alert::after{
+  background:radial-gradient(circle,rgba(248,81,73,.05) 0%,transparent 70%);
+}
+.hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  border-radius:100px;padding:5px 12px 5px 8px;
+  font-size:12px;font-weight:600;letter-spacing:.02em;border:1px solid;
+}
+.hero-pill.ok{background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25);color:#3FB950}
+.hero-pill.alert{background:rgba(248,81,73,.12);border-color:rgba(248,81,73,.25);color:#F85149}
+.hero-pill-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 7px}
+.hero-pill.ok .hero-pill-dot{animation:heroPulse 2s ease-out infinite}
+@keyframes heroPulse{
+  0%  {box-shadow:0 0 0 0 rgba(63,185,80,.5)}
+  70% {box-shadow:0 0 0 6px rgba(63,185,80,0)}
+  100%{box-shadow:0 0 0 0 rgba(63,185,80,0)}
+}
+.hero-updated{font-size:11px;color:var(--slate-3)}
+.hero-body{display:flex;align-items:flex-start;gap:18px}
+.hero-icon{
+  width:48px;height:48px;border-radius:12px;flex:0 0 48px;
+  background:rgba(0,212,255,.10);border:1px solid rgba(0,212,255,.15);
+  color:#00D4FF;display:flex;align-items:center;justify-content:center;
+}
+.hero-card.alert .hero-icon{
+  background:rgba(248,81,73,.10);border-color:rgba(248,81,73,.15);color:#F85149;
+}
+.hero-text h2{font-size:18px;font-weight:700;color:#fff;letter-spacing:-.3px;margin:0 0 5px}
+.hero-text p{font-size:13.5px;color:var(--slate-2);line-height:1.55;margin:0}
+.hero-text .hl{color:#00D4FF;font-weight:600}
+/* Escalation callout inside hero */
+.esc-callout{
+  margin-top:16px;padding:13px 15px;
+  background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.20);
+  border-radius:10px;display:flex;align-items:flex-start;gap:12px;
+}
+.esc-callout-body{flex:1}
+.esc-callout-body strong{font-size:13px;color:#fff;display:block;margin-bottom:3px}
+.esc-callout-body span{font-size:12px;color:var(--slate-2);line-height:1.5}
+.esc-cta{
+  margin-top:8px;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;
+  background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.30);
+  color:#F85149;cursor:pointer;text-decoration:none;
+}
+.esc-cta:hover{background:rgba(248,81,73,.22)}
+/* Stat row */
+.home-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.home-stat-card{
+  background:#161B22;border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:16px;
+}
+.home-stat-label{
+  font-size:11px;font-weight:500;color:var(--slate-3);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;
+}
+.home-stat-val{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1;color:#E6EDF3}
+.home-stat-val.cyan{color:#00D4FF}
+.home-stat-val.green{color:#3FB950}
+.home-stat-sub{font-size:11.5px;color:var(--slate-3);margin-top:4px}
+
+/* ================================================================
+   SETTINGS SUB-VIEWS
+   ================================================================ */
+.spage{max-width:620px;margin:0 auto;padding:24px 32px}
+.spage-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;
+  padding:6px 12px 6px 8px;border-radius:8px;font-size:12.5px;font-weight:600;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  color:var(--slate-2);cursor:pointer;font:inherit;transition:all .15s}
+.spage-back:hover{background:rgba(255,255,255,.09);color:#fff}
+.spage-head{margin-bottom:24px}
+.spage-title{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.3px;margin:0 0 5px}
+.spage-sub{font-size:13.5px;color:var(--slate-2);margin:0}
+.scard{background:#161B22;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:22px 24px;margin-bottom:14px}
+.scard-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-3);margin-bottom:16px}
+.sform-row{margin-bottom:16px}
+.sform-row:last-child{margin-bottom:0}
+.sform-label{font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px;display:block}
+.sform-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  border-radius:8px;padding:10px 12px;font-size:13.5px;color:#E6EDF3;outline:none;
+  font:inherit;box-sizing:border-box;transition:border-color .15s}
+.sform-input:focus{border-color:rgba(0,184,230,.45)}
+.sform-input::placeholder{color:var(--slate-3)}
+.sform-select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  border-radius:8px;padding:10px 12px;font-size:13.5px;color:#E6EDF3;outline:none;
+  font:inherit;box-sizing:border-box;cursor:pointer;appearance:none}
+.sform-hint{font-size:11.5px;color:var(--slate-3);margin-top:5px;line-height:1.5}
+.sform-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sform-save{height:38px;padding:0 20px;border-radius:8px;font-size:13px;font-weight:600;
+  background:var(--cyan-2);color:#031428;border:none;cursor:pointer;font:inherit;transition:background .15s}
+.sform-save:hover{background:var(--cyan)}
+/* Toggle */
+.stoggle-row{display:flex;align-items:flex-start;justify-content:space-between;
+  gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.stoggle-row:last-child{border-bottom:none;padding-bottom:0}
+.stoggle-row:first-child{padding-top:0}
+.stoggle-body{flex:1}
+.stoggle-label{font-size:13.5px;font-weight:600;color:#E6EDF3}
+.stoggle-hint{font-size:12px;color:var(--slate-3);margin-top:2px;line-height:1.5}
+.stoggle{position:relative;width:40px;height:22px;flex:0 0 40px;margin-top:1px}
+.stoggle input{opacity:0;width:0;height:0;position:absolute}
+.stoggle-track{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:11px;cursor:pointer;transition:background .2s}
+.stoggle-track::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.stoggle input:checked + .stoggle-track{background:var(--cyan-2)}
+.stoggle input:checked + .stoggle-track::before{transform:translateX(18px)}
+/* Tone selector */
+.stone-opts{display:flex;gap:8px}
+.stone-opt{flex:1;padding:10px 6px;border:1px solid rgba(255,255,255,.10);border-radius:9px;
+  background:rgba(255,255,255,.04);color:var(--slate);font-size:12.5px;font-weight:500;
+  cursor:pointer;text-align:center;font:inherit;transition:all .15s}
+.stone-opt.active{border-color:var(--cyan-2);color:#fff;background:rgba(0,212,255,.08);font-weight:600}
+/* Channel status */
+.sch-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.sch-row:last-child{border-bottom:none;padding-bottom:0}
+.sch-row:first-child{padding-top:0}
+.sch-icon{width:36px;height:36px;border-radius:9px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--slate-2)}
+.sch-body{flex:1}
+.sch-name{font-size:13.5px;font-weight:600;color:#E6EDF3}
+.sch-val{font-size:12px;color:var(--slate-3);margin-top:2px}
+.sch-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px}
+.sch-badge.on{background:rgba(63,185,80,.12);color:#3FB950;border:1px solid rgba(63,185,80,.25)}
+.sch-badge.off{background:rgba(255,255,255,.06);color:var(--slate-3);border:1px solid rgba(255,255,255,.08)}
+.sch-connect{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;
+  background:rgba(0,212,255,.10);border:1px solid rgba(0,212,255,.25);color:var(--cyan-2);cursor:pointer;font:inherit}
+/* Plan badge */
+.splan-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+  border-radius:100px;font-size:12px;font-weight:700;letter-spacing:.04em;
+  background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);color:var(--cyan-2)}
+/* Member row */
+.smember-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.smember-row:last-child{border-bottom:none;padding-bottom:0}
+.smember-row:first-child{padding-top:0}
+.smember-av{width:34px;height:34px;border-radius:50%;background:rgba(0,184,230,.12);
+  border:1px solid rgba(0,184,230,.2);display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:var(--cyan-2);flex:0 0 34px}
+.smember-name{font-size:13.5px;font-weight:600;color:#E6EDF3}
+.smember-role{font-size:12px;color:var(--slate-3)}
+.sdanger-btn{padding:8px 16px;border-radius:8px;font-size:12.5px;font-weight:600;
+  background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);color:#F85149;cursor:pointer;font:inherit}
+.sdanger-btn:hover{background:rgba(248,81,73,.15)}
+/* Specialty picker */
+.stype-wrap{position:relative}
+.stype-dropdown{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);max-height:260px;overflow-y:auto;background:#1c2128;border:1px solid rgba(0,184,230,.22);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.4);padding:4px}
+.stype-row{padding:9px 12px;border-radius:7px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:background .12s}
+.stype-row:hover{background:rgba(0,184,230,.12)}
+.stype-row b{color:#fff;font-weight:600;font-size:14px}
+.stype-cat{color:var(--ink-2);font-size:12px;white-space:nowrap}
+.stype-row.notlisted{border-top:1px solid rgba(255,255,255,.06);margin-top:3px;padding-top:11px}
+.stype-row.notlisted b{color:#00D4FF}
+.stype-selected{margin-top:6px;padding:10px 13px;border-radius:9px;background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.3);display:flex;align-items:center;justify-content:space-between}
+.stype-selected-name{color:#fff;font-weight:600;font-size:14px}
+.stype-selected-cat{color:var(--ink-2);font-size:12px;margin-top:1px}
+.stype-examples-hd{padding:5px 10px 4px;font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:3px}
+.stype-empty{padding:12px;text-align:center;color:var(--ink-2);font-size:13px}
 
 /* ================================================================
    WORKSHOP VIEW — unified tools + plug-ins surface.
@@ -460,19 +667,21 @@ a{color:inherit;text-decoration:none}
   background:
     radial-gradient(ellipse at 100% 0%, rgba(0,212,255,.08) 0%, transparent 60%),
     linear-gradient(160deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 60%);
-  border:1px solid rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.07);
+  border-top-color:rgba(0,212,255,.22);
   border-radius:18px;
   padding:20px 20px 18px;
   box-shadow:
-    0 1px 0 rgba(255,255,255,.03) inset,
+    0 1px 0 rgba(0,212,255,.12) inset,
     0 14px 32px -22px rgba(0,40,80,.7);
   animation:rpFadeIn .55s cubic-bezier(.16,1,.3,1) both;
   transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s cubic-bezier(.16,1,.3,1), border-color .25s;
 }
 .rp-card:hover{
-  border-color:rgba(0,212,255,.18);
+  border-color:rgba(0,212,255,.25);
+  border-top-color:rgba(0,212,255,.45);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
+    0 1px 0 rgba(0,212,255,.18) inset,
     0 22px 44px -22px rgba(0,80,140,.7);
 }
 @keyframes rpFadeIn{
@@ -501,13 +710,13 @@ a{color:inherit;text-decoration:none}
 }
 .stat-tile:active{transform:translateY(0) scale(.98)}
 .stat-icon{
-  position:absolute;top:9px;right:9px;
-  width:22px;height:22px;border-radius:7px;
+  position:absolute;top:10px;right:10px;
+  width:24px;height:24px;border-radius:7px;
   display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;
   background:rgba(0,212,255,.10);color:var(--cyan-2);
   border:1px solid rgba(0,212,255,.22);
 }
+.stat-icon svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none}
 .stat-num{
   font-size:26px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.05;
 }
@@ -616,14 +825,14 @@ a{color:inherit;text-decoration:none}
   transition:background .12s;
 }
 .activity-row:hover{background:rgba(255,255,255,.03)}
-.activity-row + .activity-row{border-top:1px solid rgba(255,255,255,.04)}
+.activity-row + .activity-row{border-top:1px solid rgba(255,255,255,.07)}
 .activity-icon{
-  flex:0 0 28px;height:28px;border-radius:8px;
+  flex:0 0 30px;height:30px;border-radius:9px;
   display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:13px;
   background:rgba(0,184,230,.10);color:var(--cyan-2);
   border:1px solid rgba(0,184,230,.22);
 }
+.activity-icon svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none}
 .activity-sent      .activity-icon{background:rgba(121,224,142,.10);color:var(--good);border-color:rgba(121,224,142,.25)}
 .activity-reply     .activity-icon{background:rgba(0,212,255,.10);color:var(--cyan-2);border-color:rgba(0,212,255,.25)}
 .activity-draft     .activity-icon{background:rgba(244,204,119,.10);color:var(--warn);border-color:rgba(244,204,119,.25)}
@@ -876,8 +1085,8 @@ a{color:inherit;text-decoration:none}
 }
 .featured.hot .eyebrow{color:var(--hot)}
 .featured h1{
-  font-size:23px;font-weight:700;color:#fff;letter-spacing:-.015em;
-  line-height:1.22;margin-top:4px;
+  font-size:25px;font-weight:800;color:#fff;letter-spacing:-.022em;
+  line-height:1.2;margin-top:6px;
 }
 .featured p{font-size:14px;color:var(--slate);line-height:1.55;margin-top:4px;max-width:560px}
 .featured-actions{display:flex;gap:9px;margin-top:14px}
@@ -992,51 +1201,150 @@ a{color:inherit;text-decoration:none}
 .device-row .v.ok{color:var(--good)}
 
 /* ================================================================
-   AUTOMATIONS — section 04 in Workshop
+   AUTOMATIONS — full-page view
    ================================================================ */
-.auto-list{display:flex;flex-direction:column;gap:12px}
+.autos-page{padding:28px 32px;max-width:860px;margin:0 auto}
+.autos-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
+.autos-eyebrow{font-size:11px;letter-spacing:.12em;color:var(--slate-2);text-transform:uppercase;font-weight:500;margin-bottom:6px}
+.autos-headline{font-size:24px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:5px}
+.autos-tagline{font-size:14px;color:var(--slate-2);line-height:1.5}
+.autos-new-btn{
+  height:38px;padding:0 16px;border-radius:8px;font-size:13px;font-weight:500;
+  background:var(--cyan-2);color:#031428;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;transition:all .15s;font:inherit;flex:0 0 auto;
+}
+.autos-new-btn:hover{filter:brightness(1.1);box-shadow:0 6px 16px -6px rgba(0,212,255,.5)}
+/* Filter tabs */
+.autos-tabs{display:flex;gap:2px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:24px}
+.autos-tab{
+  padding:9px 16px;font-size:13px;color:var(--slate-2);border:none;background:none;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;font:inherit;
+}
+.autos-tab:hover{color:#fff}
+.autos-tab.active{color:var(--cyan-2);border-bottom-color:var(--cyan-2);font-weight:500}
+.autos-tab-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);border-radius:10px;font-size:11px;
+  padding:0 7px;min-width:20px;height:18px;margin-left:5px;font-weight:400;
+}
+.autos-tab.active .autos-tab-count{background:rgba(0,212,255,.12);color:var(--cyan-2)}
+/* Card list */
+.autos-list{display:flex;flex-direction:column;gap:14px}
+/* Automation card zones */
 .auto-card{
-  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
-  border-radius:14px;padding:16px 18px;
-  display:grid;grid-template-columns:1fr auto;gap:8px 16px;
-  transition:border-color .2s;
+  background:#161B22;border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;overflow:hidden;transition:border-color .2s;
 }
-.auto-card:hover{border-color:rgba(0,212,255,.2)}
-.auto-card-name{font-weight:600;color:#fff;font-size:14px}
-.auto-card-url{font-size:12px;color:var(--slate-3);margin-top:2px;word-break:break-all}
-.auto-card-task{font-size:13px;color:var(--slate);margin-top:6px;line-height:1.5;grid-column:1/-1}
+.auto-card:hover{border-color:rgba(255,255,255,.16)}
+.auto-card.paused{opacity:.75}
+.auto-card.error-state{border-color:rgba(248,81,73,.35)}
+.auto-card-top{
+  display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0;
+}
+.auto-name-row{display:flex;align-items:center;gap:10px}
+.auto-status-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.auto-status-dot.active{background:#2EA043;animation:dotPulse 2s infinite}
+.auto-status-dot.paused{background:rgba(255,255,255,.25)}
+@keyframes dotPulse{
+  0%{box-shadow:0 0 0 0 rgba(46,160,67,.4)}
+  70%{box-shadow:0 0 0 5px rgba(46,160,67,0)}
+  100%{box-shadow:0 0 0 0 rgba(46,160,67,0)}
+}
+.auto-name{font-size:15px;font-weight:600;color:#fff}
+.auto-fmt-pill{
+  font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.04em;
+  border:1px solid rgba(0,212,255,.25);color:var(--cyan-2);background:rgba(0,212,255,.08);
+}
+.auto-fmt-pill.paused{border-color:rgba(255,255,255,.12);color:var(--slate-2);background:rgba(255,255,255,.05)}
+/* Meta grid */
 .auto-card-meta{
-  display:flex;align-items:center;gap:10px;margin-top:10px;grid-column:1/-1;
-  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--slate-3);
+  display:grid;grid-template-columns:repeat(3,1fr);
+  padding:14px 20px 0;gap:0 16px;
 }
-.auto-pill{
-  padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:600;letter-spacing:.05em;
-  border:1px solid;
+.meta-label{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--slate-2);font-weight:600;margin-bottom:3px;
 }
-.auto-pill.ok{background:rgba(121,224,142,.10);color:var(--good);border-color:rgba(121,224,142,.25)}
-.auto-pill.error{background:rgba(255,140,134,.10);color:var(--hot);border-color:rgba(255,140,134,.25)}
-.auto-pill.active{background:rgba(0,212,255,.08);color:var(--cyan-2);border-color:rgba(0,212,255,.25)}
-.auto-pill.paused{background:rgba(255,255,255,.05);color:var(--slate-2);border-color:rgba(255,255,255,.10)}
-.auto-card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:1/-1;margin-top:4px}
-.auto-btn{
-  padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;
-  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;
-  transition:all .15s;
+.meta-schedule{font-size:13px;color:#fff;font-weight:500}
+.meta-cron{font-size:11px;color:var(--slate-3);font-family:monospace;margin-top:2px}
+.meta-task{
+  font-size:13px;color:var(--slate);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;line-height:1.45;
 }
-.auto-btn:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22)}
-.auto-btn.primary{background:linear-gradient(140deg,var(--cyan-2),var(--cyan));color:#031428;border:none}
-.auto-btn.primary:hover{box-shadow:0 8px 20px -8px rgba(0,212,255,.6);transform:translateY(-1px)}
-.auto-btn.danger{color:var(--hot);border-color:rgba(255,140,134,.2)}
-.auto-btn.danger:hover{background:rgba(255,140,134,.08);border-color:rgba(255,140,134,.4)}
-.auto-empty{
-  text-align:center;padding:40px 24px;color:var(--slate-3);
-  border:1px dashed rgba(255,255,255,.08);border-radius:14px;
+.meta-task.expanded{white-space:normal}
+.meta-value{font-size:13px;color:var(--slate)}
+/* Run info row */
+.auto-card-run{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 20px 0;font-size:12px;color:var(--slate-2);min-height:30px;
 }
-.auto-empty-glyph{font-size:32px;margin-bottom:12px}
-.auto-empty-title{font-size:15px;color:var(--slate);font-weight:600;margin-bottom:6px}
-.auto-empty-sub{font-size:13px;line-height:1.6}
-
-/* New automation modal */
+.run-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;padding:2px 8px;border-radius:6px;font-weight:500;
+}
+.run-badge.ok{background:rgba(46,160,67,.12);color:#3FB950}
+.run-badge.fail{background:rgba(248,81,73,.12);color:#F85149}
+.run-badge.running{background:rgba(0,212,255,.08);color:var(--cyan-2)}
+.run-ts{font-size:11px;color:var(--slate-3)}
+/* Error banner */
+.auto-error-banner{
+  margin:8px 20px 0;padding:8px 12px;border-radius:8px;
+  background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);
+  font-size:12px;color:#F85149;line-height:1.5;
+}
+/* Card footer */
+.auto-card-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 20px 14px;border-top:1px solid rgba(255,255,255,.07);margin-top:12px;
+}
+.auto-actions-left{display:flex;align-items:center;gap:8px}
+.auto-actions-right{display:flex;align-items:center;gap:6px}
+.auto-action-divider{width:1px;height:18px;background:rgba(255,255,255,.08);margin:0 2px}
+/* Icon action buttons */
+.auto-icon-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;flex:0 0 32px;background:transparent;
+}
+.auto-icon-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.auto-icon-btn.run{color:var(--cyan-2);background:rgba(0,212,255,.07);border-color:rgba(0,212,255,.25)}
+.auto-icon-btn.run:hover:not(:disabled){background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.4)}
+.auto-icon-btn.dl{color:#3FB950;background:rgba(46,160,67,.07);border-color:rgba(46,160,67,.25)}
+.auto-icon-btn.dl:hover{background:rgba(46,160,67,.14);border-color:rgba(46,160,67,.4)}
+.auto-icon-btn.edit{color:var(--slate-2);border-color:rgba(255,255,255,.10)}
+.auto-icon-btn.edit:hover{color:#fff;border-color:rgba(255,255,255,.25)}
+.auto-icon-btn.del{color:#F85149;border-color:rgba(248,81,73,.15)}
+.auto-icon-btn.del:hover{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.35)}
+/* Pause/resume ghost */
+.auto-pause-ghost{
+  height:32px;padding:0 12px;border-radius:8px;font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;font:inherit;
+  color:var(--slate-2);background:transparent;border:1px solid rgba(255,255,255,.10);
+}
+.auto-pause-ghost:hover{color:#fff;border-color:rgba(255,255,255,.25)}
+.auto-pause-ghost.resume{color:#3FB950;border-color:rgba(46,160,67,.3)}
+.auto-pause-ghost.resume:hover{background:rgba(46,160,67,.07)}
+/* Inline delete confirm */
+.auto-del-confirm{font-size:12px;color:var(--slate-2);display:flex;align-items:center;gap:8px;width:100%}
+.auto-del-confirm button{
+  padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;font:inherit;
+  background:transparent;border:1px solid;transition:all .15s;
+}
+.auto-del-confirm .confirm-yes{color:#F85149;border-color:rgba(248,81,73,.3)}
+.auto-del-confirm .confirm-yes:hover{background:rgba(248,81,73,.1)}
+.auto-del-confirm .confirm-no{color:var(--slate-2);border-color:rgba(255,255,255,.1)}
+.auto-del-confirm .confirm-no:hover{color:#fff}
+/* Empty state */
+.autos-empty{
+  text-align:center;padding:80px 40px;
+  border:1px dashed rgba(255,255,255,.10);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;
+}
+.autos-empty-icon{font-size:36px;color:rgba(255,255,255,.2);margin-bottom:20px;line-height:1}
+.autos-empty-title{font-size:18px;font-weight:600;color:#fff;margin-bottom:8px}
+.autos-empty-body{font-size:14px;color:var(--slate-2);max-width:320px;line-height:1.6;margin-bottom:28px}
+/* Automation modal */
 .auto-modal-backdrop{
   position:fixed;inset:0;background:rgba(4,11,26,.85);
   backdrop-filter:blur(8px);z-index:200;
@@ -1065,7 +1373,23 @@ a{color:inherit;text-decoration:none}
 .auto-field textarea{min-height:80px;resize:vertical;line-height:1.55}
 .auto-field select option{background:#0d1f3c}
 .auto-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
-.cron-hint{font-size:11px;color:var(--slate-3);margin-top:5px;line-height:1.5}
+/* Schedule preset grid */
+.am-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.am-preset{
+  padding:10px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);color:var(--slate);font-size:13px;
+  cursor:pointer;text-align:left;font:inherit;transition:all .15s;
+}
+.am-preset:hover{border-color:rgba(0,212,255,.3);color:#fff;background:rgba(0,212,255,.05)}
+.am-preset.selected{border-color:var(--cyan-2);color:#fff;background:rgba(0,212,255,.08);font-weight:500}
+.am-preset.full-width{grid-column:1/-1}
+.am-time-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.am-time-label{font-size:12px;color:var(--slate-2);white-space:nowrap}
+.am-custom-cron{display:none;padding-top:10px}
+.am-custom-cron.visible{display:block}
+.am-cron-back{background:none;border:none;color:var(--cyan-2);font-size:12px;cursor:pointer;
+  padding:0 0 8px;text-decoration:underline;font:inherit}
+.am-preview{font-size:11px;color:var(--slate-3);margin-top:6px;line-height:1.5}
 
 /* ================================================================
    Mobile bottom nav — only shown when sidebars are hidden
@@ -1080,15 +1404,17 @@ a{color:inherit;text-decoration:none}
 @media (min-width:981px){.bn{display:none}}
 .bn button{
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
   color:var(--slate-2);
 }
 .bn button .glyph{
-  width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.06);
-  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+  width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:center;
 }
+.bn button .glyph svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.75;fill:none}
 .bn button.on{color:var(--cyan-2)}
 .bn button.on .glyph{background:rgba(0,184,230,.22);color:var(--cyan-2)}
+.bn button.on .glyph svg{stroke-width:2.25}
 
 /* Loading + toast */
 .loader{padding:50px 20px;text-align:center;color:var(--slate);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.04em}
@@ -1124,13 +1450,28 @@ a{color:inherit;text-decoration:none}
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .team-card{
   background:rgba(255,255,255,.03);border:1px solid var(--line);
-  border-radius:13px;padding:14px 15px;cursor:pointer;
-  transition:background .15s,border-color .15s,transform .1s;
-  display:flex;flex-direction:column;gap:5px;
+  border-radius:14px;padding:16px 16px 14px;cursor:pointer;
+  transition:background .2s cubic-bezier(.16,1,.3,1),border-color .2s,
+             transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s cubic-bezier(.16,1,.3,1);
+  display:flex;flex-direction:column;gap:6px;
 }
-.team-card:hover{background:rgba(0,184,230,.07);border-color:rgba(0,184,230,.3);transform:translateY(-1px)}
-.team-card-icon{width:28px;height:28px;color:var(--cyan);opacity:.85;flex-shrink:0;margin-bottom:4px}
-.team-card-icon svg{width:100%;height:100%}
+.team-card:hover{
+  background:rgba(0,184,230,.09);border-color:rgba(0,184,230,.38);
+  transform:translateY(-2px);box-shadow:0 10px 24px -12px rgba(0,184,230,.35);
+}
+.team-card:active{transform:translateY(0) scale(.98);transition-duration:.08s}
+.team-card-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.20);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--cyan);flex-shrink:0;margin-bottom:6px;
+  transition:background .2s,border-color .2s,box-shadow .2s;
+}
+.team-card-icon svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.5;fill:none}
+.team-card:hover .team-card-icon{
+  background:rgba(0,184,230,.18);border-color:rgba(0,184,230,.38);
+  box-shadow:0 0 14px -4px rgba(0,184,230,.5);
+}
 .team-card-name{font-size:13px;font-weight:700;color:#fff}
 .team-card-desc{font-size:11.5px;color:var(--slate);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
@@ -1253,6 +1594,21 @@ a{color:inherit;text-decoration:none}
 .voice-stop-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,68,68,.35);background:rgba(255,68,68,.08);color:#ff4444;font-size:12.5px;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s}
 .voice-stop-btn:hover{background:rgba(255,68,68,.16);border-color:rgba(255,68,68,.55)}
 .voice-stop-btn svg{width:12px;height:12px;fill:currentColor;stroke:none}
+
+/* Utility */
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.row-card{cursor:pointer}
+.row-card:active{transform:scale(.99)}
+
+/* Contact import */
+.ci-dropzone{border:1.5px dashed rgba(0,212,255,.25);border-radius:12px;padding:40px 24px;text-align:center;transition:border-color .15s,background .15s;cursor:pointer}
+.ci-dropzone.drag-over{border-color:var(--cyan-2);background:rgba(0,212,255,.06)}
+.ci-table{width:100%;border-collapse:collapse;font-size:12px}
+.ci-table th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+.ci-table td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--ink-2);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.ci-table tr:last-child td{border-bottom:none}
+.ci-table tr:hover td{background:rgba(255,255,255,.02)}
+.ci-success-icon{font-size:56px;margin-bottom:16px;line-height:1}
 </style>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
@@ -1276,14 +1632,14 @@ a{color:inherit;text-decoration:none}
       <button class="on" data-view="home">Home</button>
       <button data-view="queue">Queue <span class="ct" id="ct-queue">0</span></button>
       <button data-view="patients">Customers</button>
-      <button data-view="concierge">Studio</button>
+      <button data-view="concierge">Tasks</button>
       <button data-view="team">AI Team</button>
-      <button data-view="workshop">Workshop</button>
+      <button data-view="workshop">Automations</button>
       <button data-view="settings">Settings</button>
     </div>
     <div class="actions">
-      <button class="icon-btn" id="run-campaigns" title="Run campaigns now" style="font-size:13px;padding:0 10px;width:auto;gap:6px;display:flex;align-items:center">▶ Run</button>
-      <button class="icon-btn" id="reload" title="Reload">⟲</button>
+      <button class="icon-btn icon-btn--label" id="run-campaigns" title="Run campaigns now"><i data-lucide="play"></i><span>Run</span></button>
+      <button class="icon-btn" id="reload" title="Reload"><i data-lucide="refresh-cw"></i></button>
       <a class="cta" href="/chat">Chat with Adapix →</a>
     </div>
   </div>
@@ -1292,15 +1648,15 @@ a{color:inherit;text-decoration:none}
   <div class="body">
     <!-- Left icon sidebar -->
     <nav class="leftnav" id="leftnav">
-      <button class="on" data-view="home" title="Home">⌂</button>
-      <button data-view="queue" title="Queue">≡</button>
-      <button data-view="patients" title="Customers">▤</button>
-      <button data-view="concierge" title="Studio">✦</button>
-      <button data-view="team" title="AI Team">✪</button>
-      <button data-view="workshop" title="Workshop">◇</button>
-      <button data-view="settings" title="Settings">⚙</button>
+      <button class="on" data-view="home" title="Home"><i data-lucide="home"></i></button>
+      <button data-view="queue" title="Queue"><i data-lucide="inbox"></i></button>
+      <button data-view="patients" title="Customers"><i data-lucide="users"></i></button>
+      <button data-view="concierge" title="Tasks"><i data-lucide="sparkles"></i></button>
+      <button data-view="team" title="AI Team"><i data-lucide="cpu"></i></button>
+      <button data-view="workshop" title="Automations"><i data-lucide="plug"></i></button>
+      <button data-view="settings" title="Settings"><i data-lucide="settings"></i></button>
       <div class="spacer"></div>
-      <a href="/chat" class="chat-icon" title="Chat with Adapix" style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px">A</a>
+      <a href="/chat" class="chat-icon" title="Chat with Adapix" style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;"><i data-lucide="message-circle"></i></a>
     </nav>
 
     <!-- Main column -->
@@ -1317,10 +1673,12 @@ a{color:inherit;text-decoration:none}
 
 <!-- Mobile bottom nav (only shown when sidebars hidden) -->
 <nav class="bn" id="bn">
-  <button class="on" data-view="home"><div class="glyph">⌂</div>Home</button>
-  <button data-view="queue"><div class="glyph">≡</div>Queue</button>
-  <button data-view="patients"><div class="glyph">▤</div>Customers</button>
-  <button data-view="settings"><div class="glyph">⚙</div>Settings</button>
+  <button class="on" data-view="home"><div class="glyph"><i data-lucide="home"></i></div>Home</button>
+  <button data-view="queue"><div class="glyph"><i data-lucide="inbox"></i></div>Queue</button>
+  <button data-view="patients"><div class="glyph"><i data-lucide="users"></i></div>Contacts</button>
+  <button data-view="concierge"><div class="glyph"><i data-lucide="sparkles"></i></div>Tasks</button>
+  <button data-view="workshop"><div class="glyph"><i data-lucide="plug"></i></div>Connect</button>
+  <button data-view="settings"><div class="glyph"><i data-lucide="settings"></i></div>Settings</button>
 </nav>
 
 <div class="toast" id="toast"></div>
@@ -1334,7 +1692,7 @@ a{color:inherit;text-decoration:none}
   const rightpane = $('rightpane');
 
   const state = {
-    view: 'home', feed: null, dashboard: null, patients: null,
+    view: 'home', feed: null, dashboard: null, patients: null, settingsPage: null, contactsPage: null,
   };
 
   function escapeHTML(s){
@@ -1393,90 +1751,111 @@ a{color:inherit;text-decoration:none}
     const escs = feed.escalations || [];
     const apprs = feed.approvals || [];
     const d = feed.digest || {};
+    const watched = (state.patients || []).length;
+    const hasEsc = escs.length > 0;
+    const sentToday = d.sent_today || 0;
+    const booked = d.booked_recently || 0;
 
-    const hasEmergency = escs.some(e => e.category === 'emergency');
-    let headline, detail, actions;
-    if (escs.length || apprs.length){
-      const parts = [];
-      if (escs.length)  parts.push(`${escs.length} ${escs.length===1?'escalation':'escalations'}`);
-      if (apprs.length) parts.push(`${apprs.length} ${apprs.length===1?'draft':'drafts'} to approve`);
-      headline = parts.join(' · ') + ' need' + (parts.length===1?'s':'') + ' you.';
-      if (hasEmergency){
-        const e = escs.find(x=>x.category==='emergency');
-        detail = `${escapeHTML(e.patient)} flagged an emergency. Open the thread to read the full message.`;
-      } else if (escs.length){
-        detail = `Adapix has flagged ${escs.length} customer ${escs.length===1?'message':'messages'} that need a human response.`;
-      } else {
-        detail = `Adapix composed ${apprs.length} outbound ${apprs.length===1?'message':'messages'} waiting for your sign-off before they go to the customer.`;
-      }
-      actions = '<button class="btn btn-primary" data-view="queue" onclick="document.querySelector(`#topnav button[data-view=queue]`).click()">Open queue →</button>';
-    } else {
-      const contactCount = (state.patients || []).length;
-      headline = contactCount
-        ? `Watching ${contactCount} conversation${contactCount===1?'':'s'} — nothing needs you right now.`
-        : 'Adapix is online and listening.';
-      detail = contactCount
-        ? 'Follow-ups, deal acceptance, and rebooking are all running in the background. I’ll surface anything that needs a human here.'
-        : 'Connect your business email or import a contact list to get started. The more I know about how you work, the better the follow-ups sound.';
-      actions = '<a class="btn btn-primary" href="/chat">Chat with Adapix →</a> '
-              + '<button class="btn btn-ghost" data-view="patients" onclick="goView(\'patients\')">View contacts</button>';
+    // Queue nav badge — red for escalations, cyan for drafts only
+    const badge = document.getElementById('ct-queue');
+    if (badge) {
+      const total = escs.length + apprs.length;
+      badge.textContent = total;
+      badge.classList.toggle('hot', hasEsc);
+      badge.style.display = total ? '' : 'none';
     }
 
-    let rowsHtml = '';
-    const items = [
-      ...escs.slice(0,3).map(e => ({
-        hot: e.category === 'emergency',
-        title: escapeHTML(e.patient),
-        sub: escapeHTML((e.category||'').replace(/_/g,' ') + ' · ' + (e.reasoning || e.suggested_action || '')),
-        pill: e.category === 'emergency' ? 'emergency' : (e.category||'escalation').replace(/_/g,' '),
-        pillHot: true,
-      })),
-      ...apprs.slice(0,3).map(m => ({
-        hot:false,
-        title: escapeHTML(m.patient),
-        sub: escapeHTML(((m.body||'').slice(0,140))),
-        pill: 'draft',
-        pillHot: false,
-      })),
-    ];
+    const pillState = hasEsc ? 'alert' : 'ok';
+    const pillText  = hasEsc
+      ? `${escs.length} item${escs.length > 1 ? 's' : ''} flagged`
+      : sentToday > 0 ? `${sentToday} sent today` : 'Running · All systems normal';
 
-    if (items.length){
-      rowsHtml = '<div class="rows">' + items.map(it=>`
-        <div class="row-card ${it.hot?'hot':''}">
-          <div class="text"><b>${it.title}</b><span>${it.sub}</span></div>
-          <span class="pill ${it.pillHot?'hot':''}">${escapeHTML(it.pill)}</span>
+    const watchedTxt = watched
+      ? `<span class="hl">${watched} patient${watched !== 1 ? 's' : ''}</span>`
+      : `<span class="hl">your patients</span>`;
+
+    let heroHeadline, heroDesc;
+    if (hasEsc) {
+      heroHeadline = `Adapix flagged ${escs.length} message${escs.length > 1 ? 's' : ''}`;
+      heroDesc = `Still watching ${watchedTxt}. ${escs.length > 1 ? 'These conversations require' : 'This conversation requires'} a human response — Adapix can\'t resolve ${escs.length > 1 ? 'these' : 'this'} automatically.`;
+    } else if (sentToday > 0 && booked > 0) {
+      heroHeadline = `Sent ${sentToday} message${sentToday !== 1 ? 's' : ''} · booked ${booked} appointment${booked !== 1 ? 's' : ''}`;
+      heroDesc = `Watching ${watchedTxt} — following up on schedule and converting conversations into booked appointments. Nothing needs your attention right now.`;
+    } else if (sentToday > 0) {
+      heroHeadline = `Adapix sent ${sentToday} follow-up${sentToday !== 1 ? 's' : ''} today`;
+      heroDesc = `Watching ${watchedTxt} and staying in contact on your behalf. Adapix will surface anything that needs a human response.`;
+    } else if (booked > 0) {
+      heroHeadline = `Adapix booked ${booked} appointment${booked !== 1 ? 's' : ''} this week`;
+      heroDesc = `Watching ${watchedTxt} — handling reminders and converting replies into bookings. Nothing needs your attention right now.`;
+    } else if (watched > 0) {
+      heroHeadline = `Adapix is watching ${watched} patient${watched !== 1 ? 's' : ''}`;
+      heroDesc = `Monitoring conversations and queuing follow-ups. Adapix will surface anything that needs a human response.`;
+    } else {
+      heroHeadline = 'Adapix is ready and listening';
+      heroDesc = 'Add contacts and Adapix will handle follow-ups, rebooking, and reminders automatically.';
+    }
+
+    const escNames = escs.slice(0, 2).map(e => escapeHTML(e.patient || '')).filter(Boolean).join(', ');
+    const escCallout = hasEsc ? `
+      <div class="esc-callout">
+        <div style="flex:0 0 15px;margin-top:1px;color:#F85149"><i data-lucide="alert-triangle" style="width:15px;height:15px"></i></div>
+        <div class="esc-callout-body">
+          <strong>${escs.length} patient${escs.length > 1 ? 's' : ''} need${escs.length === 1 ? 's' : ''} a human response</strong>
+          <span>${escNames || 'Open the queue to review'}</span>
+          <br><button class="esc-cta" onclick="document.querySelector('#topnav button[data-view=queue]').click()"><i data-lucide="arrow-right" style="width:11px;height:11px"></i> Go to Queue</button>
         </div>
-      `).join('') + '</div>';
-    } else {
-      rowsHtml = `
-        <div class="watching-grid">
-          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Follow-ups</div><div class="watching-sub">checking who's due</div></div>
-          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Deals</div><div class="watching-sub">nudging open proposals</div></div>
-          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Rebooking</div><div class="watching-sub">recovering missed appts</div></div>
-          <div class="watching-cell"><div class="watching-dot"></div><div class="watching-label">Inbox</div><div class="watching-sub">monitoring replies</div></div>
-        </div>`;
-    }
+      </div>` : '';
 
     main.innerHTML = `
       <div class="section-eyebrow">Today · ${new Date().toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'})}</div>
-      <div class="featured ${hasEmergency?'hot':''}">
-        <div class="featured-content">
-          <div class="featured-avatar">${hasEmergency?'attention':'live'}</div>
-          <h1>${escapeHTML(headline)}</h1>
-          <p>${detail}</p>
-          <div class="featured-actions">${actions}</div>
+
+      <div class="hero-card ${hasEsc ? 'alert' : ''}">
+        <div class="hero-top">
+          <div class="hero-pill ${pillState}">
+            <span class="hero-pill-dot"></span>
+            ${pillText}
+          </div>
+          <span class="hero-updated">Updated just now</span>
+        </div>
+        <div class="hero-body">
+          <div class="hero-icon">
+            <i data-lucide="${hasEsc ? 'alert-triangle' : 'bot'}" style="width:22px;height:22px"></i>
+          </div>
+          <div class="hero-text">
+            <h2>${escapeHTML(heroHeadline)}</h2>
+            <p>${heroDesc}</p>
+          </div>
+        </div>
+        ${escCallout}
+      </div>
+
+      <div class="home-stat-row">
+        <div class="home-stat-card">
+          <div class="home-stat-label">Sent today</div>
+          <div class="home-stat-val cyan">${sentToday}</div>
+          <div class="home-stat-sub">Messages delivered</div>
+        </div>
+        <div class="home-stat-card">
+          <div class="home-stat-label">Contacts watched</div>
+          <div class="home-stat-val">${watched}</div>
+          <div class="home-stat-sub">Active conversations</div>
+        </div>
+        <div class="home-stat-card">
+          <div class="home-stat-label">Booked recently</div>
+          <div class="home-stat-val green">${booked}</div>
+          <div class="home-stat-sub">Appointments attributed</div>
         </div>
       </div>
-      <div class="section-eyebrow">Follow-up queue</div>
-      ${rowsHtml}
-      <div class="section-eyebrow" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between">
-        <span>Today's activity</span>
+
+      <div class="section-eyebrow" style="margin-top:4px;display:flex;align-items:center;justify-content:space-between">
+        <span>Recent activity</span>
         <span class="activity-meta" id="activityMeta">&nbsp;</span>
       </div>
       <div class="activity-feed" id="activityFeed">
         <div class="activity-empty">Adapix is online. Activity will appear here as messages are sent.</div>
       </div>
     `;
+    renderLucide(main);
     refreshActivity();
   }
 
@@ -1495,6 +1874,7 @@ a{color:inherit;text-decoration:none}
         metaEl.textContent = 'standing by';
       } else {
         feedEl.innerHTML = events.map(renderActivityRow).join('');
+        renderLucide(feedEl);
         const todayCount = j.today_count || 0;
         const lastTs = j.last_action_ts ? new Date(j.last_action_ts) : null;
         const lastAgo = lastTs ? timeAgo(lastTs) : '—';
@@ -1508,8 +1888,16 @@ a{color:inherit;text-decoration:none}
   function renderActivityRow(ev){
     const ts = ev.ts ? new Date(ev.ts) : null;
     const ago = ts ? timeAgo(ts) : '';
-    const iconMap = { sent:'↗', draft:'✎', reply:'↘', rejected:'⤬', escalation:'!', emergency:'⚠', outbound:'·' };
-    const icon = iconMap[ev.kind] || '·';
+    const iconMap = {
+      sent:       '<i data-lucide="send"></i>',
+      draft:      '<i data-lucide="file-edit"></i>',
+      reply:      '<i data-lucide="reply"></i>',
+      rejected:   '<i data-lucide="x-circle"></i>',
+      escalation: '<i data-lucide="alert-triangle"></i>',
+      emergency:  '<i data-lucide="alert-octagon"></i>',
+      outbound:   '<i data-lucide="arrow-up-right"></i>',
+    };
+    const icon = iconMap[ev.kind] || '<i data-lucide="dot"></i>';
     return `
       <div class="activity-row activity-${ev.kind}">
         <div class="activity-icon">${icon}</div>
@@ -1534,40 +1922,218 @@ a{color:inherit;text-decoration:none}
   // -------- QUEUE view --------
   function renderQueue(){
     const feed = state.feed || {};
-    const items = [].concat(
-      (feed.escalations||[]).map(e => ({hot: e.category==='emergency', title:e.patient, sub:(e.reasoning||e.suggested_action||''), pill:e.category||'escalation', pillHot:true})),
-      (feed.approvals||[]).map(m => ({hot:false, title:m.patient, sub:(m.body||'').slice(0,200), pill:'draft', pillHot:false})),
-    );
-    let html = '<div class="section-eyebrow">Queue · ' + items.length + ' item' + (items.length===1?'':'s') + '</div>';
-    if (!items.length){
-      html += '<div class="empty-row">Inbox zero. Adapix has nothing waiting for you.</div>';
+    const escs  = feed.escalations || [];
+    const apprs = feed.approvals   || [];
+    const total = escs.length + apprs.length;
+
+    let html = '<div class="section-eyebrow">Queue · ' + total + ' item' + (total===1?'':'s') + '</div>';
+
+    if (!total){
+      html += `
+        <div style="text-align:center;padding:48px 20px">
+          <div style="font-size:32px;margin-bottom:12px;color:var(--good)">✓</div>
+          <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">You're all caught up.</div>
+          <div style="font-size:13.5px;color:var(--slate);max-width:340px;margin:0 auto 20px;line-height:1.6">
+            No escalations or drafts waiting for your review right now.
+          </div>
+          <button class="btn btn-primary" onclick="goView('concierge')" style="padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:#04243a;border:0;cursor:pointer">Start a task →</button>
+        </div>`;
     } else {
-      html += '<div class="rows">' + items.map(it => `
-        <div class="row-card ${it.hot?'hot':''}">
-          <div class="text"><b>${escapeHTML(it.title)}</b><span>${escapeHTML(it.sub)}</span></div>
-          <span class="pill ${it.pillHot?'hot':''}">${escapeHTML((it.pill||'').replace(/_/g,' '))}</span>
-        </div>
-      `).join('') + '</div>';
+      if (escs.length){
+        html += '<div class="section-eyebrow" style="color:var(--hot);margin-bottom:12px">Needs your reply · ' + escs.length + '</div>';
+        html += '<div class="rows">' + escs.map(e => `
+          <div class="row-card ${e.category==='emergency'?'hot':''}" style="cursor:pointer" onclick="goView('patients')" title="Open conversation">
+            <div class="text"><b>${escapeHTML(e.patient)}</b><span>${escapeHTML((e.category||'').replace(/_/g,' ') + (e.reasoning ? ' · ' + e.reasoning : ''))}</span></div>
+            <span class="pill hot">${escapeHTML((e.category||'escalation').replace(/_/g,' '))}</span>
+            <span style="color:var(--slate-3);font-size:18px;flex:0 0 auto">›</span>
+          </div>`).join('') + '</div>';
+      }
+      if (apprs.length){
+        html += '<div class="section-eyebrow" style="margin-top:24px;margin-bottom:12px">Drafts awaiting approval · ' + apprs.length + '</div>';
+        html += '<div class="rows">' + apprs.map(m => `
+          <div class="row-card" style="cursor:pointer" onclick="goView('patients')" title="Open conversation">
+            <div class="text"><b>${escapeHTML(m.patient)}</b><span>${escapeHTML((m.body||'').slice(0,200))}</span></div>
+            <span class="pill">draft</span>
+            <span style="color:var(--slate-3);font-size:18px;flex:0 0 auto">›</span>
+          </div>`).join('') + '</div>';
+      }
     }
     main.innerHTML = html;
   }
 
-  // -------- PATIENTS view --------
+  // -------- CONTACTS / PATIENTS view --------
   async function renderPatientsView(){
+    if (state.contactsPage === 'import') { renderContactsImport(); return; }
+
+    main.innerHTML = '<div class="loader">loading…</div>';
     try {
       const j = await fetch('/api/v1/patients', {credentials:'include'}).then(r=>r.json());
       state.patients = j.patients || [];
     } catch(_){ state.patients = []; }
+
+    const importBtn = `<button id="go-import" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);color:var(--cyan-2);font-size:13px;font-weight:600;cursor:pointer"><i data-lucide="upload"></i>Import contacts</button>`;
+
     if (!state.patients.length){
-      main.innerHTML = '<div class="section-eyebrow">Contacts</div><div class="empty-row">No contacts yet. Adapix will add them as you import or chat to me about them.</div>';
-      return;
-    }
-    main.innerHTML = '<div class="section-eyebrow">Customers · ' + state.patients.length + '</div>'
-      + '<div class="rows">' + state.patients.slice(0,200).map(p => `
-        <div class="row-card">
-          <div class="text"><b>${escapeHTML(p.first_name+' '+p.last_name)}</b><span>${escapeHTML(p.status||'')} · ${escapeHTML(p.preferred_channel||'sms')}</span></div>
+      main.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="section-eyebrow" style="margin:0">Contacts</div>
+          ${importBtn}
         </div>
-      `).join('') + '</div>';
+        <div class="empty-row" style="text-align:center;padding:48px 24px">
+          <div style="font-size:32px;margin-bottom:12px;opacity:.3">👤</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">No contacts yet</div>
+          <div style="font-size:13px;color:var(--ink-2)">Import a CSV to get started — Adapix begins follow-up automatically.</div>
+        </div>`;
+    } else {
+      const statusColors = {consulted_not_started:'var(--warn)',treatment_started:'var(--good)',explicitly_declined:'var(--hot)',paused:'var(--ink-3)'};
+      main.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="section-eyebrow" style="margin:0">Contacts · ${state.patients.length}</div>
+          ${importBtn}
+        </div>
+        <div class="rows">${state.patients.slice(0,200).map(p => `
+          <div class="row-card" style="cursor:default">
+            <div class="text">
+              <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>
+              <span>${escapeHTML(p.preferred_channel||'sms')}${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
+            </div>
+            <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML((p.status||'').replace(/_/g,' '))}</span>
+          </div>`).join('')}
+        </div>`;
+    }
+    renderLucide(main);
+    main.querySelector('#go-import').addEventListener('click', () => goContactsView('import'));
+  }
+
+  function goContactsView(page){
+    state.contactsPage = page;
+    renderPatientsView();
+  }
+
+  function renderContactsImport(){
+    main.innerHTML = `
+      <button class="spage-back" id="ci-back">← Contacts</button>
+      <div class="spage-head">
+        <div class="spage-title">Import contacts</div>
+        <div class="spage-sub">Upload a CSV and Adapix starts follow-up campaigns automatically. Only first_name, last_name, and phone or email are required.</div>
+      </div>
+
+      <div class="scard" style="margin-bottom:16px">
+        <div class="scard-title">Step 1 — Get the template</div>
+        <p style="font-size:13px;color:var(--ink-2);margin-bottom:14px">Download, fill it in with your contacts, then upload it below.</p>
+        <a href="/api/v1/contacts/template.csv" download style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink);font-size:13px;font-weight:500;text-decoration:none"><i data-lucide="download"></i> Download template CSV</a>
+      </div>
+
+      <div class="scard" id="ci-upload-card">
+        <div class="scard-title">Step 2 — Upload your CSV</div>
+        <div class="ci-dropzone" id="ci-dropzone">
+          <div style="font-size:36px;margin-bottom:14px;opacity:.35">📂</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">Drop your CSV file here</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-bottom:18px">or</div>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);color:var(--cyan-2);font-size:13px;font-weight:600;cursor:pointer">
+            <i data-lucide="upload"></i> Choose file
+            <input type="file" id="ci-file" accept=".csv,text/csv" style="display:none">
+          </label>
+        </div>
+      </div>
+
+      <div id="ci-preview-card" style="display:none">
+        <div class="scard" style="margin-bottom:16px">
+          <div class="scard-title" id="ci-preview-title">Preview</div>
+          <div id="ci-preview-table" style="overflow-x:auto;margin-bottom:18px;border-radius:8px;background:var(--bg-3);border:1px solid rgba(255,255,255,.05)"></div>
+          <button id="ci-import-btn" style="padding:12px 28px;border-radius:10px;background:linear-gradient(180deg,var(--cyan-2),#00a8cc);color:#04243a;font-size:14px;font-weight:800;border:0;cursor:pointer;font-family:inherit">Import contacts →</button>
+        </div>
+      </div>
+
+      <div id="ci-success" style="display:none;text-align:center;padding:56px 24px">
+        <div class="ci-success-icon">✓</div>
+        <div id="ci-success-count" style="font-size:26px;font-weight:800;color:#fff;margin-bottom:8px"></div>
+        <div style="font-size:14px;color:var(--ink-2);margin-bottom:28px">Adapix will begin follow-up automatically based on your active workflows.</div>
+        <button id="ci-done-btn" style="padding:12px 28px;border-radius:10px;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);color:var(--cyan-2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">View contacts →</button>
+      </div>`;
+
+    renderLucide(main);
+
+    main.querySelector('#ci-back').addEventListener('click', () => goContactsView(null));
+    main.querySelector('#ci-done-btn').addEventListener('click', () => {
+      state.patients = null; // force refresh
+      goContactsView(null);
+    });
+
+    let pendingFile = null;
+    const fileInput    = main.querySelector('#ci-file');
+    const dropzone     = main.querySelector('#ci-dropzone');
+    const uploadCard   = main.querySelector('#ci-upload-card');
+    const previewCard  = main.querySelector('#ci-preview-card');
+    const previewTitle = main.querySelector('#ci-preview-title');
+    const previewTable = main.querySelector('#ci-preview-table');
+    const importBtn    = main.querySelector('#ci-import-btn');
+    const successEl    = main.querySelector('#ci-success');
+
+    async function handleFile(file){
+      if (!file || !file.name.toLowerCase().endsWith('.csv')){ toast('Please select a .csv file'); return; }
+      pendingFile = file;
+      dropzone.style.opacity = '.4';
+      dropzone.style.pointerEvents = 'none';
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('preview', 'true');
+
+      try {
+        const j = await fetch('/api/v1/contacts/import', {method:'POST', credentials:'include', body:fd}).then(r=>r.json());
+        const rows = j.preview || [];
+        const total = j.total || 0;
+        const cols = (j.columns || []).filter(c => c);
+
+        previewTitle.textContent = total + ' contact' + (total !== 1 ? 's' : '') + ' found';
+        importBtn.textContent = 'Import ' + total + ' contact' + (total !== 1 ? 's' : '') + ' →';
+
+        const th = cols.map(c => `<th>${escapeHTML(c)}</th>`).join('');
+        const trs = rows.map(r => `<tr>${cols.map(c => `<td>${escapeHTML(r[c]||'')}</td>`).join('')}</tr>`).join('');
+        previewTable.innerHTML = `<table class="ci-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`
+          + (total > 5 ? `<div style="padding:8px 10px;font-size:11px;color:var(--ink-3)">Showing first 5 of ${total} rows</div>` : '');
+
+        uploadCard.style.display = 'none';
+        previewCard.style.display = 'block';
+      } catch(e){
+        toast('Could not read CSV — check the file format');
+        dropzone.style.opacity = '';
+        dropzone.style.pointerEvents = '';
+      }
+    }
+
+    importBtn.addEventListener('click', async () => {
+      if (!pendingFile) return;
+      importBtn.textContent = 'Importing…';
+      importBtn.disabled = true;
+
+      const fd = new FormData();
+      fd.append('file', pendingFile);
+      fd.append('preview', 'false');
+
+      try {
+        const j = await fetch('/api/v1/contacts/import', {method:'POST', credentials:'include', body:fd}).then(r=>r.json());
+        previewCard.style.display = 'none';
+        successEl.style.display = 'block';
+        main.querySelector('#ci-success-count').textContent = j.imported + ' contact' + (j.imported !== 1 ? 's' : '') + ' imported';
+        if (j.errors && j.errors.length) toast(j.errors.length + ' row(s) skipped — check format');
+      } catch(e){
+        toast('Import failed — please try again');
+        importBtn.textContent = 'Import contacts →';
+        importBtn.disabled = false;
+      }
+    });
+
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
   }
 
   // ================================================================
@@ -1631,6 +2197,9 @@ a{color:inherit;text-decoration:none}
     'product-feedback-synthesizer': 'message-circle',
     'product-sprint-prioritizer':   'check-square',
     'product-trend-researcher':     'globe',
+    // Operations
+    'supply-chain-strategist':      'truck',
+    'inventory-fulfillment-manager':'package',
     // Engineering
     'engineering-senior-developer': 'code',
     'engineering-backend-architect':'server',
@@ -2025,51 +2594,73 @@ a{color:inherit;text-decoration:none}
     input.focus();
   }
 
+  // -------- Business type catalog (used by settings specialty picker) --------
+  const BUSINESS_TYPES = [
+    {id:'general_dentist',name:'General dentist',cat:'Healthcare'},{id:'oral_surgeon',name:'Oral surgeon',cat:'Healthcare'},{id:'orthodontist',name:'Orthodontist',cat:'Healthcare'},{id:'periodontist',name:'Periodontist',cat:'Healthcare'},{id:'endodontist',name:'Endodontist',cat:'Healthcare'},{id:'pediatric_dentist',name:'Pediatric dentist',cat:'Healthcare'},{id:'family_doctor',name:'Family doctor',cat:'Healthcare'},{id:'pediatrician',name:'Pediatrician',cat:'Healthcare'},{id:'internist',name:'Internist',cat:'Healthcare'},{id:'dermatologist',name:'Dermatologist',cat:'Healthcare'},{id:'cardiologist',name:'Cardiologist',cat:'Healthcare'},{id:'ob_gyn',name:'OB/GYN',cat:'Healthcare'},{id:'ophthalmologist',name:'Ophthalmologist',cat:'Healthcare'},{id:'optometrist',name:'Optometrist',cat:'Healthcare'},{id:'ent',name:'ENT (otolaryngologist)',cat:'Healthcare'},{id:'urgent_care',name:'Urgent care clinic',cat:'Healthcare'},{id:'psychiatrist',name:'Psychiatrist',cat:'Healthcare'},{id:'psychologist',name:'Psychologist',cat:'Healthcare'},{id:'therapist',name:'Therapist / counselor',cat:'Healthcare'},{id:'chiropractor',name:'Chiropractor',cat:'Healthcare'},{id:'physical_therapist',name:'Physical therapist',cat:'Healthcare'},{id:'occupational_therapist',name:'Occupational therapist',cat:'Healthcare'},{id:'speech_therapist',name:'Speech therapist',cat:'Healthcare'},{id:'audiologist',name:'Audiologist',cat:'Healthcare'},{id:'plastic_surgeon',name:'Plastic surgeon',cat:'Healthcare'},{id:'med_spa',name:'Med spa / aesthetic clinic',cat:'Healthcare'},{id:'acupuncturist',name:'Acupuncturist',cat:'Healthcare'},{id:'naturopath',name:'Naturopath',cat:'Healthcare'},{id:'veterinarian',name:'Veterinarian / animal hospital',cat:'Healthcare'},{id:'sleep_clinic',name:'Sleep clinic',cat:'Healthcare'},{id:'fertility_clinic',name:'Fertility clinic',cat:'Healthcare'},{id:'home_health',name:'Home health / in-home care',cat:'Healthcare'},
+    {id:'gym',name:'Gym',cat:'Wellness & Fitness'},{id:'crossfit',name:'CrossFit box',cat:'Wellness & Fitness'},{id:'yoga_studio',name:'Yoga studio',cat:'Wellness & Fitness'},{id:'pilates_studio',name:'Pilates studio',cat:'Wellness & Fitness'},{id:'barre_studio',name:'Barre studio',cat:'Wellness & Fitness'},{id:'spin_studio',name:'Spin / cycling studio',cat:'Wellness & Fitness'},{id:'martial_arts',name:'Martial arts dojo',cat:'Wellness & Fitness'},{id:'personal_trainer',name:'Personal trainer',cat:'Wellness & Fitness'},{id:'nutritionist',name:'Nutritionist / dietitian',cat:'Wellness & Fitness'},{id:'health_coach',name:'Health / life coach',cat:'Wellness & Fitness'},{id:'massage_therapist',name:'Massage therapist',cat:'Wellness & Fitness'},{id:'day_spa',name:'Day spa',cat:'Wellness & Fitness'},
+    {id:'hair_salon',name:'Hair salon',cat:'Beauty'},{id:'barber_shop',name:'Barber shop',cat:'Beauty'},{id:'nail_salon',name:'Nail salon',cat:'Beauty'},{id:'lash_studio',name:'Lash studio',cat:'Beauty'},{id:'brow_bar',name:'Brow bar',cat:'Beauty'},{id:'waxing_studio',name:'Waxing studio',cat:'Beauty'},{id:'tattoo_studio',name:'Tattoo studio',cat:'Beauty'},{id:'piercing_studio',name:'Piercing studio',cat:'Beauty'},{id:'makeup_artist',name:'Makeup artist',cat:'Beauty'},{id:'esthetician',name:'Esthetician',cat:'Beauty'},
+    {id:'plumber',name:'Plumber',cat:'Home Services'},{id:'electrician',name:'Electrician',cat:'Home Services'},{id:'hvac',name:'HVAC contractor',cat:'Home Services'},{id:'general_contractor',name:'General contractor',cat:'Home Services'},{id:'roofer',name:'Roofer',cat:'Home Services'},{id:'painter',name:'Painter',cat:'Home Services'},{id:'flooring',name:'Flooring installer',cat:'Home Services'},{id:'carpenter',name:'Carpenter / cabinetry',cat:'Home Services'},{id:'handyman',name:'Handyman',cat:'Home Services'},{id:'landscaper',name:'Landscaper / lawn care',cat:'Home Services'},{id:'tree_service',name:'Tree service / arborist',cat:'Home Services'},{id:'pool_service',name:'Pool service',cat:'Home Services'},{id:'pest_control',name:'Pest control',cat:'Home Services'},{id:'house_cleaning',name:'House cleaning / maid service',cat:'Home Services'},{id:'carpet_cleaning',name:'Carpet cleaning',cat:'Home Services'},{id:'pressure_washing',name:'Pressure washing',cat:'Home Services'},{id:'window_washing',name:'Window washing',cat:'Home Services'},{id:'locksmith',name:'Locksmith',cat:'Home Services'},{id:'garage_door',name:'Garage door service',cat:'Home Services'},{id:'junk_removal',name:'Junk removal',cat:'Home Services'},{id:'moving_company',name:'Moving company',cat:'Home Services'},{id:'septic_service',name:'Septic / well service',cat:'Home Services'},
+    {id:'auto_repair',name:'Auto repair / mechanic',cat:'Auto'},{id:'body_shop',name:'Body shop',cat:'Auto'},{id:'detailing',name:'Auto detailing',cat:'Auto'},{id:'car_wash',name:'Car wash',cat:'Auto'},{id:'tire_shop',name:'Tire shop',cat:'Auto'},{id:'towing',name:'Towing service',cat:'Auto'},{id:'auto_glass',name:'Auto glass repair',cat:'Auto'},{id:'dealership',name:'Car dealership',cat:'Auto'},{id:'window_tinting',name:'Window tinting',cat:'Auto'},
+    {id:'lawyer_general',name:'Lawyer (general practice)',cat:'Professional Services'},{id:'lawyer_pi',name:'Personal injury lawyer',cat:'Professional Services'},{id:'lawyer_criminal',name:'Criminal defense lawyer',cat:'Professional Services'},{id:'lawyer_family',name:'Family lawyer',cat:'Professional Services'},{id:'lawyer_immigration',name:'Immigration lawyer',cat:'Professional Services'},{id:'lawyer_estate',name:'Estate planning lawyer',cat:'Professional Services'},{id:'lawyer_business',name:'Business lawyer',cat:'Professional Services'},{id:'accountant',name:'Accountant / CPA',cat:'Professional Services'},{id:'bookkeeper',name:'Bookkeeper',cat:'Professional Services'},{id:'tax_preparer',name:'Tax preparer',cat:'Professional Services'},{id:'financial_advisor',name:'Financial advisor',cat:'Professional Services'},{id:'insurance_agent',name:'Insurance agent',cat:'Professional Services'},{id:'mortgage_broker',name:'Mortgage broker',cat:'Professional Services'},{id:'architect',name:'Architect',cat:'Professional Services'},{id:'engineer',name:'Engineer (civil / structural)',cat:'Professional Services'},{id:'surveyor',name:'Land surveyor',cat:'Professional Services'},{id:'marketing_agency',name:'Marketing agency',cat:'Professional Services'},{id:'ad_agency',name:'Ad agency',cat:'Professional Services'},{id:'seo_agency',name:'SEO agency',cat:'Professional Services'},{id:'pr_firm',name:'PR firm',cat:'Professional Services'},{id:'web_design',name:'Web design studio',cat:'Professional Services'},{id:'software_dev',name:'Software / app dev shop',cat:'Professional Services'},{id:'it_consultant',name:'IT consultant / managed IT',cat:'Professional Services'},{id:'graphic_designer',name:'Graphic designer / branding studio',cat:'Professional Services'},{id:'video_producer',name:'Video production company',cat:'Professional Services'},{id:'photographer',name:'Photographer',cat:'Professional Services'},{id:'business_consultant',name:'Business consultant',cat:'Professional Services'},{id:'hr_consultant',name:'HR consultant',cat:'Professional Services'},{id:'recruiter',name:'Recruiter / staffing agency',cat:'Professional Services'},{id:'virtual_assistant',name:'Virtual assistant',cat:'Professional Services'},{id:'notary',name:'Notary service',cat:'Professional Services'},{id:'translator',name:'Translator / interpreter',cat:'Professional Services'},
+    {id:'real_estate_agent',name:'Real estate agent',cat:'Real Estate'},{id:'real_estate_brokerage',name:'Real estate brokerage',cat:'Real Estate'},{id:'property_manager',name:'Property manager',cat:'Real Estate'},{id:'str_host',name:'Short-term rental / Airbnb host',cat:'Real Estate'},{id:'title_company',name:'Title company',cat:'Real Estate'},{id:'home_inspector',name:'Home inspector',cat:'Real Estate'},
+    {id:'clothing_boutique',name:'Clothing boutique',cat:'Retail'},{id:'shoe_store',name:'Shoe store',cat:'Retail'},{id:'jewelry_store',name:'Jewelry store',cat:'Retail'},{id:'bookstore',name:'Bookstore',cat:'Retail'},{id:'florist',name:'Florist',cat:'Retail'},{id:'gift_shop',name:'Gift shop',cat:'Retail'},{id:'home_decor',name:'Home decor / furniture store',cat:'Retail'},{id:'hardware_store',name:'Hardware store',cat:'Retail'},{id:'toy_store',name:'Toy store',cat:'Retail'},{id:'bike_shop',name:'Bike shop',cat:'Retail'},{id:'optical_shop',name:'Optical shop / eyewear',cat:'Retail'},{id:'pet_store',name:'Pet store',cat:'Retail'},{id:'liquor_store',name:'Liquor / wine store',cat:'Retail'},{id:'cannabis_dispensary',name:'Cannabis dispensary',cat:'Retail'},{id:'mattress_store',name:'Mattress store',cat:'Retail'},{id:'antique_store',name:'Antique store',cat:'Retail'},{id:'specialty_grocery',name:'Specialty grocery / market',cat:'Retail'},
+    {id:'restaurant',name:'Restaurant',cat:'Food & Beverage'},{id:'fine_dining',name:'Fine dining restaurant',cat:'Food & Beverage'},{id:'pizza_place',name:'Pizza place',cat:'Food & Beverage'},{id:'sushi_restaurant',name:'Sushi restaurant',cat:'Food & Beverage'},{id:'taqueria',name:'Taqueria / Mexican restaurant',cat:'Food & Beverage'},{id:'bbq_joint',name:'BBQ joint',cat:'Food & Beverage'},{id:'sandwich_shop',name:'Sandwich shop / deli',cat:'Food & Beverage'},{id:'coffee_shop',name:'Coffee shop / café',cat:'Food & Beverage'},{id:'bakery',name:'Bakery',cat:'Food & Beverage'},{id:'donut_shop',name:'Donut shop',cat:'Food & Beverage'},{id:'ice_cream_shop',name:'Ice cream / gelato shop',cat:'Food & Beverage'},{id:'juice_bar',name:'Juice / smoothie bar',cat:'Food & Beverage'},{id:'bar',name:'Bar',cat:'Food & Beverage'},{id:'cocktail_bar',name:'Cocktail bar',cat:'Food & Beverage'},{id:'wine_bar',name:'Wine bar',cat:'Food & Beverage'},{id:'sports_bar',name:'Sports bar',cat:'Food & Beverage'},{id:'brewery',name:'Brewery / brewpub',cat:'Food & Beverage'},{id:'distillery',name:'Distillery',cat:'Food & Beverage'},{id:'winery',name:'Winery / vineyard',cat:'Food & Beverage'},{id:'food_truck',name:'Food truck',cat:'Food & Beverage'},{id:'catering',name:'Catering company',cat:'Food & Beverage'},{id:'butcher',name:'Butcher shop',cat:'Food & Beverage'},
+    {id:'hotel',name:'Hotel / motel',cat:'Hospitality'},{id:'bed_breakfast',name:'Bed & breakfast',cat:'Hospitality'},{id:'event_venue',name:'Event / wedding venue',cat:'Hospitality'},{id:'wedding_planner',name:'Wedding planner',cat:'Hospitality'},{id:'event_planner',name:'Event planner',cat:'Hospitality'},{id:'dj',name:'DJ',cat:'Hospitality'},{id:'party_rental',name:'Party / equipment rental',cat:'Hospitality'},
+    {id:'tutor',name:'Tutor / test prep',cat:'Education'},{id:'music_school',name:'Music school / instructor',cat:'Education'},{id:'art_school',name:'Art / pottery studio',cat:'Education'},{id:'dance_studio',name:'Dance studio',cat:'Education'},{id:'language_school',name:'Language school',cat:'Education'},{id:'driving_school',name:'Driving school',cat:'Education'},{id:'daycare',name:'Daycare / preschool',cat:'Education'},{id:'after_school',name:'After-school program',cat:'Education'},{id:'coding_bootcamp',name:'Coding bootcamp',cat:'Education'},{id:'online_course',name:'Online course creator',cat:'Education'},
+    {id:'pet_groomer',name:'Pet groomer',cat:'Pet Services'},{id:'dog_walker',name:'Dog walker',cat:'Pet Services'},{id:'dog_trainer',name:'Dog trainer',cat:'Pet Services'},{id:'pet_boarding',name:'Pet boarding / sitting',cat:'Pet Services'},{id:'dog_daycare',name:'Dog daycare',cat:'Pet Services'},
+    {id:'saas',name:'SaaS / software startup',cat:'Tech'},{id:'ecommerce',name:'E-commerce business',cat:'Tech'},{id:'mobile_app',name:'Mobile app studio',cat:'Tech'},{id:'subscription_box',name:'Subscription box',cat:'Tech'},{id:'podcast',name:'Podcast producer',cat:'Tech'},{id:'content_creator',name:'Content creator / influencer',cat:'Tech'},{id:'newsletter',name:'Newsletter publisher',cat:'Tech'},{id:'game_studio',name:'Indie game studio',cat:'Tech'},
+    {id:'nonprofit',name:'Nonprofit / charity',cat:'Nonprofit'},{id:'religious_org',name:'Religious organization',cat:'Nonprofit'},{id:'community_center',name:'Community center',cat:'Nonprofit'},{id:'animal_shelter',name:'Animal shelter / rescue',cat:'Nonprofit'},
+    {id:'manufacturer',name:'Manufacturer / factory',cat:'Manufacturing'},{id:'machine_shop',name:'Machine / fab shop',cat:'Manufacturing'},{id:'woodshop',name:'Custom woodshop',cat:'Manufacturing'},{id:'3d_printing',name:'3D printing service',cat:'Manufacturing'},{id:'wholesale_distributor',name:'Wholesale distributor',cat:'Manufacturing'},
+    {id:'courier',name:'Courier / delivery service',cat:'Logistics'},{id:'trucking',name:'Trucking company',cat:'Logistics'},{id:'limo',name:'Limo / car service',cat:'Logistics'},
+    {id:'farm',name:'Farm / ranch',cat:'Agriculture'},{id:'orchard',name:'Orchard / CSA',cat:'Agriculture'},{id:'plant_nursery',name:'Plant nursery',cat:'Agriculture'},
+  ];
+  const STYPE_DEFAULTS = ['general_dentist','med_spa','orthodontist','hair_salon','real_estate_agent','auto_repair','lawyer_general','restaurant'];
+
   // -------- CONCIERGE view --------
   const CONCIERGE_CATEGORIES = [
     { key:'communication', icon:'✉', accent:'cyan', title:'Customer Communication',
       sub:'Follow-ups, rebooking, win-back, proposal nudges.',
       tasks:[
-        {label:'Reach out to customers we haven’t talked to in 6+ months', prompt:'Pull a list of customers we haven’t heard from in 6+ months and draft a warm check-in message I can review.'},
+        {label:'Reach out to customers we haven\'t talked to in 6+ months', prompt:'Pull a list of customers we haven\'t heard from in 6+ months and draft a warm check-in message I can review.'},
         {label:'Follow up on open proposals or quotes',    prompt:'Find customers with open proposals or quotes from the last 30 days but no decision yet, and draft a personal follow-up for each.'},
         {label:'Recover missed appointments this week',    prompt:'Identify customers who missed appointments or meetings this week and draft empathetic rebook messages for them.'},
         {label:'Write a holiday-hours announcement',       prompt:'Draft a friendly SMS + email to all active customers announcing our holiday hours.'},
-        {label:'+ Something else about customer comms',    prompt:'I have a customer-communication need that isn’t in the list. Ask me what it is and help me handle it.', custom:true},
+        {label:'+ Something else about customer comms',    prompt:'I have a customer-communication need that isn\'t in the list. Ask me what it is and help me handle it.', custom:true},
       ]},
     { key:'finance', icon:'$', accent:'green', title:'Finance',
       sub:'Collections, billing reminders, revenue insights.',
       tasks:[
         {label:'Draft a polite past-due billing reminder', prompt:'Help me draft a polite past-due balance reminder for customers with balances over 30 days old.'},
-        {label:'Summarize this month’s revenue',           prompt:'Pull this month’s production, collections, and acceptance rate and summarize it as a quick paragraph I can read in 10 seconds.'},
-        {label:'Compare this month vs. last month',        prompt:'Compare this month’s production and collections to last month and call out anything unusual.'},
+        {label:'Summarize this month\'s revenue',           prompt:'Pull this month\'s production, collections, and acceptance rate and summarize it as a quick paragraph I can read in 10 seconds.'},
+        {label:'Compare this month vs. last month',        prompt:'Compare this month\'s production and collections to last month and call out anything unusual.'},
         {label:'Identify expiring credits or unused benefits', prompt:'Find customers with unused credits, store balance, or expiring benefits and draft a friendly "use it before you lose it" message for each.'},
-        {label:'+ Something else about finance',           prompt:'I have a financial question or task that isn’t in this list. Ask me about it and help me work through it.', custom:true},
+        {label:'+ Something else about finance',           prompt:'I have a financial question or task that isn\'t in this list. Ask me about it and help me work through it.', custom:true},
       ]},
     { key:'marketing', icon:'★', accent:'yellow', title:'Marketing',
       sub:'Reviews, referrals, social posts, reactivation campaigns.',
       tasks:[
         {label:'Ask happy customers for Google reviews', prompt:'Identify customers who had a good experience in the last 14 days. Draft personalized review-request messages for each.'},
         {label:'Plan a referral promotion',              prompt:'Help me design a referral promotion for current customers — what to offer, who to send it to, and the message itself.'},
-        {label:'Reactivate dormant customers',          prompt:'Find customers we haven’t seen in 18+ months and draft a "we miss you" message offering to reconnect.'},
-        {label:'Draft this week’s social post',         prompt:'Write a friendly social media post about something happening at the business this week.'},
+        {label:'Reactivate dormant customers',          prompt:'Find customers we haven\'t seen in 18+ months and draft a "we miss you" message offering to reconnect.'},
+        {label:'Draft this week\'s social post',         prompt:'Write a friendly social media post about something happening at the business this week.'},
         {label:'+ Something else about marketing',      prompt:'I have a marketing idea or campaign I want help on. Ask me to describe it and help me execute it.', custom:true},
       ]},
     { key:'business', icon:'◆', accent:'cyan', title:'Business Management',
       sub:'Schedule, staffing, vendors, ops decisions.',
       tasks:[
-        {label:'Find tomorrow’s schedule gaps', prompt:'Look at tomorrow’s schedule and tell me which gaps to fill and who from the waitlist or backlog could fill them.'},
-        {label:'Daily 5-minute briefing',       prompt:'Give me a 5-minute morning briefing: yesterday’s metrics, today’s VIPs, anything that needs my attention.'},
+        {label:'Find tomorrow\'s schedule gaps', prompt:'Look at tomorrow\'s schedule and tell me which gaps to fill and who from the waitlist or backlog could fill them.'},
+        {label:'Daily 5-minute briefing',       prompt:'Give me a 5-minute morning briefing: yesterday\'s metrics, today\'s VIPs, anything that needs my attention.'},
         {label:'Draft a vendor follow-up',      prompt:'Help me write a follow-up email to one of my vendors. Ask me which vendor and what about.'},
         {label:'Weekly KPI summary',            prompt:'At the end of each week, summarize KPIs: revenue, new customers, close rate, churn, retention.'},
-        {label:'+ Something else operational',  prompt:'I have an operations or management question that isn’t in the list. Ask me what it is and help me think through it.', custom:true},
+        {label:'+ Something else operational',  prompt:'I have an operations or management question that isn\'t in the list. Ask me what it is and help me think through it.', custom:true},
       ]},
     { key:'networking', icon:'◌', accent:'cyan', title:'Networking',
       sub:'Partners, referrals, peer relationships.',
       tasks:[
         {label:'Thank a referral source',      prompt:'Help me write a sincere thank-you note to a partner or referral source. Ask me who and what for.'},
         {label:'Quarterly partner update',     prompt:'Draft a short quarterly update to send to all my partners and referral sources summarizing outcomes and saying thanks.'},
-        {label:'Outreach to a new partner',    prompt:'Help me reach out to a new partner or collaborator I’d like to start working with. Ask me their name and what they do first.'},
-        {label:'+ Something else about networking', prompt:'I have a networking or relationship question that isn’t in the list. Ask me about it and help me handle it.', custom:true},
+        {label:'Outreach to a new partner',    prompt:'Help me reach out to a new partner or collaborator I\'d like to start working with. Ask me their name and what they do first.'},
+        {label:'+ Something else about networking', prompt:'I have a networking or relationship question that isn\'t in the list. Ask me about it and help me handle it.', custom:true},
       ]},
     { key:'patient_exp', icon:'♥', accent:'pink', title:'Customer Experience',
       sub:'Onboarding, satisfaction, post-purchase follow-up.',
@@ -2077,14 +2668,14 @@ a{color:inherit;text-decoration:none}
         {label:'New-customer welcome series', prompt:'Design a 3-message welcome series for brand new customers before their first interaction with us.'},
         {label:'Post-purchase check-in',      prompt:'Draft a 24-hour post-purchase check-in message for new customers. Be warm but professional.'},
         {label:'Satisfaction survey',         prompt:'Send a short satisfaction survey to customers we served this week and summarize the results for me.'},
-        {label:'+ Something else about customer experience', prompt:'I have a customer-experience question or idea that isn’t in this list. Ask me what it is and help me work on it.', custom:true},
+        {label:'+ Something else about customer experience', prompt:'I have a customer-experience question or idea that isn\'t in this list. Ask me what it is and help me work on it.', custom:true},
       ]},
     { key:'custom', icon:'✦', accent:'custom', title:'Something Specific',
       sub:'Have a unique request? Describe it in your own words.',
       tasks:[
         {label:'I have a one-off customer situation', prompt:'I have a one-off situation with a specific customer. Ask me about it and help me figure out the best move.'},
-        {label:'Help me brainstorm a solution',       prompt:'I’m stuck on a problem at my business. Ask me to describe it, then help me think through it.'},
-        {label:'Something not on this list',          prompt:'I need help with something Adapix doesn’t have a pre-built play for. Ask me what it is and we’ll work through it together.'},
+        {label:'Help me brainstorm a solution',       prompt:'I\'m stuck on a problem at my business. Ask me to describe it, then help me think through it.'},
+        {label:'Something not on this list',          prompt:'I need help with something Adapix doesn\'t have a pre-built play for. Ask me what it is and we\'ll work through it together.'},
         {label:'Write a one-off message',             prompt:'I need to write a custom message to a specific person. Ask me who it is and what I want to say, then help me write it.'},
         {label:'+ Just open chat — blank slate',      prompt:'', custom:true},
       ]},
@@ -2106,7 +2697,7 @@ a{color:inherit;text-decoration:none}
       </div>`).join('');
     main.innerHTML = `
       <div class="cn-hero">
-        <div class="cn-hero-eyebrow">Studio</div>
+        <div class="cn-hero-eyebrow">Tasks</div>
         <h1 class="cn-hero-title">What can Adapix do for you today?</h1>
         <p class="cn-hero-sub">Pick a task below — or describe your own in chat. Every action stays in your hands until you approve it.</p>
         <div class="cn-hero-glow"></div>
@@ -2188,110 +2779,46 @@ a{color:inherit;text-decoration:none}
   }
 
   async function renderWorkshop(){
-    const plugins = await loadPluginStatus();
+    main.innerHTML = `
+      <div class="autos-page">
+        <div class="autos-header">
+          <div class="autos-header-left">
+            <div class="autos-eyebrow">Automations</div>
+            <h1 class="autos-headline">Scheduled Automations</h1>
+            <p class="autos-tagline">Set it once. Adapix runs it on your schedule — automatically.</p>
+          </div>
+          <button class="autos-new-btn" id="autos-new-btn">
+            <i data-lucide="plus" style="width:16px;height:16px"></i>
+            New Automation
+          </button>
+        </div>
+        <div class="autos-tabs" id="autos-tabs">
+          <button class="autos-tab active" data-filter="all">All <span class="autos-tab-count" id="tab-ct-all">…</span></button>
+          <button class="autos-tab" data-filter="active">Active <span class="autos-tab-count" id="tab-ct-active"></span></button>
+          <button class="autos-tab" data-filter="paused">Paused <span class="autos-tab-count" id="tab-ct-paused"></span></button>
+        </div>
+        <div id="autos-list-container">
+          <div class="autos-empty">
+            <div class="autos-empty-icon"><i data-lucide="clock" style="width:36px;height:36px"></i></div>
+            <div class="autos-empty-title">Loading…</div>
+          </div>
+        </div>
+      </div>`;
 
-    const toolGrid = WORKSHOP_TOOLS.map(t => (
-      '<button class="wb-tool" data-tone="'+t.tone+'" data-prompt="'+escapeAttr(t.prompt)+'">'
-      + '<div class="wb-tool-glyph">'+escapeHTML(t.glyph)+'</div>'
-      + '<div class="wb-tool-body">'
-      +   '<div class="wb-tool-name">'+escapeHTML(t.name)+'</div>'
-      +   '<div class="wb-tool-use">'+escapeHTML(t.use)+'</div>'
-      + '</div>'
-      + '<div class="wb-tool-key">'+escapeHTML(t.key)+'</div>'
-      + '</button>'
-    )).join('');
+    lucide.createIcons();
 
-    const pluginRows = WORKSHOP_PLUGINS.map(p => {
-      const st = plugins[p.key];
-      const pill = pluginPill(st);
-      const account = st && st.account ? st.account : '—';
-      let action;
-      if (!st || !st.configured) {
-        action = '<button class="wb-plug-btn ghost" data-plug-key="'+p.key+'" data-plug-action="help">Set up</button>';
-      } else if (!st.connected && st.connect_url) {
-        action = '<button class="wb-plug-btn primary" data-plug-key="'+p.key+'" data-plug-action="connect">Connect</button>';
-      } else {
-        action = '<button class="wb-plug-btn" data-plug-key="'+p.key+'" data-plug-action="test">Test</button>';
-      }
-      return ''
-        + '<div class="wb-plug-row">'
-        +   '<div class="wb-plug-mark"></div>'
-        +   '<div class="wb-plug-name">'
-        +     '<b>'+escapeHTML(p.name)+'</b>'
-        +     '<span class="wb-plug-kind">'+escapeHTML(p.kind)+'</span>'
-        +   '</div>'
-        +   '<div class="wb-plug-account">'+escapeHTML(account)+'</div>'
-        +   '<div class="wb-plug-pill '+pill.cls+'">'+pill.label+'</div>'
-        +   '<div class="wb-plug-action">'+action+'</div>'
-        + '</div>';
-    }).join('');
+    document.getElementById('autos-new-btn').addEventListener('click', () => showAutoModal());
 
-    const liveCount   = Object.values(plugins).filter(p => p && p.connected).length;
-    const totalPlugs  = WORKSHOP_PLUGINS.length;
-
-    main.innerHTML = ''
-      + '<div class="wb-canvas">'
-      +   '<div class="wb-corner wb-tl"></div><div class="wb-corner wb-tr"></div>'
-      +   '<div class="wb-corner wb-bl"></div><div class="wb-corner wb-br"></div>'
-      +   '<div class="wb-head">'
-      +     '<div class="wb-head-eyebrow">The Workshop</div>'
-      +     '<h1 class="wb-head-title">Build with Adapix.</h1>'
-      +     '<p class="wb-head-sub">Tools to do the work. Plug-ins to do it everywhere. One bench to keep what you ship.</p>'
-      +     '<div class="wb-head-stats">'
-      +       '<span><b>'+WORKSHOP_TOOLS.length+'</b> tools</span>'
-      +       '<span><b>'+liveCount+'</b>/'+totalPlugs+' plug-ins live</span>'
-      +     '</div>'
-      +   '</div>'
-
-      +   '<section class="wb-section">'
-      +     '<div class="wb-eyebrow"><span class="wb-tag">01</span>BENCH</div>'
-      +     '<div class="wb-bench">'
-      +       '<div class="wb-bench-empty">'
-      +         '<div class="wb-bench-empty-glyph">⌗</div>'
-      +         '<div class="wb-bench-empty-title">No active project on the bench.</div>'
-      +         '<div class="wb-bench-empty-sub">Run a tool below or open the chat. Whatever you and Adapix work on next lives here.</div>'
-      +         '<a class="wb-bench-cta" href="/chat">Open chat <span>→</span></a>'
-      +       '</div>'
-      +     '</div>'
-      +   '</section>'
-
-      +   '<section class="wb-section">'
-      +     '<div class="wb-eyebrow"><span class="wb-tag">02</span>TOOLS<span class="wb-ct">'+WORKSHOP_TOOLS.length+'</span></div>'
-      +     '<div class="wb-tool-grid">'+toolGrid+'</div>'
-      +   '</section>'
-
-      +   '<section class="wb-section">'
-      +     '<div class="wb-eyebrow"><span class="wb-tag">03</span>PLUG-INS<span class="wb-ct">'+totalPlugs+'</span></div>'
-      +     '<div class="wb-plug-list">'+pluginRows+'</div>'
-      +   '</section>'
-
-      +   '<section class="wb-section" id="auto-section">'
-      +     '<div class="wb-eyebrow"><span class="wb-tag">04</span>AUTOMATIONS<span class="wb-ct" id="auto-count">…</span></div>'
-      +     '<div id="auto-list-container"><div class="auto-empty"><div class="auto-empty-glyph">⟳</div><div class="auto-empty-title">Loading…</div></div></div>'
-      +     '<div style="margin-top:14px"><button class="auto-btn primary" id="auto-new-btn">+ New automation</button></div>'
-      +   '</section>'
-
-      + '</div>';
-
-    // Wire tool clicks → prefill the chat
-    main.querySelectorAll('.wb-tool').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const prompt = btn.getAttribute('data-prompt') || '';
-        try { sessionStorage.setItem('adapix.prefill', prompt); } catch(_){}
-        window.location.href = '/chat?prefill=' + encodeURIComponent(prompt);
-      });
-    });
-    // Wire plug-in buttons
-    main.querySelectorAll('[data-plug-action]').forEach(btn => {
-      btn.addEventListener('click', () => handlePluginAction(
-        btn.getAttribute('data-plug-key'),
-        btn.getAttribute('data-plug-action')
-      ));
+    document.getElementById('autos-tabs').addEventListener('click', e => {
+      const tab = e.target.closest('.autos-tab');
+      if (!tab) return;
+      document.querySelectorAll('.autos-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      autoFilter = tab.dataset.filter;
+      renderAutomations(autoFilter);
     });
 
-    // Load and render automations
-    await renderAutomations();
-    document.getElementById('auto-new-btn')?.addEventListener('click', () => showAutoModal());
+    await renderAutomations('all');
   }
 
   // ---------------------------------------------------------------------------
@@ -2304,66 +2831,196 @@ a{color:inherit;text-decoration:none}
     return (await r.json()).automations || [];
   }
 
-  async function renderAutomations(){
+  function cronToHuman(cron){
+    try {
+      const parts = cron.split(' ');
+      if (parts.length < 5) return cron;
+      const [min, hr, dom, , dow] = parts;
+      if (hr === '*') return 'Every hour';
+      const h = parseInt(hr), m = parseInt(min);
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const time = h12 + ':' + (m < 10 ? '0'+m : String(m)) + ' ' + ampm;
+      if (dow === '1-5') return 'Weekdays at ' + time;
+      if (dow !== '*'){
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        return 'Every ' + (days[parseInt(dow)] || dow) + ' at ' + time;
+      }
+      if (dom !== '*') return 'Monthly, day ' + dom + ' at ' + time;
+      return 'Daily at ' + time;
+    } catch(_){ return cron; }
+  }
+
+  function timeAgo(iso){
+    if (!iso) return 'Never';
+    const ms = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(ms/1000);
+    if (s < 60) return 'Just now';
+    const m = Math.floor(s/60);
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m/60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h/24) + 'd ago';
+  }
+
+  let autoFilter = 'all';
+
+  async function renderAutomations(filter){
+    filter = filter || autoFilter;
+    autoFilter = filter;
     const autos = await loadAutomations().catch(()=>[]);
-    const ct = document.getElementById('auto-count');
-    const container = document.getElementById('auto-list-container');
-    if (!ct || !container) return;
-    ct.textContent = autos.length;
-    if (!autos.length){
-      container.innerHTML = '<div class="auto-empty">'
-        + '<div class="auto-empty-glyph">⚙</div>'
-        + '<div class="auto-empty-title">No automations yet.</div>'
-        + '<div class="auto-empty-sub">Set one up and Adapix will open Chrome, visit the site, extract your data, and save it as a document — automatically, on schedule.</div>'
+
+    // Update tab counts
+    const ctAll    = document.getElementById('tab-ct-all');
+    const ctActive = document.getElementById('tab-ct-active');
+    const ctPaused = document.getElementById('tab-ct-paused');
+    if (ctAll)    ctAll.textContent    = autos.length;
+    if (ctActive) ctActive.textContent = autos.filter(a=>a.status==='active').length;
+    if (ctPaused) ctPaused.textContent = autos.filter(a=>a.status==='paused').length;
+
+    // Errors tab — show only when errors exist
+    const errored = autos.filter(a => a.last_run_status === 'error');
+    const tabs = document.getElementById('autos-tabs');
+    if (tabs){
+      let errTab = document.getElementById('tab-errors');
+      if (errored.length && !errTab){
+        errTab = document.createElement('button');
+        errTab.className = 'autos-tab';
+        errTab.id = 'tab-errors';
+        errTab.dataset.filter = 'errors';
+        errTab.innerHTML = 'Errors <span class="autos-tab-count" style="background:rgba(248,81,73,.12);color:#F85149">'+errored.length+'</span>';
+        tabs.appendChild(errTab);
+        errTab.addEventListener('click', () => {
+          document.querySelectorAll('.autos-tab').forEach(t => t.classList.remove('active'));
+          errTab.classList.add('active');
+          autoFilter = 'errors';
+          renderAutomations('errors');
+        });
+      } else if (errTab){
+        if (!errored.length) errTab.remove();
+        else errTab.querySelector('.autos-tab-count').textContent = errored.length;
+      }
+    }
+
+    // Apply filter
+    let filtered = autos;
+    if (filter === 'active')  filtered = autos.filter(a => a.status === 'active');
+    if (filter === 'paused')  filtered = autos.filter(a => a.status === 'paused');
+    if (filter === 'errors')  filtered = errored;
+
+    const container = document.getElementById('autos-list-container');
+    if (!container) return;
+
+    if (!filtered.length){
+      container.innerHTML = '<div class="autos-empty">'
+        + '<div class="autos-empty-icon"><i data-lucide="clock" style="width:36px;height:36px"></i></div>'
+        + '<div class="autos-empty-title">'+(filter==='all'?'Schedule your first automation':'Nothing here yet')+'</div>'
+        + '<div class="autos-empty-body">'+(filter==='all'
+            ? 'Tell Adapix a URL and what to look for. It checks the page on your schedule and saves the result — no code, no manual checking.'
+            : 'No automations match this filter right now.')+'</div>'
+        + (filter==='all' ? '<button class="autos-new-btn" onclick="showAutoModal()"><i data-lucide="plus" style="width:16px;height:16px"></i> Create automation</button>' : '')
         + '</div>';
+      lucide.createIcons();
       return;
     }
-    container.innerHTML = '<div class="auto-list">' + autos.map(a => {
-      const lastRun = a.last_run_at
-        ? new Date(a.last_run_at).toLocaleString()
-        : 'Never run';
-      const statusPill = a.last_run_status === 'ok'
-        ? '<span class="auto-pill ok">Last run ✓</span>'
-        : a.last_run_status === 'error'
-        ? '<span class="auto-pill error">Last run failed</span>'
+
+    container.innerHTML = '<div class="autos-list">' + filtered.map(a => {
+      const isActive = a.status === 'active';
+      const isError  = a.last_run_status === 'error';
+
+      let runBadge = '';
+      if (a.last_run_status === 'ok')
+        runBadge = '<span class="run-badge ok"><i data-lucide="check" style="width:12px;height:12px"></i> Success</span>';
+      else if (a.last_run_status === 'error')
+        runBadge = '<span class="run-badge fail"><i data-lucide="x" style="width:12px;height:12px"></i> Failed</span>';
+
+      const runTs = a.last_run_at
+        ? '<span class="run-ts">'+new Date(a.last_run_at).toLocaleString()+'</span>'
         : '';
-      const activePill = '<span class="auto-pill '+(a.status==='active'?'active':'paused')+'">'+(a.status==='active'?'Active':'Paused')+'</span>';
-      return '<div class="auto-card" data-id="'+a.id+'">'
-        + '<div>'
-        +   '<div class="auto-card-name">'+escapeHTML(a.name)+'</div>'
-        +   '<div class="auto-card-url">'+escapeHTML(a.url)+'</div>'
+
+      const dlBtn = a.has_result
+        ? '<button class="auto-icon-btn dl auto-dl-btn" data-id="'+a.id+'" title="Download result"><i data-lucide="download" style="width:14px;height:14px"></i></button>'
+        : '';
+
+      const errorBanner = isError
+        ? '<div class="auto-error-banner">Last run failed. Check the URL is accessible and the task description is clear, then retry.</div>'
+        : '';
+
+      return '<div class="auto-card'
+        + (!isActive ? ' paused'      : '')
+        + (isError   ? ' error-state' : '')
+        + '" data-id="'+a.id+'">'
+        + '<div class="auto-card-top">'
+        +   '<div class="auto-name-row">'
+        +     '<span class="auto-status-dot '+(isActive?'active':'paused')+'"></span>'
+        +     '<span class="auto-name">'+escapeHTML(a.name)+'</span>'
+        +   '</div>'
+        +   '<span class="auto-fmt-pill'+(isActive?'':' paused')+'">'+a.output_format.toUpperCase()+'</span>'
         + '</div>'
-        + '<div style="text-align:right;font-size:11px;color:var(--slate-3);font-family:\'JetBrains Mono\',monospace">'+escapeHTML(a.schedule)+'</div>'
-        + '<div class="auto-card-task">'+escapeHTML(a.task)+'</div>'
         + '<div class="auto-card-meta">'
-        +   activePill + statusPill
-        +   '<span style="margin-left:auto">'+escapeHTML(lastRun)+'</span>'
-        +   '<span>'+escapeHTML(a.output_format.toUpperCase())+'</span>'
+        +   '<div class="meta-cell">'
+        +     '<div class="meta-label">Schedule</div>'
+        +     '<div class="meta-schedule">'+escapeHTML(cronToHuman(a.schedule))+'</div>'
+        +     '<div class="meta-cron">'+escapeHTML(a.schedule)+'</div>'
+        +   '</div>'
+        +   '<div class="meta-cell">'
+        +     '<div class="meta-label">Task</div>'
+        +     '<div class="meta-task" title="'+escapeAttr(a.task)+'">'+escapeHTML(a.task)+'</div>'
+        +   '</div>'
+        +   '<div class="meta-cell">'
+        +     '<div class="meta-label">Last run</div>'
+        +     '<div class="meta-value">'+timeAgo(a.last_run_at)+'</div>'
+        +   '</div>'
         + '</div>'
-        + '<div class="auto-card-actions">'
-        +   '<button class="auto-btn primary auto-run-btn" data-id="'+a.id+'">▶ Run now</button>'
-        +   (a.has_result ? '<button class="auto-btn auto-dl-btn" data-id="'+a.id+'">↓ Download</button>' : '')
-        +   '<button class="auto-btn auto-pause-btn" data-id="'+a.id+'">'+(a.status==='active'?'Pause':'Resume')+'</button>'
-        +   '<button class="auto-btn auto-edit-btn" data-id="'+a.id+'" data-auto=\''+JSON.stringify(a).replace(/'/g,"&#39;")+'\'">Edit</button>'
-        +   '<button class="auto-btn danger auto-del-btn" data-id="'+a.id+'">Delete</button>'
+        + '<div class="auto-card-run">'+runBadge+runTs+'</div>'
+        + errorBanner
+        + '<div class="auto-card-footer">'
+        +   '<div class="auto-actions-left">'
+        +     '<button class="auto-icon-btn run auto-run-btn" data-id="'+a.id+'" title="'+(isError?'Retry now':'Run now')+'">'
+        +       '<i data-lucide="'+(isError?'rotate-ccw':'play')+'" style="width:14px;height:14px"></i>'
+        +     '</button>'
+        +     dlBtn
+        +     '<div class="auto-action-divider"></div>'
+        +     '<button class="auto-pause-ghost'+(isActive?'':' resume')+' auto-pause-btn" data-id="'+a.id+'">'+(isActive?'Pause':'Resume')+'</button>'
+        +   '</div>'
+        +   '<div class="auto-actions-right">'
+        +     '<button class="auto-icon-btn edit auto-edit-btn" data-id="'+a.id
+        +       +'" data-auto=\''+JSON.stringify(a).replace(/'/g,"&#39;")+'\' title="Edit">'
+        +       '<i data-lucide="pencil" style="width:13px;height:13px"></i>'
+        +     '</button>'
+        +     '<button class="auto-icon-btn del auto-del-btn" data-id="'+a.id+'" title="Delete">'
+        +       '<i data-lucide="trash-2" style="width:13px;height:13px"></i>'
+        +     '</button>'
+        +   '</div>'
         + '</div>'
         + '</div>';
     }).join('') + '</div>';
 
-    // Wire buttons
+    lucide.createIcons();
+
+    // Expand task on click
+    container.querySelectorAll('.meta-task').forEach(el => {
+      el.addEventListener('click', () => el.classList.toggle('expanded'));
+    });
+
+    // Run buttons
     container.querySelectorAll('.auto-run-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        btn.disabled = true; btn.textContent = 'Running…';
+        const card = container.querySelector('.auto-card[data-id="'+id+'"]');
+        btn.disabled = true;
+        const runArea = card && card.querySelector('.auto-card-run');
+        if (runArea) runArea.innerHTML = '<span class="run-badge running">Running — up to 60 seconds…</span>';
+        card && card.querySelectorAll('.auto-edit-btn,.auto-del-btn,.auto-pause-btn').forEach(b => { b.disabled = true; });
         try {
-          const r = await fetch('/api/v1/automations/'+id+'/run', {method:'POST',credentials:'include'});
-          const j = await r.json();
-          toast('Automation started — results will appear when done.');
-          setTimeout(()=>renderAutomations(), 3000);
-        } catch(e){ toast('Failed to start automation'); }
-        finally { btn.disabled=false; btn.textContent='▶ Run now'; }
+          await fetch('/api/v1/automations/'+id+'/run', {method:'POST',credentials:'include'});
+          toast('Automation started — results appear when done.');
+          setTimeout(()=>renderAutomations(filter), 5000);
+        } catch(e){ toast('Failed to start automation.'); renderAutomations(filter); }
       });
     });
+
+    // Download buttons
     container.querySelectorAll('.auto-dl-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const a = document.createElement('a');
@@ -2374,19 +3031,36 @@ a{color:inherit;text-decoration:none}
         document.body.removeChild(a);
       });
     });
+
+    // Pause/resume buttons
     container.querySelectorAll('.auto-pause-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         await fetch('/api/v1/automations/'+btn.dataset.id+'/pause', {method:'POST',credentials:'include'});
-        await renderAutomations();
+        await renderAutomations(filter);
       });
     });
+
+    // Delete — inline confirm
     container.querySelectorAll('.auto-del-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Delete this automation?')) return;
-        await fetch('/api/v1/automations/'+btn.dataset.id, {method:'DELETE',credentials:'include'});
-        await renderAutomations();
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const card = container.querySelector('.auto-card[data-id="'+id+'"]');
+        const footer = card && card.querySelector('.auto-card-footer');
+        if (!footer) return;
+        footer.innerHTML = '<div class="auto-del-confirm">'
+          + '<span>Delete this automation?</span>'
+          + '<button class="confirm-yes">Yes, delete</button>'
+          + '<button class="confirm-no">Cancel</button>'
+          + '</div>';
+        footer.querySelector('.confirm-yes').addEventListener('click', async () => {
+          await fetch('/api/v1/automations/'+id, {method:'DELETE',credentials:'include'});
+          await renderAutomations(filter);
+        });
+        footer.querySelector('.confirm-no').addEventListener('click', () => renderAutomations(filter));
       });
     });
+
+    // Edit buttons
     container.querySelectorAll('.auto-edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         try { showAutoModal(JSON.parse(btn.dataset.auto)); } catch(_){}
@@ -2394,85 +3068,97 @@ a{color:inherit;text-decoration:none}
     });
   }
 
-  // Parse an existing cron string into {freq, weekday, monthday, hour, minute, ampm}
-  function parseCron(cron){
+  function detectPreset(cron){
     try {
       const [min, hr, dom, , dow] = (cron||'0 9 * * *').split(' ');
+      if (hr === '*') return { preset:'hourly', hour:'9', minute:'00', ampm:'AM' };
       const h = parseInt(hr), m = parseInt(min);
       const ampm = h < 12 ? 'AM' : 'PM';
-      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      let freq = 'daily';
-      if (dow === '1-5') freq = 'weekdays';
-      else if (dow !== '*') freq = 'weekly';
-      else if (dom !== '*') freq = 'monthly';
-      return { freq, weekday: dow === '*' || dow === '1-5' ? '1' : dow,
-               monthday: dom === '*' ? '1' : dom,
-               hour: String(hour12), minute: m === 0 ? '00' : String(m), ampm };
-    } catch(_){ return { freq:'daily', weekday:'1', monthday:'1', hour:'9', minute:'00', ampm:'AM' }; }
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const mm = m < 10 ? '0'+m : String(m);
+      if (dow === '1-5') return { preset:'weekdays', hour:String(h12), minute:mm, ampm };
+      if (dow === '1')   return { preset:'mon',      hour:String(h12), minute:mm, ampm };
+      if (dom !== '*')   return { preset:'monthly',  hour:String(h12), minute:mm, ampm };
+      if (dow === '*')   return { preset:'daily',    hour:String(h12), minute:mm, ampm };
+      return { preset:'custom', hour:'9', minute:'00', ampm:'AM', customCron: cron };
+    } catch(_){
+      return { preset:'daily', hour:'9', minute:'00', ampm:'AM' };
+    }
   }
 
-  function buildCron(){
-    const freq = document.getElementById('am-freq').value;
-    let hr12 = Math.min(12, Math.max(1, parseInt(document.getElementById('am-hour').value) || 9));
-    let m    = Math.min(59, Math.max(0, parseInt(document.getElementById('am-min').value)  || 0));
-    const ampm = document.getElementById('am-ampm').value;
-    let hr24 = ampm === 'PM' ? (hr12 === 12 ? 12 : hr12 + 12) : (hr12 === 12 ? 0 : hr12);
-    if (freq === 'daily')    return `${m} ${hr24} * * *`;
-    if (freq === 'weekdays') return `${m} ${hr24} * * 1-5`;
-    if (freq === 'weekly')   return `${m} ${hr24} * * ${document.getElementById('am-weekday').value}`;
-    if (freq === 'monthly')  return `${m} ${hr24} ${document.getElementById('am-monthday').value} * *`;
-    return `${m} ${hr24} * * *`;
+  function buildCronFromModal(){
+    const preset = (document.getElementById('am-selected-preset')||{}).value || 'daily';
+    if (preset === 'hourly') return '0 * * * *';
+    if (preset === 'custom'){
+      return ((document.getElementById('am-custom-cron-val')||{}).value||'').trim() || '0 9 * * *';
+    }
+    const hr12 = Math.min(12, Math.max(1, parseInt(((document.getElementById('am-hour')||{}).value)||'9') || 9));
+    const m    = Math.min(59, Math.max(0,  parseInt(((document.getElementById('am-min')||{}).value)||'0')  || 0));
+    const ampm = ((document.getElementById('am-ampm')||{}).value) || 'AM';
+    const hr24 = ampm === 'PM' ? (hr12 === 12 ? 12 : hr12 + 12) : (hr12 === 12 ? 0 : hr12);
+    if (preset === 'daily')    return m+' '+hr24+' * * *';
+    if (preset === 'weekdays') return m+' '+hr24+' * * 1-5';
+    if (preset === 'mon')      return m+' '+hr24+' * * 1';
+    if (preset === 'monthly')  return m+' '+hr24+' 1 * *';
+    return m+' '+hr24+' * * *';
   }
 
   function showAutoModal(existing){
     const isEdit = !!existing;
-    const p = parseCron(isEdit ? existing.schedule : '0 9 * * *');
+    const p = detectPreset(isEdit ? existing.schedule : '0 9 * * *');
 
-    const hourOpts  = [1,2,3,4,5,6,7,8,9,10,11,12].map(h=>`<option value="${h}"${p.hour==h?' selected':''}>${h}</option>`).join('');
-    const minOpts   = ['00','15','30','45'].map(m=>`<option value="${m}"${p.minute===m?' selected':''}>${m}</option>`).join('');
-    const dayOpts   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-      .map((d,i)=>`<option value="${i+1}"${p.weekday==i+1?' selected':''}>${d}</option>`).join('');
-    const mdayOpts  = Array.from({length:28},(_,i)=>i+1)
-      .map(d=>`<option value="${d}"${p.monthday==d?' selected':''}>${d}</option>`).join('');
+    const PRESETS = [
+      { key:'daily',    label:'Every day at…' },
+      { key:'weekdays', label:'Every weekday (Mon–Fri) at…' },
+      { key:'mon',      label:'Every Monday at…' },
+      { key:'hourly',   label:'Every hour' },
+      { key:'monthly',  label:'1st of every month at…' },
+      { key:'custom',   label:'Custom cron expression…', fullWidth:true },
+    ];
+
+    const presetButtons = PRESETS.map(ps =>
+      '<button type="button" class="am-preset'
+      + (p.preset === ps.key ? ' selected' : '')
+      + (ps.fullWidth ? ' full-width' : '')
+      + '" data-preset="'+ps.key+'">'
+      + escapeHTML(ps.label)
+      + '</button>'
+    ).join('');
+
+    const showTime = p.preset !== 'hourly' && p.preset !== 'custom';
 
     const backdrop = document.createElement('div');
     backdrop.className = 'auto-modal-backdrop';
     backdrop.innerHTML = '<div class="auto-modal" style="max-height:90vh;overflow-y:auto">'
-      + '<h2>'+(isEdit ? 'Edit automation' : 'New automation')+'</h2>'
+      + '<h2>'+(isEdit?'Edit automation':'New automation')+'</h2>'
 
-      // Basic info
       + '<div class="auto-field"><label>Name</label>'
-      +   '<input id="am-name" placeholder="e.g. Daily competitor pricing" value="'+escapeHTML(isEdit?existing.name:'')+'"></div>'
-      + '<div class="auto-field"><label>Website URL</label>'
-      +   '<input id="am-url" placeholder="https://example.com/pricing" value="'+escapeHTML(isEdit?existing.url:'')+'"></div>'
-      + '<div class="auto-field"><label>What to extract</label>'
-      +   '<textarea id="am-task" placeholder="Find all product prices and their names. Include any discounts or sale prices shown.">'+escapeHTML(isEdit?existing.task:'')+'</textarea></div>'
+      +   '<input id="am-name" placeholder="e.g. Daily competitor pricing" autofocus value="'+escapeHTML(isEdit?existing.name:'')+'"></div>'
 
-      // Schedule builder
+      + '<div class="auto-field"><label>What to extract</label>'
+      +   '<textarea id="am-task" rows="3" placeholder="Find all product prices and their names. Include any discounts or sale prices shown.">'+escapeHTML(isEdit?existing.task:'')+'</textarea></div>'
+
       + '<div class="auto-field"><label>Schedule</label>'
-      +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-      +     '<select id="am-freq" style="width:100%">'
-      +       '<option value="daily"'+(p.freq==='daily'?' selected':'')+'>Every day</option>'
-      +       '<option value="weekdays"'+(p.freq==='weekdays'?' selected':'')+'>Every weekday (Mon–Fri)</option>'
-      +       '<option value="weekly"'+(p.freq==='weekly'?' selected':'')+'>Every week on…</option>'
-      +       '<option value="monthly"'+(p.freq==='monthly'?' selected':'')+'>Every month on day…</option>'
-      +     '</select>'
-      +     '<select id="am-weekday" style="width:100%;display:'+(p.freq==='weekly'?'block':'none')+'">'+dayOpts+'</select>'
-      +     '<select id="am-monthday" style="width:100%;display:'+(p.freq==='monthly'?'block':'none')+'">'+mdayOpts+'</select>'
-      +   '</div>'
-      +   '<div style="display:flex;gap:8px;align-items:center">'
-      +     '<span style="font-size:12px;color:var(--slate-2);white-space:nowrap">at</span>'
-      +     '<input id="am-hour" type="number" min="1" max="12" value="'+p.hour+'" style="flex:1;width:0" placeholder="9">'
+      +   '<div class="am-presets">'+presetButtons+'</div>'
+      +   '<input type="hidden" id="am-selected-preset" value="'+p.preset+'">'
+      +   '<div id="am-time-row" class="am-time-row" style="display:'+(showTime?'flex':'none')+'">'
+      +     '<span class="am-time-label">at</span>'
+      +     '<input id="am-hour" type="number" min="1" max="12" value="'+p.hour+'" style="width:52px" placeholder="9">'
       +     '<span style="font-size:13px;color:var(--slate-3)">:</span>'
-      +     '<input id="am-min" type="number" min="0" max="59" value="'+p.minute+'" style="flex:1;width:0" placeholder="00">'
-      +     '<select id="am-ampm" style="flex:1">'
+      +     '<input id="am-min" type="number" min="0" max="59" value="'+p.minute+'" style="width:52px" placeholder="00">'
+      +     '<select id="am-ampm" style="width:70px">'
       +       '<option value="AM"'+(p.ampm==='AM'?' selected':'')+'>AM</option>'
       +       '<option value="PM"'+(p.ampm==='PM'?' selected':'')+'>PM</option>'
       +     '</select>'
       +   '</div>'
+      +   '<div id="am-custom-cron" class="am-custom-cron'+(p.preset==='custom'?' visible':'')+'">'
+      +     '<input id="am-custom-cron-val" placeholder="e.g. 0 9 * * 1" value="'+(p.preset==='custom'&&isEdit?escapeHTML(existing.schedule):'')+'">'
+      +   '</div>'
       + '</div>'
 
-      // Output format
+      + '<div class="auto-field"><label>Website URL</label>'
+      +   '<input id="am-url" placeholder="https://example.com/pricing" value="'+escapeHTML(isEdit?existing.url:'')+'"></div>'
+
       + '<div class="auto-field"><label>Output format</label>'
       +   '<select id="am-format">'
       +     '<option value="docx"'+(isEdit&&existing.output_format==='docx'?' selected':'')+'>Word document (.docx)</option>'
@@ -2480,56 +3166,41 @@ a{color:inherit;text-decoration:none}
       +     '<option value="json"'+(isEdit&&existing.output_format==='json'?' selected':'')+'>JSON (.json)</option>'
       +   '</select></div>'
 
-      // Login credentials (collapsible)
-      + '<details style="margin-top:8px;margin-bottom:8px" '+(isEdit&&(existing.login_username||existing.login_email)?'open':'')+' >'
-      + '<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-2);letter-spacing:.06em;text-transform:uppercase;padding:8px 0;list-style:none;display:flex;align-items:center;gap:8px">'
-      +   '<span style="border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-size:10px">+</span> Login credentials <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate-3)">(optional — for sites that require sign-in)</span>'
-      + '</summary>'
-      + '<div style="padding-top:12px;display:flex;flex-direction:column;gap:12px">'
-      +   '<div class="auto-field" style="margin:0"><label>Login page URL</label>'
-      +     '<input id="am-login-url" placeholder="https://example.com/login (leave blank to use the same URL)" value="'+escapeHTML(isEdit&&existing.login_url?existing.login_url:'')+'"></div>'
-      +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      +     '<div class="auto-field" style="margin:0"><label>Username</label>'
-      +       '<input id="am-login-user" placeholder="your username" value="'+escapeHTML(isEdit&&existing.login_username?existing.login_username:'')+'"></div>'
-      +     '<div class="auto-field" style="margin:0"><label>Email</label>'
-      +       '<input id="am-login-email" type="email" placeholder="your@email.com" value="'+escapeHTML(isEdit&&existing.login_email?existing.login_email:'')+'"></div>'
-      +   '</div>'
-      +   '<div class="auto-field" style="margin:0"><label>Password</label>'
-      +     '<input id="am-login-pass" type="password" placeholder="••••••••"></div>'
-      + '</div>'
-      + '</details>'
-
       + '<div class="auto-modal-actions">'
-      +   '<button class="auto-btn" id="am-cancel">Cancel</button>'
-      +   '<button class="auto-btn primary" id="am-save">'+(isEdit?'Save changes':'Create automation')+'</button>'
+      +   '<button class="auto-pause-ghost" id="am-cancel">Cancel</button>'
+      +   '<button class="autos-new-btn" id="am-save">'+(isEdit?'Save changes':'Create automation')+'</button>'
       + '</div>'
       + '</div>';
+
     document.body.appendChild(backdrop);
 
-    // Show/hide day pickers based on frequency
-    document.getElementById('am-freq').addEventListener('change', function(){
-      document.getElementById('am-weekday').style.display  = this.value === 'weekly'  ? 'block' : 'none';
-      document.getElementById('am-monthday').style.display = this.value === 'monthly' ? 'block' : 'none';
+    // Preset selection
+    backdrop.querySelectorAll('.am-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        backdrop.querySelectorAll('.am-preset').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const preset = btn.dataset.preset;
+        document.getElementById('am-selected-preset').value = preset;
+        const timeRow    = document.getElementById('am-time-row');
+        const customCron = document.getElementById('am-custom-cron');
+        timeRow.style.display = (preset !== 'hourly' && preset !== 'custom') ? 'flex' : 'none';
+        customCron.classList[preset === 'custom' ? 'add' : 'remove']('visible');
+      });
     });
 
-    document.getElementById('am-cancel').addEventListener('click', ()=>backdrop.remove());
-    backdrop.addEventListener('click', e => { if(e.target===backdrop) backdrop.remove(); });
+    document.getElementById('am-cancel').addEventListener('click', () => backdrop.remove());
+    backdrop.addEventListener('click', e => { if(e.target === backdrop) backdrop.remove(); });
 
     document.getElementById('am-save').addEventListener('click', async () => {
+      const name = document.getElementById('am-name').value.trim();
+      const url  = document.getElementById('am-url').value.trim();
+      const task = document.getElementById('am-task').value.trim();
+      if (!name || !url || !task){ toast('Name, URL, and task are required.'); return; }
       const body = {
-        name:          document.getElementById('am-name').value.trim(),
-        url:           document.getElementById('am-url').value.trim(),
-        task:          document.getElementById('am-task').value.trim(),
-        schedule:      buildCron(),
+        name, url, task,
+        schedule:      buildCronFromModal(),
         output_format: document.getElementById('am-format').value,
-        login_url:     document.getElementById('am-login-url').value.trim() || null,
-        login_username:document.getElementById('am-login-user').value.trim() || null,
-        login_email:   document.getElementById('am-login-email').value.trim() || null,
-        login_password:document.getElementById('am-login-pass').value || null,
       };
-      if (!body.name || !body.url || !body.task){
-        toast('Name, URL, and task are required.'); return;
-      }
       const endpoint = isEdit ? '/api/v1/automations/'+existing.id : '/api/v1/automations';
       const method   = isEdit ? 'PATCH' : 'POST';
       const r = await fetch(endpoint, {method, credentials:'include',
@@ -2537,7 +3208,7 @@ a{color:inherit;text-decoration:none}
       if (r.ok){
         backdrop.remove();
         toast(isEdit ? 'Automation updated.' : 'Automation created.');
-        await renderAutomations();
+        await renderAutomations(autoFilter);
       } else {
         toast('Save failed — check the server logs.');
       }
@@ -2578,13 +3249,297 @@ a{color:inherit;text-decoration:none}
   }
 
   function renderSettingsLink(){
+    if (state.settingsPage) { renderSettingsPage(state.settingsPage); return; }
+    renderSettingsHub();
+  }
+
+  function renderSettingsHub(){
+    const cats = [
+      { icon:'user',         key:'profile',  title:'Practice profile',       sub:'Name, address, hours, specialty' },
+      { icon:'mail',         key:'channels', title:'Messaging & channels',   sub:'Connected email, SMS, notification preferences' },
+      { icon:'list-checks',  key:'rules',    title:'Follow-up rules',        sub:'Timing, tone, auto-approve thresholds' },
+      { icon:'credit-card',  key:'account',  title:'Account & billing',      sub:'Plan, usage, team members' },
+    ];
     main.innerHTML =
       '<div class="section-eyebrow">Settings</div>'
-    + '<div class="rp-card">'
-    +   '<b style="color:#fff">Chat with Adapix</b>'
-    +   '<div style="color:var(--slate-2);font-size:13px;margin-top:6px">Tell Adapix anything about your business — she remembers + shapes the dashboard around what you tell her.</div>'
-    +   '<div style="margin-top:12px"><a class="btn btn-primary" href="/chat" style="display:inline-block">Open chat →</a></div>'
-    + '</div>';
+    + '<div class="rows">'
+    + cats.map(s =>
+        `<div class="row-card" data-settings-view="${s.key}" style="cursor:pointer">`
+        + `<div style="flex:0 0 32px;height:32px;border-radius:9px;background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.2);display:flex;align-items:center;justify-content:center;color:var(--cyan-2)"><i data-lucide="${s.icon}"></i></div>`
+        + `<div class="text"><b>${s.title}</b><span>${s.sub}</span></div>`
+        + `<span style="color:var(--slate-3);font-size:18px;flex:0 0 auto">&rsaquo;</span>`
+        + `</div>`
+      ).join('')
+    + '</div>'
+    + `<div class="rp-card" style="margin-top:16px">`
+    + `<b style="color:#fff">Tell Adapix about your practice</b>`
+    + `<div style="color:var(--slate-2);font-size:13px;margin-top:6px;line-height:1.55">Chat to adjust how Adapix writes, who it prioritizes, and what tone it uses. Changes take effect on the next campaign pass.</div>`
+    + `<div style="margin-top:12px"><a class="btn btn-primary" href="/chat" style="display:inline-block;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:#04243a;text-decoration:none">Open chat &rarr;</a></div>`
+    + `</div>`;
+    renderLucide(main);
+    main.querySelectorAll('[data-settings-view]').forEach(el => {
+      el.addEventListener('click', () => goSettingsView(el.dataset.settingsView));
+    });
+  }
+
+  function renderSettingsPage(page){
+    const pages = {
+      profile:  { title:'Practice profile',     sub:'How Adapix represents your business when writing to customers.' },
+      channels: { title:'Messaging & channels', sub:'Where Adapix sends messages and how you get notified.' },
+      rules:    { title:'Follow-up rules',      sub:'Control how and when Adapix reaches out to customers.' },
+      account:  { title:'Account & billing',    sub:'Your plan, usage, and team.' },
+    };
+    const meta = pages[page] || { title:page, sub:'' };
+
+    let body = '';
+    if (page === 'profile'){
+      body = `
+        <div class="scard">
+          <div class="scard-title">Business info</div>
+          <div class="sform-row"><label class="sform-label">Practice name</label><input class="sform-input" placeholder="e.g. Bright Smile Orthodontics" /></div>
+          <div class="sform-row">
+            <label class="sform-label">Specialty / type</label>
+            <div class="stype-wrap">
+              <input class="sform-input" id="stype-search" autocomplete="off" placeholder="Search business type..." />
+              <div class="stype-dropdown" id="stype-dropdown" hidden></div>
+            </div>
+            <div class="stype-selected" id="stype-selected" hidden>
+              <div><div class="stype-selected-name" id="stype-selected-name"></div><div class="stype-selected-cat" id="stype-selected-cat"></div></div>
+              <button style="background:none;border:none;color:var(--ink-2);cursor:pointer;font-size:18px;line-height:1;padding:0" id="stype-clear">&times;</button>
+            </div>
+          </div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" placeholder="(555) 000-0000" /></div>
+            <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" placeholder="yourpractice.com" /></div>
+          </div>
+          <div class="sform-row"><label class="sform-label">Address</label><textarea class="sform-input" rows="2" placeholder="123 Main St, Suite 1, City, State 00000" style="resize:vertical"></textarea></div>
+        </div>
+        <div class="scard">
+          <div class="scard-title">Business hours</div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Weekdays (Mon&ndash;Fri)</label><input class="sform-input" placeholder="9:00 AM &ndash; 5:00 PM" /></div>
+            <div class="sform-row"><label class="sform-label">Saturday</label><input class="sform-input" placeholder="Closed" /></div>
+          </div>
+          <div class="sform-row"><label class="sform-label">Sunday</label><input class="sform-input" placeholder="Closed" /></div>
+        </div>
+        <button class="sform-save" data-action="save">Save changes</button>`;
+
+    } else if (page === 'channels'){
+      body = `
+        <div class="scard">
+          <div class="scard-title">Connected channels</div>
+          <div class="sch-row">
+            <div class="sch-icon"><i data-lucide="message-square" style="width:16px;height:16px"></i></div>
+            <div class="sch-body"><div class="sch-name">SMS</div><div class="sch-val">Not configured</div></div>
+            <span class="sch-badge off">Disconnected</span>
+            <button class="sch-connect" data-action="connect-sms">Connect</button>
+          </div>
+          <div class="sch-row">
+            <div class="sch-icon"><i data-lucide="mail" style="width:16px;height:16px"></i></div>
+            <div class="sch-body"><div class="sch-name">Email</div><div class="sch-val">Not configured</div></div>
+            <span class="sch-badge off">Disconnected</span>
+            <button class="sch-connect" data-action="connect-email">Connect</button>
+          </div>
+        </div>
+        <div class="scard">
+          <div class="scard-title">Notify me when</div>
+          <div class="stoggle-row">
+            <div class="stoggle-body"><div class="stoggle-label">Customer needs a human reply</div><div class="stoggle-hint">Escalations &mdash; Adapix could not handle it automatically</div></div>
+            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+          </div>
+          <div class="stoggle-row">
+            <div class="stoggle-body"><div class="stoggle-label">Drafts are ready to review</div><div class="stoggle-hint">When Adapix writes messages waiting for your approval</div></div>
+            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+          </div>
+          <div class="stoggle-row">
+            <div class="stoggle-body"><div class="stoggle-label">Campaign pass completes</div><div class="stoggle-hint">Summary after each automated send cycle</div></div>
+            <label class="stoggle"><input type="checkbox" /><span class="stoggle-track"></span></label>
+          </div>
+        </div>
+        <button class="sform-save" data-action="save">Save changes</button>`;
+
+    } else if (page === 'rules'){
+      body = `
+        <div class="scard">
+          <div class="scard-title">Timing</div>
+          <div class="sform-row">
+            <label class="sform-label">First follow-up after appointment</label>
+            <select class="sform-input sform-select"><option>Same day</option><option>1 day later</option><option selected>2 days later</option><option>3 days later</option><option>1 week later</option></select>
+            <div class="sform-hint">When Adapix sends the first post-visit check-in</div>
+          </div>
+          <div class="sform-row">
+            <label class="sform-label">Re-contact window</label>
+            <select class="sform-input sform-select"><option>Once</option><option selected>Up to 2 times</option><option>Up to 3 times</option><option>Until they respond</option></select>
+            <div class="sform-hint">How many times Adapix follows up without a reply</div>
+          </div>
+          <div class="sform-row">
+            <label class="sform-label">Win-back: reach dormant customers after</label>
+            <select class="sform-input sform-select"><option>3 months</option><option>6 months</option><option selected>12 months</option><option>18 months</option><option>Never</option></select>
+          </div>
+        </div>
+        <div class="scard">
+          <div class="scard-title">Tone</div>
+          <div class="sform-row">
+            <label class="sform-label">Default message tone</label>
+            <div class="stone-opts">
+              <button class="stone-opt">Formal</button>
+              <button class="stone-opt active">Warm</button>
+              <button class="stone-opt">Casual</button>
+              <button class="stone-opt">Concise</button>
+            </div>
+            <div class="sform-hint">Applies to all automated messages. You can override per-campaign in chat.</div>
+          </div>
+        </div>
+        <div class="scard">
+          <div class="scard-title">Approval</div>
+          <div class="stoggle-row">
+            <div class="stoggle-body"><div class="stoggle-label">Auto-approve routine messages</div><div class="stoggle-hint">Standard follow-ups and reminders send without your review. Unusual messages still queue for approval.</div></div>
+            <label class="stoggle"><input type="checkbox" /><span class="stoggle-track"></span></label>
+          </div>
+          <div class="stoggle-row">
+            <div class="stoggle-body"><div class="stoggle-label">Require approval for win-back messages</div><div class="stoggle-hint">Always review messages to dormant customers before they send</div></div>
+            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+          </div>
+        </div>
+        <button class="sform-save" data-action="save">Save changes</button>`;
+
+    } else if (page === 'account'){
+      body = `
+        <div class="scard">
+          <div class="scard-title">Current plan</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">Starter &nbsp;<span class="splan-badge">Active</span></div>
+              <div style="font-size:13px;color:var(--slate-2)">Up to 200 contacts &middot; 500 messages/mo</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Messages</div><div style="font-size:22px;font-weight:700;color:#00D4FF">0</div><div style="font-size:11px;color:var(--slate-3)">of 500 this month</div></div>
+            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Contacts</div><div style="font-size:22px;font-weight:700;color:#E6EDF3">0</div><div style="font-size:11px;color:var(--slate-3)">of 200 max</div></div>
+            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Renews</div><div style="font-size:22px;font-weight:700;color:#3FB950">&mdash;</div><div style="font-size:11px;color:var(--slate-3)">billing not set up</div></div>
+          </div>
+        </div>
+        <div class="scard">
+          <div class="scard-title">Team members</div>
+          <div class="smember-row">
+            <div class="smember-av">RC</div>
+            <div><div class="smember-name">You</div><div class="smember-role">Owner</div></div>
+          </div>
+          <div style="margin-top:14px">
+            <button class="sch-connect" style="font-size:13px;padding:7px 14px" data-action="invite">+ Invite team member</button>
+          </div>
+        </div>
+        <div class="scard">
+          <div class="scard-title" style="color:#F85149">Danger zone</div>
+          <div style="font-size:13px;color:var(--slate-2);margin-bottom:14px;line-height:1.55">Deactivating pauses all automations and prevents Adapix from sending messages. You can reactivate at any time.</div>
+          <button class="sdanger-btn" data-action="deactivate">Deactivate practice</button>
+        </div>`;
+    }
+
+    main.innerHTML = `
+      <div class="spage">
+        <button class="spage-back" data-action="back"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Settings</button>
+        <div class="spage-head">
+          <div class="spage-title">${meta.title}</div>
+          <div class="spage-sub">${meta.sub}</div>
+        </div>
+        ${body}
+      </div>`;
+
+    renderLucide(main);
+
+    main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
+
+    main.querySelectorAll('.sform-save, [data-action="save"]').forEach(btn => {
+      btn.addEventListener('click', () => toast('Changes saved'));
+    });
+    const inv = main.querySelector('[data-action="invite"]');
+    if (inv) inv.addEventListener('click', () => toast('Invite link copied — feature coming soon'));
+    const deact = main.querySelector('[data-action="deactivate"]');
+    if (deact) deact.addEventListener('click', () => toast('Contact support to deactivate your account', true));
+    const conSms = main.querySelector('[data-action="connect-sms"]');
+    if (conSms) conSms.addEventListener('click', () => toast('SMS setup coming soon'));
+    const conEmail = main.querySelector('[data-action="connect-email"]');
+    if (conEmail) conEmail.addEventListener('click', () => toast('Email setup coming soon'));
+
+    main.querySelectorAll('.stone-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        main.querySelectorAll('.stone-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Specialty picker (profile page only)
+    if (page === 'profile') {
+      const stypeSearch = main.querySelector('#stype-search');
+      const stypeDD    = main.querySelector('#stype-dropdown');
+      const stypeSel   = main.querySelector('#stype-selected');
+      const stypeSelN  = main.querySelector('#stype-selected-name');
+      const stypeSelC  = main.querySelector('#stype-selected-cat');
+      const stypeClr   = main.querySelector('#stype-clear');
+
+      function stypeFuzzy(it, q){
+        const n = it.name.toLowerCase(), c = it.cat.toLowerCase();
+        if (n.startsWith(q)) return 1000;
+        const ni = n.indexOf(q); if (ni >= 0) return 800 - ni;
+        const ci = c.indexOf(q); if (ci >= 0) return 400 - ci;
+        return -1;
+      }
+
+      function stypeRenderDD(items, showHdr){
+        const rows = items.map(it =>
+          `<div class="stype-row" data-id="${it.id}"><b>${it.name}</b><span class="stype-cat">${it.cat}</span></div>`
+        ).join('');
+        const hdr = showHdr ? '<div class="stype-examples-hd">Examples — start typing to search 200+ types</div>' : '';
+        const notListed = '<div class="stype-row notlisted" data-id="__other"><b>Not listed — describe it yourself</b><span class="stype-cat">free text</span></div>';
+        stypeDD.innerHTML = items.length === 0
+          ? '<div class="stype-empty">No matches — try another word</div>' + notListed
+          : hdr + rows + notListed;
+        stypeDD.hidden = false;
+        stypeDD.querySelectorAll('[data-id]').forEach(el => {
+          el.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const id = el.dataset.id;
+            if (id === '__other'){
+              stypeSearch.value = '';
+              stypeDD.hidden = true;
+              stypeSel.hidden = true;
+              return;
+            }
+            const it = BUSINESS_TYPES.find(x => x.id === id);
+            if (!it) return;
+            stypeSearch.value = it.name;
+            stypeSelN.textContent = it.name;
+            stypeSelC.textContent = it.cat;
+            stypeSel.hidden = false;
+            stypeDD.hidden = true;
+          });
+        });
+      }
+
+      function stypeShowDefaults(){
+        const items = STYPE_DEFAULTS.map(id => BUSINESS_TYPES.find(b => b.id === id)).filter(Boolean);
+        stypeRenderDD(items, true);
+      }
+
+      stypeSearch.addEventListener('focus', stypeShowDefaults);
+      stypeSearch.addEventListener('input', () => {
+        const q = stypeSearch.value.trim().toLowerCase();
+        if (!q){ stypeShowDefaults(); return; }
+        const items = BUSINESS_TYPES
+          .map(it => ({it, s: stypeFuzzy(it, q)}))
+          .filter(x => x.s >= 0)
+          .sort((a, b) => b.s - a.s)
+          .slice(0, 8)
+          .map(x => x.it);
+        stypeRenderDD(items, false);
+      });
+      stypeSearch.addEventListener('blur', () => { setTimeout(() => { stypeDD.hidden = true; }, 120); });
+      stypeClr.addEventListener('click', () => {
+        stypeSearch.value = '';
+        stypeSel.hidden = true;
+      });
+    }
   }
 
   function renderRightPane(){
@@ -2602,10 +3557,10 @@ a{color:inherit;text-decoration:none}
         '<div class="rp-card today-card">'
       +   '<div class="rp-eyebrow">Today</div>'
       +   '<div class="stat-grid">'
-      +     '<div class="stat-tile stat-sent"><div class="stat-icon">↗</div><div class="stat-num">'+sent+'</div><div class="stat-lbl">Sent</div></div>'
-      +     '<div class="stat-tile stat-esc"><div class="stat-icon">!</div><div class="stat-num">'+esc+'</div><div class="stat-lbl">Flagged</div></div>'
-      +     '<div class="stat-tile stat-draft"><div class="stat-icon">✎</div><div class="stat-num">'+dr+'</div><div class="stat-lbl">Drafts</div></div>'
-      +     '<div class="stat-tile stat-booked"><div class="stat-icon">★</div><div class="stat-num">'+booked+'</div><div class="stat-lbl">Booked</div></div>'
+      +     '<div class="stat-tile stat-sent"><div class="stat-icon"><i data-lucide="send"></i></div><div class="stat-num">'+sent+'</div><div class="stat-lbl">Sent</div></div>'
+      +     '<div class="stat-tile stat-esc"><div class="stat-icon"><i data-lucide="alert-circle"></i></div><div class="stat-num">'+esc+'</div><div class="stat-lbl">Flagged</div></div>'
+      +     '<div class="stat-tile stat-draft"><div class="stat-icon"><i data-lucide="file-edit"></i></div><div class="stat-num">'+dr+'</div><div class="stat-lbl">Drafts</div></div>'
+      +     '<div class="stat-tile stat-booked"><div class="stat-icon"><i data-lucide="calendar-check"></i></div><div class="stat-num">'+booked+'</div><div class="stat-lbl">Booked</div></div>'
       +   '</div>'
       +   '<div class="rp-progress"><div class="rp-progress-bar" style="width:'+arc+'%"></div></div>'
       +   '<div class="rp-progress-lbl"><span>'+sent+' sent</span><span>'+dr+' pending review</span></div>'
@@ -2622,6 +3577,7 @@ a{color:inherit;text-decoration:none}
       +     '</div>'
       +   '</div>'
       + '</div>';
+    renderLucide(rp);
   }
 
   function formatUptime(ms){
@@ -2640,10 +3596,17 @@ a{color:inherit;text-decoration:none}
 
   function goView(name){
     state.view = name;
+    state.settingsPage = null;
+    state.contactsPage = null;
     document.querySelectorAll('#topnav button, #leftnav button').forEach(b => {
       b.classList.toggle('on', b.dataset.view === name);
     });
     render();
+  }
+
+  function goSettingsView(page){
+    state.settingsPage = page;
+    renderSettingsLink();
   }
 
   function bindNav(){
@@ -2657,7 +3620,8 @@ a{color:inherit;text-decoration:none}
     const runBtn = document.getElementById('run-campaigns');
     if (runBtn) runBtn.addEventListener('click', async () => {
       runBtn.disabled = true;
-      runBtn.textContent = '▶ Running…';
+      runBtn.innerHTML = '<i data-lucide="loader-2" style="animation:spin .7s linear infinite"></i><span>Running…</span>';
+      renderLucide(runBtn);
       try {
         const r = await fetch('/api/v1/campaigns/run', {method:'POST', credentials:'include'});
         const j = await r.json();
@@ -2675,22 +3639,16 @@ a{color:inherit;text-decoration:none}
         toast('Could not reach server. Is it running?');
       } finally {
         runBtn.disabled = false;
-        runBtn.textContent = '▶ Run';
+        runBtn.innerHTML = '<i data-lucide="play"></i><span>Run</span>';
+        renderLucide(runBtn);
       }
     });
-  }
-
-  function toast(msg){
-    const t = document.createElement('div');
-    t.textContent = msg;
-    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:9999;border:1px solid var(--line)';
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 3000);
   }
 
   (async function init(){
     state._bootedAt = Date.now();
     bindNav();
+    if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': '1.75' } });
     await loadFeed();
     document.getElementById('loader')?.remove();
     render();

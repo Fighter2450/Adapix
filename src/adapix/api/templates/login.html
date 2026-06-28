@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in — Adapix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--bg-2:#161B22;--bg-3:#1c2128;
+  --ink:#E6EDF3;--ink-2:#8B949E;--ink-3:#58626E;
+  --cyan:#00D4FF;--cyan-2:#00B8E6;
+  --hot:#F85149;--good:#3FB950;
+  --border:rgba(255,255,255,.08);
+}
+html,body{height:100%;margin:0}
+body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);display:flex;min-height:100vh}
+
+/* ---- Two-column shell ---- */
+.auth-shell{display:grid;grid-template-columns:1fr 480px;min-height:100vh;width:100%}
+
+/* ---- Left panel ---- */
+.auth-panel{
+  background:var(--bg-2);border-right:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:56px 48px;position:relative;overflow:hidden;
+}
+.auth-panel::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 25% 25%,rgba(0,212,255,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.panel-inner{max-width:400px;position:relative;z-index:1}
+.panel-logo{display:flex;align-items:center;gap:10px;margin-bottom:48px}
+.panel-logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--cyan),var(--cyan-2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#04243a;flex-shrink:0}
+.panel-logo-text{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.panel-headline{font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-.025em;margin-bottom:14px;color:#fff}
+.panel-headline em{color:var(--cyan-2);font-style:normal}
+.panel-sub{font-size:15px;color:var(--ink-2);line-height:1.65;margin-bottom:40px}
+.panel-bullets{list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:44px}
+.panel-bullets li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--ink-2);line-height:1.45}
+.panel-bullets li::before{content:'✓';color:var(--good);font-weight:700;flex-shrink:0;margin-top:1px}
+.panel-quote{border-left:2px solid rgba(0,212,255,.25);padding:10px 0 10px 18px}
+.panel-quote p{font-size:14px;color:var(--ink);line-height:1.6;font-style:italic;margin-bottom:7px}
+.panel-quote cite{font-size:12px;color:var(--ink-3);font-style:normal;letter-spacing:.01em}
+
+/* ---- Right panel ---- */
+.auth-column{
+  display:flex;align-items:center;justify-content:center;
+  padding:40px 24px;background:var(--bg);
+}
+
+/* ---- Card ---- */
+.card{
+  width:100%;max-width:368px;
+  padding:40px 36px;
+  background:var(--bg-2);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:16px;
+  box-shadow:0 0 0 1px rgba(0,212,255,.04),0 24px 56px rgba(0,0,0,.45);
+  animation:cardIn .35s cubic-bezier(0.16,1,.3,1) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.card,.btn{animation:none!important}*{transition-duration:.01ms!important}}
+
+.logo{display:flex;align-items:center;gap:9px;margin-bottom:28px;justify-content:center}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--cyan-2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#04243a}
+.logo-text{font-size:18px;font-weight:800;letter-spacing:-.02em}
+
+h1{font-size:24px;font-weight:700;text-align:center;margin-bottom:6px;letter-spacing:-.02em}
+.sub{font-size:13px;color:var(--ink-2);text-align:center;margin-bottom:28px;line-height:1.5}
+
+/* ---- Error ---- */
+.err{
+  background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);
+  color:#ff7b76;border-radius:9px;padding:10px 14px;
+  font-size:13px;margin-bottom:16px;display:none;line-height:1.45;
+}
+.err a{color:#ff7b76;font-weight:600}
+.err.visible{display:block;animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- Fields ---- */
+.field{margin-bottom:18px}
+.field-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+label{display:block;font-size:11px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.08em}
+.field-link{font-size:12px;color:var(--cyan-2);text-decoration:none;font-weight:500;opacity:.85;transition:opacity .15s}
+.field-link:hover{opacity:1;text-decoration:underline}
+
+.input-wrap{position:relative}
+input[type=email],input[type=password],input[type=text]{
+  width:100%;padding:12px 14px;
+  background:var(--bg-3);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;color:var(--ink);font-size:14px;font-family:inherit;
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+input:hover:not(:focus){border-color:rgba(255,255,255,.2)}
+input:focus{border-color:var(--cyan-2);box-shadow:0 0 0 3px rgba(0,184,230,.12)}
+input::placeholder{color:var(--ink-3);opacity:.65}
+input[data-has-toggle]{padding-right:56px}
+
+.pwd-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--ink-3);cursor:pointer;
+  font-size:11px;font-weight:700;font-family:inherit;padding:4px;
+  text-transform:uppercase;letter-spacing:.04em;
+  transition:color .15s;
+}
+.pwd-toggle:hover{color:var(--ink-2)}
+
+/* ---- Button ---- */
+.btn{
+  width:100%;padding:14px;
+  background:var(--cyan-2);color:#04243a;
+  border:0;border-radius:10px;
+  font-size:15px;font-weight:800;font-family:inherit;
+  cursor:pointer;margin-top:20px;letter-spacing:.01em;
+  transition:filter .15s,transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:hover:not(:disabled){filter:brightness(1.09)}
+.btn:active:not(:disabled){transform:scale(0.987)}
+.btn:disabled{opacity:.5;cursor:default}
+.spinner{
+  width:13px;height:13px;
+  border:2px solid rgba(4,36,58,.3);border-top-color:#04243a;
+  border-radius:50%;animation:spin .7s linear infinite;display:none;
+  flex-shrink:0;
+}
+.is-loading .spinner{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.divider{border:none;border-top:1px solid var(--border);margin:24px 0}
+.foot{text-align:center;font-size:13px;color:var(--ink-2)}
+.foot a{color:var(--cyan-2);text-decoration:none;font-weight:600}
+.foot a:hover{text-decoration:underline}
+
+/* ---- Responsive ---- */
+@media(max-width:768px){
+  .auth-shell{grid-template-columns:1fr}
+  .auth-panel{display:none}
+  .auth-column{align-items:flex-start;padding:32px 20px;min-height:100vh}
+}
+@media(max-width:380px){
+  .card{padding:28px 20px;border-radius:12px}
+}
+</style>
+</head>
+<body>
+<div class="auth-shell">
+
+  <!-- Left: product value -->
+  <aside class="auth-panel" aria-hidden="true">
+    <div class="panel-inner">
+      <div class="panel-logo">
+        <div class="panel-logo-mark">A</div>
+        <span class="panel-logo-text">Adapix</span>
+      </div>
+      <h2 class="panel-headline">Stop losing revenue to<br><em>missed follow-ups</em></h2>
+      <p class="panel-sub">Adapix automatically follows up with every consultation that doesn't convert — composing personalized messages your team approves before they send.</p>
+      <ul class="panel-bullets">
+        <li>Follows up within minutes of a missed close</li>
+        <li>AI-composed, human-approved before sending</li>
+        <li>Works for any high-ticket consultation business</li>
+        <li>Set up in under 10 minutes</li>
+      </ul>
+      <blockquote class="panel-quote">
+        <p>"We recovered $14,000 in the first month without hiring anyone."</p>
+        <cite>— Maria T., Practice Manager · Pittsburgh, PA</cite>
+      </blockquote>
+    </div>
+  </aside>
+
+  <!-- Right: form -->
+  <main class="auth-column">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-mark">A</div>
+        <span class="logo-text">Adapix</span>
+      </div>
+      <h1>Welcome back</h1>
+      <p class="sub">Sign in to your account</p>
+
+      <div class="err" id="err" role="alert" aria-live="assertive"></div>
+
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email"
+                 placeholder="you@company.com" required autocomplete="email">
+        </div>
+        <div class="field">
+          <div class="field-header">
+            <label for="password" style="margin-bottom:0">Password</label>
+            <a href="/forgot-password" class="field-link">Forgot password?</a>
+          </div>
+          <div class="input-wrap">
+            <input id="password" type="password" name="password"
+                   placeholder="••••••••" required autocomplete="current-password"
+                   data-has-toggle>
+            <button type="button" class="pwd-toggle" id="pwd-toggle"
+                    aria-label="Show password">Show</button>
+          </div>
+        </div>
+        <button class="btn" type="submit" id="btn">
+          <span id="btn-text">Sign in to Adapix</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <hr class="divider">
+      <div class="foot">New to Adapix? <a href="/signup">Start your free 14-day trial →</a></div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  const form      = document.getElementById('form');
+  const btn       = document.getElementById('btn');
+  const btnText   = document.getElementById('btn-text');
+  const errEl     = document.getElementById('err');
+  const pwdInput  = document.getElementById('password');
+  const pwdToggle = document.getElementById('pwd-toggle');
+
+  const ERROR_MAP = {
+    'Invalid email or password': 'That email or password is incorrect. <a href="/forgot-password">Reset your password</a>.',
+    'Not authenticated': 'Session expired. Please sign in again.',
+  };
+
+  function showError(msg) {
+    errEl.innerHTML = ERROR_MAP[msg] || escapeHtml(msg) || 'Something went wrong. Please try again.';
+    errEl.classList.add('visible');
+    document.getElementById('email').focus();
+  }
+
+  function escapeHtml(s) {
+    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function setLoading(on) {
+    btn.disabled = on;
+    btn.classList.toggle('is-loading', on);
+    btnText.textContent = on ? 'Signing in…' : 'Sign in to Adapix';
+  }
+
+  pwdToggle.addEventListener('click', function() {
+    var showing = pwdInput.type === 'text';
+    pwdInput.type = showing ? 'password' : 'text';
+    pwdToggle.textContent = showing ? 'Show' : 'Hide';
+    pwdToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    errEl.classList.remove('visible');
+    setLoading(true);
+    try {
+      var r = await fetch(location.origin + '/auth/login', {method:'POST', body: new FormData(form)});
+      var j = await r.json();
+      if (!r.ok) throw new Error(j.detail || 'Login failed');
+      window.location.href = j.redirect || '/app';
+    } catch(err2) {
+      showError(err2.message);
+      setLoading(false);
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,10 +1,7 @@
-"""Database models. Patients, campaigns, messages, escalation events.
-
-Schema is intentionally minimal for v0. PHI fields are flagged in comments;
-when we move to production we encrypt those columns at rest.
-"""
+"""Database models."""
 from __future__ import annotations
 
+import uuid as _uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -15,6 +12,41 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     pass
+
+
+# ---------------------------------------------------------------------------
+# Multi-tenant identity
+# ---------------------------------------------------------------------------
+
+class Organization(Base):
+    """A business that subscribes to Adapix. Its id is used as practice_id on all data rows."""
+
+    __tablename__ = "organizations"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(_uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(200))
+    plan: Mapped[str] = mapped_column(String(32), default="trial")  # trial | starter | pro
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    users: Mapped[list["User"]] = relationship(back_populates="org", cascade="all, delete-orphan")
+
+
+class User(Base):
+    """A human who logs into Adapix to manage their organization's account."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    org_id: Mapped[str] = mapped_column(String(64), ForeignKey("organizations.id"), index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    role: Mapped[str] = mapped_column(String(32), default="owner")  # owner | admin | member
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    org: Mapped["Organization"] = relationship(back_populates="users")
 
 
 class PatientStatus(str, Enum):

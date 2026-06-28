@@ -1,60 +1,71 @@
-"""HTTP Basic auth for the admin UI.
-
-Single shared admin user/password from .env (ADMIN_USERNAME / ADMIN_PASSWORD).
-If both are blank, auth is DISABLED (dev convenience). For production, set
-both in .env.
-
-Multi-tenant per-practice auth is a follow-up. v0 ships single-tenant
-deployment per pilot, so one admin credential pair is enough.
-"""
+"""JWT cookie-based auth for the Adapix SaaS platform."""
 from __future__ import annotations
 
-import secrets
+import os
+from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, HTTPException, Request, status
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
-from ..config import Settings
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-production-please")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_DAYS = 30
+COOKIE_NAME = "adapix_session"
 
-security = HTTPBasic(auto_error=False)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_admin(
-    creds: HTTPBasicCredentials | None = Depends(security),
-) -> str:
-    """FastAPI dependency that protects admin routes.
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
-    Returns the authenticated username, or raises 401.
 
-    If ADMIN_USERNAME / ADMIN_PASSWORD are unset in .env, auth is bypassed
-    and "anonymous" is returned. This makes local dev frictionless. Always
-    set both in production.
-    """
-    settings = Settings()
-    expected_user = settings.admin_username
-    expected_pass = settings.admin_password
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
 
-    if not expected_user or not expected_pass:
-        # Auth disabled (dev mode)
-        return "anonymous"
 
-    if creds is None:
+def create_access_token(user_id: int, org_id: str, email: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    payload = {"sub": str(user_id), "org": org_id, "email": email, "exp": expire}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def _decode_token(token: str) -> dict:
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+
+class CurrentUser:
+    """Lightweight session context extracted from the JWT cookie."""
+
+    def __init__(self, user_id: int, org_id: str, email: str):
+        self.id = user_id
+        self.org_id = org_id
+        self.email = email
+
+
+async def get_current_user(request: Request) -> CurrentUser:
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": 'Basic realm="Adapix Admin"'},
+            detail="Not authenticated",
+            headers={"X-Redirect": "/login"},
         )
-
-    user_ok = secrets.compare_digest(
-        creds.username.encode("utf-8"), expected_user.encode("utf-8")
-    )
-    pass_ok = secrets.compare_digest(
-        creds.password.encode("utf-8"), expected_pass.encode("utf-8")
-    )
-    if not (user_ok and pass_ok):
+    try:
+        payload = _decode_token(token)
+        return CurrentUser(
+            user_id=int(payload["sub"]),
+            org_id=payload["org"],
+            email=payload["email"],
+        )
+    except (JWTError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": 'Basic realm="Adapix Admin"'},
+            detail="Invalid or expired session",
+            headers={"X-Redirect": "/login"},
         )
-    return creds.username
+
+
+async def verify_admin(user: CurrentUser = Depends(get_current_user)) -> str:
+    """Backwards-compat dependency. Returns org_id (used as practice_id throughout)."""
+    return user.org_id

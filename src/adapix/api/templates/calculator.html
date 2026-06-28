@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Revenue Gap Calculator — Adapix</title>
+<meta name="description" content="Find out exactly how much revenue is sitting in your unconverted quotes and proposals. Enter your numbers and see your recovery potential." />
+<meta name="theme-color" content="#0D1117" />
+<link rel="icon" type="image/svg+xml" href="/static/adapix_mark.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1117; --bg-2:#161B22; --bg-3:#1c2128;
+  --cyan:#00D4FF; --cyan-2:#00B8E6; --cyan-3:#aef0ff;
+  --ink:#E6EDF3; --ink-2:#8B949E; --ink-3:#58626E;
+  --good:#3FB950; --warn:#E3B341; --hot:#F85149;
+  --line:rgba(0,212,255,.14);
+  --card-border:rgba(0,212,255,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+
+.glow-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.glow-bg::before{content:'';position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,230,.07) 0%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);filter:blur(60px)}
+.glow-bg::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(63,185,80,.04) 0%,transparent 70%);bottom:0;right:-100px;filter:blur(80px)}
+
+/* ── Layout ── */
+.page{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:56px 24px 100px}
+
+/* ── Topbar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand-pulse{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:breathe 3.5s ease-in-out infinite;flex-shrink:0}
+@keyframes breathe{0%,100%{transform:scale(.85);opacity:.6}50%{transform:scale(1.15);opacity:1;box-shadow:0 0 20px var(--cyan),0 0 40px rgba(0,212,255,.5)}}
+.brand-name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ink-2);text-transform:uppercase}
+.topbar-cta{padding:9px 18px;border-radius:9px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--cyan);font-size:13px;font-weight:600;text-decoration:none;transition:background .2s,border-color .2s}
+.topbar-cta:hover{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35)}
+
+/* ── Hero ── */
+.hero{text-align:center;margin-bottom:48px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(0,212,255,.04);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:24px}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good)}
+h1{font-size:clamp(30px,5vw,50px);font-weight:300;letter-spacing:-.025em;line-height:1.1;color:#fff;margin-bottom:16px}
+h1 strong{font-weight:800;background:linear-gradient(180deg,#fff 0%,var(--cyan-3) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{font-size:17px;color:var(--ink-2);max-width:540px;margin:0 auto;line-height:1.6}
+
+/* ── Calculator card ── */
+.calc-card{background:var(--bg-2);border:1px solid var(--card-border);border-radius:16px;padding:40px 48px;position:relative;overflow:hidden;margin-bottom:24px}
+.calc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan-2) 40%,var(--cyan) 60%,transparent);opacity:.5}
+@media(max-width:480px){.calc-card{padding:24px 20px}}
+
+/* ── Inputs ── */
+.input-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+@media(max-width:720px){.input-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.input-grid{grid-template-columns:1fr}}
+
+.field-label{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);margin-bottom:10px;display:block}
+.field-hint{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
+.num-input{width:100%;padding:14px 16px;font-size:18px;font-weight:600;font-family:'Inter',sans-serif;color:#fff;background:var(--bg-3);border:1px solid rgba(255,255,255,.08);border-radius:10px;outline:none;transition:border-color .2s,box-shadow .2s;-moz-appearance:textfield}
+.num-input::-webkit-outer-spin-button,.num-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.num-input:focus{border-color:var(--cyan-2);box-shadow:0 0 0 3px rgba(0,184,230,.12)}
+.num-input.has-value{border-color:rgba(255,255,255,.18)}
+.num-input::placeholder{color:var(--ink-3);font-weight:400}
+.prefix-wrap{position:relative}
+.prefix{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:18px;font-weight:600;color:var(--ink-2);pointer-events:none}
+.prefix-wrap .num-input{padding-left:32px}
+.suffix-wrap{position:relative}
+.suffix{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--ink-2);pointer-events:none}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--line);margin:40px 0 36px}
+
+/* ── Empty state — greyed preview ── */
+.empty-state{opacity:1}
+.empty-preview-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:center;margin-bottom:16px}
+.preview-wrapper{opacity:.28;pointer-events:none;user-select:none}
+
+/* ── Results ── */
+.results-section{display:none}
+.results-section.visible{display:block;animation:fadeUp .5s cubic-bezier(0.16,1,.3,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Leakage banner ── */
+.leakage-banner{text-align:center;padding:44px 32px;background:linear-gradient(180deg,rgba(248,81,73,.06) 0%,rgba(248,81,73,.02) 100%);border:1px solid rgba(248,81,73,.18);border-radius:14px;margin-bottom:16px;position:relative;overflow:hidden}
+.leakage-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(248,81,73,.6),transparent)}
+.leakage-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--hot);margin-bottom:16px}
+.leakage-number{font-size:clamp(44px,10vw,80px);font-weight:800;letter-spacing:-.03em;color:#fff;line-height:.95;margin-bottom:14px;overflow-wrap:break-word}
+.leakage-sub{font-size:14px;color:var(--ink-2);max-width:380px;margin:0 auto;line-height:1.5}
+.leakage-sub span{color:var(--hot);font-weight:600}
+
+/* ── Calculation detail ── */
+.calc-detail{margin-bottom:28px}
+.calc-detail summary{font-size:11.5px;color:var(--ink-3);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;width:fit-content;margin:0 auto;padding:4px 0;transition:color .15s}
+.calc-detail summary::-webkit-details-marker{display:none}
+.calc-detail summary::before{content:'▸';font-size:9px;transition:transform .15s}
+details[open] .calc-detail summary::before{transform:rotate(90deg)}
+.calc-detail summary:hover{color:var(--ink-2)}
+.calc-detail p{margin-top:10px;font-size:12px;color:var(--ink-3);line-height:1.6;background:var(--bg-3);border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.05)}
+
+/* ── ROI strip (now above scenarios) ── */
+.roi-strip{background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.18);border-radius:14px;padding:24px 28px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;margin-bottom:28px}
+@media(max-width:480px){.roi-strip{grid-template-columns:1fr;text-align:center}}
+.roi-left-label{font-size:12px;color:var(--ink-2);margin-bottom:6px}
+.roi-headline{font-size:18px;font-weight:700;color:#fff}
+.roi-badge{background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);border-radius:10px;padding:14px 22px;text-align:center;white-space:nowrap}
+@media(max-width:480px){.roi-badge{width:100%}}
+.roi-badge-num{font-size:32px;font-weight:800;color:var(--good);letter-spacing:-.03em;display:block}
+.roi-badge-label{font-size:10px;color:var(--good);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── Scenarios ── */
+.scenarios-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin-bottom:16px}
+.scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
+@media(max-width:520px){.scenarios{grid-template-columns:1fr}}
+.scenario{background:var(--bg-3);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:22px 18px;transition:border-color .2s}
+.scenario.base{border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.07);padding:26px 18px;box-shadow:0 0 0 1px rgba(0,212,255,.1) inset,0 8px 24px -8px rgba(0,212,255,.2)}
+.scenario-tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.scenario-tag.conservative{color:var(--ink-3)}
+.scenario-tag.base{color:var(--cyan)}
+.scenario-tag.optimistic{color:var(--good)}
+.scenario-pct{font-size:11.5px;color:var(--ink-3);margin-bottom:14px}
+.scenario-val{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.scenario.base .scenario-val{font-size:28px}
+.scenario-val.cyan{color:var(--cyan)}
+.scenario-sub{font-size:11px;color:var(--ink-3);margin-top:4px}
+
+/* ── Benchmarks (inside card) ── */
+.benchmarks{margin-top:28px;margin-bottom:28px;padding-top:24px;border-top:1px solid var(--line)}
+.bench-title{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px}
+.bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.bench-grid{grid-template-columns:1fr}}
+.bench-item{background:var(--bg-3);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:20px}
+.bench-num{font-size:20px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.bench-desc{font-size:13px;color:var(--ink-2);line-height:1.55}
+
+/* ── Closing quote ── */
+.closer-quote{font-size:15.5px;color:var(--ink-2);line-height:1.7;border-left:2px solid rgba(0,184,230,.45);padding-left:20px;margin-bottom:24px}
+.closer-quote strong{color:var(--ink)}
+
+/* ── Guarantee ── */
+.guarantee-block{display:flex;align-items:flex-start;gap:12px;background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.2);border-radius:10px;padding:14px 18px;margin-bottom:24px}
+.guarantee-check{font-size:16px;color:var(--good);flex-shrink:0;font-weight:700;margin-top:1px}
+.guarantee-text{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+.guarantee-text strong{color:#fff;font-weight:700}
+
+/* ── CTA ── */
+.cta-block{text-align:center}
+.cta-btn{display:inline-flex;align-items:center;gap:12px;padding:18px 40px;border-radius:14px;background:linear-gradient(180deg,var(--cyan-2),#00a8cc);color:#04243a;font-size:15px;font-weight:800;letter-spacing:-.01em;text-decoration:none;border:none;cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .2s;box-shadow:0 12px 36px -12px rgba(0,212,255,.6),0 0 0 1px rgba(255,255,255,.1) inset}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 16px 48px -12px rgba(0,212,255,.8),0 0 0 1px rgba(255,255,255,.1) inset}
+.cta-btn:active{transform:scale(.98)}
+.cta-arrow{font-size:16px;transition:transform .2s}
+.cta-btn:hover .cta-arrow{transform:translateX(4px)}
+.cta-note{margin-top:16px;font-size:12px;color:var(--ink-2)}
+.cta-note span{color:var(--ink)}
+
+/* ── Repeat CTA (below card) ── */
+.cta-repeat{display:none;text-align:center;margin-top:40px}
+
+/* ── Footer ── */
+.page-footer{margin-top:64px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.footer-brand{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:12px;color:var(--ink-3);text-decoration:none}
+.footer-links a:hover{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="glow-bg"></div>
+
+<div class="page">
+
+  <nav class="topbar">
+    <a class="brand" href="/app">
+      <div class="brand-pulse"></div>
+      <span class="brand-name">Adapix</span>
+    </a>
+    <a class="topbar-cta" href="mailto:hello@adapix.com?subject=Demo%20Request">Book a demo</a>
+  </nav>
+
+  <div class="hero">
+    <div class="eyebrow"><span class="eyebrow-dot"></span>Revenue Gap Calculator</div>
+    <h1>How much is your business<br><strong>leaving on the table?</strong></h1>
+    <p class="hero-sub">Enter your numbers below. See exactly how much revenue is sitting in your unconverted quotes and proposals — and what it takes to recover it.</p>
+  </div>
+
+  <div class="calc-card">
+    <div class="input-grid">
+      <div>
+        <label class="field-label" for="inp-consults">Monthly quotes / consultations</label>
+        <input class="num-input" id="inp-consults" type="number" min="0" placeholder="80" />
+        <div class="field-hint">Demos, site visits, proposals sent per month</div>
+      </div>
+      <div>
+        <label class="field-label" for="inp-rate">Close rate</label>
+        <div class="suffix-wrap">
+          <input class="num-input" id="inp-rate" type="number" min="0" max="100" placeholder="60" />
+          <span class="suffix">%</span>
+        </div>
+        <div class="field-hint">What % of quotes / consults convert to a sale</div>
+      </div>
+      <div>
+        <label class="field-label" for="inp-value">Average deal value</label>
+        <div class="prefix-wrap">
+          <span class="prefix">$</span>
+          <input class="num-input" id="inp-value" type="number" min="0" placeholder="6000" />
+        </div>
+        <div class="field-hint">Revenue per closed contract, job, or sale</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Empty state — greyed preview at industry averages -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-preview-label">Example — enter your numbers above to see yours</div>
+      <div class="preview-wrapper">
+        <div class="leakage-banner">
+          <div class="leakage-label">Estimated annual revenue gap</div>
+          <div class="leakage-number">$2,304,000</div>
+          <div class="leakage-sub"><span>32 prospects</span> walk away every month without buying</div>
+        </div>
+        <div class="roi-strip" style="margin-top:16px">
+          <div>
+            <div class="roi-left-label">Adapix at $1,500/month ($18,000/year)</div>
+            <div class="roi-headline">Base case return on your Adapix investment</div>
+          </div>
+          <div class="roi-badge">
+            <span class="roi-badge-num">44.8x</span>
+            <span class="roi-badge-label">ROI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live results -->
+    <div class="results-section" id="results">
+
+      <div class="leakage-banner">
+        <div class="leakage-label">Estimated annual revenue gap</div>
+        <div class="leakage-number" id="leakage-num">$0</div>
+        <div class="leakage-sub">
+          <span id="patients-month">0 prospects</span> walk away every month without buying
+        </div>
+      </div>
+
+      <details class="calc-detail">
+        <summary>How is this calculated?</summary>
+        <p>Annual gap = (Monthly quotes × (1 − close rate)) × average deal value × 12 months. This is the total revenue in prospects who didn't convert — not people who said no, but people who went quiet. Win-back scenarios apply observed reactivation rates from businesses using systematic multi-touch follow-up versus generic email blasts (12–15%).</p>
+      </details>
+
+      <!-- ROI first — punchline before the detail -->
+      <div class="roi-strip">
+        <div>
+          <div class="roi-left-label">Adapix at $1,500/month ($18,000/year)</div>
+          <div class="roi-headline">Base case return on your Adapix investment</div>
+        </div>
+        <div class="roi-badge">
+          <span class="roi-badge-num" id="roi-badge-num">0x</span>
+          <span class="roi-badge-label">ROI</span>
+        </div>
+      </div>
+
+      <!-- Scenarios as supporting breakdown -->
+      <div class="scenarios-label">How that breaks down</div>
+      <div class="scenarios">
+        <div class="scenario">
+          <div class="scenario-tag conservative">Conservative</div>
+          <div class="scenario-pct">20% win-back rate</div>
+          <div class="scenario-val" id="s-conservative">$0</div>
+          <div class="scenario-sub">per year recovered</div>
+        </div>
+        <div class="scenario base">
+          <div class="scenario-tag base">Base case</div>
+          <div class="scenario-pct">35% win-back rate</div>
+          <div class="scenario-val cyan" id="s-base">$0</div>
+          <div class="scenario-sub">per year recovered</div>
+        </div>
+        <div class="scenario">
+          <div class="scenario-tag optimistic">Optimistic</div>
+          <div class="scenario-pct">50% win-back rate</div>
+          <div class="scenario-val" id="s-optimistic">$0</div>
+          <div class="scenario-sub">per year recovered</div>
+        </div>
+      </div>
+
+      <!-- Benchmarks moved inside card for validation -->
+      <div class="benchmarks">
+        <div class="bench-title">Industry benchmarks</div>
+        <div class="bench-grid">
+          <div class="bench-item">
+            <div class="bench-num">35–40%</div>
+            <div class="bench-desc">Win-back rate with personalized, multi-touch follow-up</div>
+          </div>
+          <div class="bench-item">
+            <div class="bench-num">12–15%</div>
+            <div class="bench-desc">Win-back rate from generic email blasts — what most businesses do today</div>
+          </div>
+          <div class="bench-item">
+            <div class="bench-num">$5–$15</div>
+            <div class="bench-desc">Cost to reactivate a dormant lead vs. $300–$600 to acquire a brand new one</div>
+          </div>
+          <div class="bench-item">
+            <div class="bench-num">4 min</div>
+            <div class="bench-desc">To review and approve a full day's queue of AI-drafted follow-up messages</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="closer-quote">
+        If Adapix wins back <strong>3 prospects from your dormant pipeline in the first 60 days</strong> — people who already know you, already considered you — it has paid for itself for the next <strong>18 months.</strong>
+      </div>
+
+      <!-- Guarantee prominently above CTA -->
+      <div class="guarantee-block">
+        <div class="guarantee-check">✓</div>
+        <div class="guarantee-text"><strong>10 recovered clients in 60 days</strong> — or we give you 3 months free. No questions asked.</div>
+      </div>
+
+      <div class="cta-block">
+        <a class="cta-btn" href="mailto:hello@adapix.com?subject=Demo%20Request&body=I%20ran%20the%20revenue%20gap%20calculator%20and%20want%20to%20learn%20more.">
+          Get my recovery plan <span class="cta-arrow">→</span>
+        </a>
+        <div class="cta-note">20-minute call &nbsp;·&nbsp; <span>No pitch until you see your number</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Repeat CTA for long-scroll users -->
+  <div class="cta-repeat" id="cta-repeat">
+    <a class="cta-btn" href="mailto:hello@adapix.com?subject=Demo%20Request&body=I%20ran%20the%20revenue%20gap%20calculator%20and%20want%20to%20learn%20more.">
+      Book a 20-minute demo <span class="cta-arrow">→</span>
+    </a>
+    <div class="cta-note" style="margin-top:12px"><span>10 recovered clients in 60 days or 3 months free</span></div>
+  </div>
+
+  <footer class="page-footer">
+    <span class="footer-brand">Adapix — Autonomous Follow-Up</span>
+    <nav class="footer-links">
+      <a href="/app">Dashboard</a>
+      <a href="mailto:hello@adapix.com">Contact</a>
+    </nav>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const consults    = document.getElementById('inp-consults');
+  const rate        = document.getElementById('inp-rate');
+  const value       = document.getElementById('inp-value');
+  const results     = document.getElementById('results');
+  const empty       = document.getElementById('empty-state');
+  const ctaRepeat   = document.getElementById('cta-repeat');
+  const leakageEl   = document.getElementById('leakage-num');
+
+  const ADAPIX_ANNUAL = 18000;
+  let firstReveal = true;
+
+  function fmtFull(n){
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function animateNum(el, target){
+    const dur = 700;
+    const t0 = performance.now();
+    function step(now){
+      const p = Math.min((now - t0) / dur, 1);
+      const ease = 1 - Math.pow(1 - p, 4); // easeOutQuart
+      const cur = Math.round(target * ease);
+      el.textContent = '$' + cur.toLocaleString('en-US');
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function calculate(){
+    const c = parseFloat(consults.value) || 0;
+    const r = parseFloat(rate.value)     || 0;
+    const v = parseFloat(value.value)    || 0;
+
+    if (!c || !r || !v){
+      results.classList.remove('visible');
+      empty.style.display = '';
+      ctaRepeat.style.display = 'none';
+      firstReveal = true;
+      return;
+    }
+
+    const unconverted_mo = c * (1 - r / 100);
+    const leakage        = unconverted_mo * 12 * v;
+    const conservative   = leakage * 0.20;
+    const base           = leakage * 0.35;
+    const optimistic     = leakage * 0.50;
+    const roi            = Math.round(base / ADAPIX_ANNUAL * 10) / 10;
+    const ptCount        = Math.round(unconverted_mo);
+
+    empty.style.display = 'none';
+
+    const wasHidden = !results.classList.contains('visible');
+    results.classList.add('visible');
+    ctaRepeat.style.display = 'block';
+
+    if (firstReveal && wasHidden){
+      firstReveal = false;
+      animateNum(leakageEl, leakage);
+    } else {
+      leakageEl.textContent = fmtFull(leakage);
+    }
+
+    document.getElementById('patients-month').textContent = ptCount + ' prospect' + (ptCount !== 1 ? 's' : '');
+    document.getElementById('s-conservative').textContent = fmtFull(conservative);
+    document.getElementById('s-base').textContent         = fmtFull(base);
+    document.getElementById('s-optimistic').textContent   = fmtFull(optimistic);
+    document.getElementById('roi-badge-num').textContent  = roi + 'x';
+  }
+
+  // Track filled state for input styling
+  [consults, rate, value].forEach(el => {
+    el.addEventListener('input', () => {
+      el.classList.toggle('has-value', el.value.trim() !== '');
+      calculate();
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
