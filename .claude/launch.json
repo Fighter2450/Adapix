@@ -1,11 +1,1 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    {
-      "name": "adapix-website",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "website", "-p", "3456", "--no-clipboard"],
-      "port": 3456
-    }
-  ]
-}
+{"version":"0.0.1","configurations":[{"name":"adapix","runtimeExecutable":"venv/Scripts/python.exe","runtimeArgs":["-m","uvicorn","src.adapix.api.main:app","--reload","--port","8000"],"port":8000}]}

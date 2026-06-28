@@ -259,7 +259,7 @@ input[data-has-toggle]{padding-right:56px}
     errEl.classList.remove('visible');
     setLoading(true);
     try {
-      var r = await fetch(location.origin + '/auth/login', {method:'POST', body: new FormData(form)});
+      var r = await fetch(new URL('/auth/login', document.baseURI).href, {method:'POST', body: new FormData(form)});
       var j = await r.json();
       if (!r.ok) throw new Error(j.detail || 'Login failed');
       window.location.href = j.redirect || '/app';

@@ -89,6 +89,9 @@ CURATED: dict[str, str] = {
     "product-feedback-synthesizer":       "Product",
     "product-sprint-prioritizer":         "Product",
     "product-trend-researcher":           "Product",
+    # Operations
+    "supply-chain-strategist":            "Operations",
+    "inventory-fulfillment-manager":      "Operations",
     # Engineering
     "engineering-senior-developer":       "Engineering",
     "engineering-backend-architect":      "Engineering",
@@ -110,6 +113,7 @@ CATEGORY_ORDER = [
     "Legal",
     "Brand & Design",
     "Product",
+    "Operations",
     "Engineering",
 ]
 

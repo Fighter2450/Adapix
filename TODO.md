@@ -1,0 +1,55 @@
+# Adapix — Next Steps
+
+## 🔴 Broken right now (blocks real usage)
+
+### 1. Practice profile → per-tenant database storage
+- `practice_profile.json` and `configured.flag` are flat files on the server
+- Every org shares the same practice settings — wrong business name, wrong tone, wrong product
+- **Fix:** Add `PracticeProfile` model keyed by `org_id`, migrate wizard to save/load per org
+
+### 2. Campaign runner → org-aware
+- `run_all_campaigns()` calls `list_practices()` which scans YAML config files
+- Has no knowledge of orgs in the `organizations` table
+- Imported contacts never trigger follow-up campaigns
+- **Fix:** Query `Organization` table for active orgs, run campaigns per org using their `org_id` as `practice_id`
+
+### 3. `JWT_SECRET_KEY` in `.env`
+- Currently defaults to `"dev-secret-change-in-production-please"` if env var not set
+- **Fix:** Add `JWT_SECRET_KEY=<random 64-char string>` to `.env`
+
+---
+
+## 🟡 After those three are fixed
+
+Once the above are done, the full loop works:
+**Sign up → Welcome wizard → Import contacts → Campaigns fire → Approve messages → Message sends**
+
+---
+
+## 🟢 Remaining SaaS pieces
+
+### 4. Deploy to Railway
+- Switch SQLite → PostgreSQL (one env var change)
+- Set `JWT_SECRET_KEY`, `ANTHROPIC_API_KEY`, Twilio creds in Railway env
+- One `railway up` command
+
+### 5. Billing — Stripe
+- Stripe Checkout for trial → paid conversion
+- Webhook handler for subscription events (paid, cancelled, past_due)
+- Plan enforcement: block campaign sends if trial expired and no active subscription
+- `stripe_customer_id` and `stripe_subscription_id` already on `Organization` model
+
+### 6. Password reset flow
+- `/forgot-password` link exists on login page but goes nowhere
+- Add `POST /auth/forgot-password` → send reset email via Resend
+- Add `GET /auth/reset-password?token=...` page + `POST` handler
+
+---
+
+## 📋 Known issues fixed this session
+- ✅ Signup 500 error — passlib incompatible with bcrypt 4.x, replaced with direct bcrypt calls
+- ✅ `fetch` URL parse error — `location.origin` returned `"null"` in sandboxed iframe, fixed with `document.baseURI`
+- ✅ JWT auth replaces HTTP Basic — `User` + `Organization` models, JWT cookies, all routes tenant-scoped
+- ✅ CSV contact import — drag-and-drop web UI, preview mode, success screen
+- ✅ Login + Signup pages — two-column layout, password toggle, accessible, loading states
+- ✅ Revenue calculator — public `/calculator` page with ROI vs Adapix cost
