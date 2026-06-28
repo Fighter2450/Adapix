@@ -58,14 +58,28 @@ def app_shell(request: Request):
     from fastapi.responses import RedirectResponse
     from .auth import COOKIE_NAME, _decode_token
     from jose import JWTError
+    from ..db import get_engine
+    from ..models import OrgProfile
+    from sqlalchemy.orm import Session
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         return RedirectResponse(url="/login", status_code=302)
     try:
-        _decode_token(token)
+        payload = _decode_token(token)
+        org_id = payload.get("org")
     except (JWTError, Exception):
         return RedirectResponse(url="/login", status_code=302)
-    if not CONFIGURED_FLAG.exists():
+    # Check per-org profile in DB first; fall back to legacy flat file
+    configured = False
+    if org_id:
+        try:
+            with Session(get_engine()) as s:
+                configured = s.get(OrgProfile, org_id) is not None
+        except Exception:
+            pass
+    if not configured:
+        configured = CONFIGURED_FLAG.exists()
+    if not configured:
         return RedirectResponse(url="/welcome", status_code=302)
     return HTMLResponse((TEMPLATE_DIR / "app.html").read_text(encoding="utf-8"))
 
@@ -102,10 +116,10 @@ def chat_page():
 
 
 @router.get("/api/v1/chat/history")
-def api_chat_history():
+def api_chat_history(org_id: str = Depends(verify_admin)):
     from ..chat import load_history, missing_topics, suggestions_for
     from ..practice import load_profile
-    profile = load_profile()
+    profile = load_profile(org_id)
     msgs = load_history()
     return {
         "messages": msgs,
@@ -625,42 +639,60 @@ class SetupBody(BaseModel):
 
 
 @router.post("/api/v1/setup/save")
-def api_setup_save(body: SetupBody):
-    """Save the wizard's collected config + mark the device configured."""
+def api_setup_save(body: SetupBody, org_id: str = Depends(verify_admin)):
+    """Save the wizard's collected config per org into the DB."""
+    from ..db import get_engine
+    from ..models import OrgProfile
+    from sqlalchemy.orm import Session
+    payload = {
+        "practice": body.practice,
+        "tone": body.tone,
+        "workflows": body.workflows,
+        "escalations": body.escalations,
+        "workflow_custom": body.workflow_custom,
+        "escalation_custom": body.escalation_custom,
+        "practice_problems": body.practice_problems,
+        "practice_type": body.practice_type,
+        "practice_type_label": body.practice_type_label,
+        "practice_type_custom": body.practice_type_custom,
+        "mode": body.mode if body.mode in ("new", "existing") else "existing",
+        "configured_at": datetime.utcnow().isoformat() + "Z",
+    }
     try:
-        SETUP_DIR.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "practice": body.practice,
-            "tone": body.tone,
-            "workflows": body.workflows,
-            "escalations": body.escalations,
-            "workflow_custom": body.workflow_custom,
-            "escalation_custom": body.escalation_custom,
-            "practice_problems": body.practice_problems,
-            "practice_type": body.practice_type,
-            "practice_type_label": body.practice_type_label,
-            "practice_type_custom": body.practice_type_custom,
-            "mode": body.mode if body.mode in ("new", "existing") else "existing",
-            "configured_at": datetime.utcnow().isoformat() + "Z",
-        }
-        PRACTICE_JSON.write_text(json.dumps(payload, indent=2))
-        CONFIGURED_FLAG.write_text("ok\n")
+        with Session(get_engine()) as s:
+            row = s.get(OrgProfile, org_id)
+            if row:
+                row.data = payload
+                row.configured_at = datetime.utcnow()
+            else:
+                s.add(OrgProfile(org_id=org_id, data=payload))
+            s.commit()
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"could not save: {e}")
 
 
 @router.get("/api/v1/setup/status")
-def api_setup_status():
-    """Read current setup state — used by other UI surfaces to decide
-    whether the device has been onboarded yet."""
-    if not CONFIGURED_FLAG.exists():
-        return {"configured": False, "profile": None}
+def api_setup_status(org_id: str = Depends(verify_admin)):
+    """Read current setup state for the calling org."""
+    from ..db import get_engine
+    from ..models import OrgProfile
+    from sqlalchemy.orm import Session
     try:
-        profile = json.loads(PRACTICE_JSON.read_text()) if PRACTICE_JSON.exists() else None
+        with Session(get_engine()) as s:
+            row = s.get(OrgProfile, org_id)
+            if row:
+                return {"configured": True, "profile": row.data}
     except Exception:
-        profile = None
-    return {"configured": True, "profile": profile}
+        pass
+    # Legacy fallback for dev environments
+    if CONFIGURED_FLAG.exists():
+        try:
+            profile = json.loads(PRACTICE_JSON.read_text()) if PRACTICE_JSON.exists() else None
+        except Exception:
+            profile = None
+        return {"configured": True, "profile": profile}
+    return {"configured": False, "profile": None}
 
 
 @router.get("/app/manifest.json")
@@ -1215,17 +1247,33 @@ def api_run_campaigns(_user: str = Depends(verify_admin)) -> dict[str, Any]:
 
 
 def run_all_campaigns() -> dict[str, Any]:
-    """Run campaigns for every practice+workflow pair that has a config file.
+    """Run campaigns for every org that has completed setup, plus legacy YAML practices.
     Called both from the API endpoint and the background scheduler."""
     from ..campaign import CampaignRunner
     from ..config import list_practices, list_workflows
+    from ..db import get_engine
+    from ..models import Organization, OrgProfile
+    from sqlalchemy.orm import Session
 
-    practices = list_practices()
-    workflows = list_workflows()
     results: list[dict[str, Any]] = []
     errors: list[str] = []
 
-    for practice_id in practices:
+    # --- DB-backed orgs (new multi-tenant path) ---
+    try:
+        with Session(get_engine()) as s:
+            db_orgs = (
+                s.query(Organization)
+                .join(OrgProfile, Organization.id == OrgProfile.org_id)
+                .all()
+            )
+            org_ids = [o.id for o in db_orgs]
+    except Exception as exc:
+        errors.append(f"db org query: {exc}")
+        org_ids = []
+
+    workflows = list_workflows()
+
+    for practice_id in org_ids:
         for workflow_id in workflows:
             try:
                 runner = CampaignRunner(practice_id, workflow_id)
@@ -1238,7 +1286,26 @@ def run_all_campaigns() -> dict[str, Any]:
                     "composed": composed,
                 })
             except FileNotFoundError:
-                pass  # practice/workflow combo doesn't exist — skip silently
+                pass  # workflow config file doesn't exist — skip
+            except Exception as exc:
+                errors.append(f"{practice_id}/{workflow_id}: {exc}")
+
+    # --- Legacy YAML-backed practices (backwards compat) ---
+    yaml_practices = [p for p in list_practices() if p not in org_ids]
+    for practice_id in yaml_practices:
+        for workflow_id in workflows:
+            try:
+                runner = CampaignRunner(practice_id, workflow_id)
+                started = runner.start_campaigns_for_eligible_patients()
+                composed = runner.run_due_messages()
+                results.append({
+                    "practice": practice_id,
+                    "workflow": workflow_id,
+                    "started": started,
+                    "composed": composed,
+                })
+            except FileNotFoundError:
+                pass
             except Exception as exc:
                 errors.append(f"{practice_id}/{workflow_id}: {exc}")
 

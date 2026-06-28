@@ -272,15 +272,8 @@ def _profile_path() -> Path:
     return Path(var) / "practice_profile.json"
 
 
-def load_profile() -> PracticeProfile:
-    """Read the wizard's saved JSON. Returns defaults if not yet configured."""
-    p = _profile_path()
-    if not p.exists():
-        return PracticeProfile()
-    try:
-        raw = json.loads(p.read_text())
-    except Exception:
-        return PracticeProfile()
+def _raw_to_profile(raw: dict) -> PracticeProfile:
+    """Convert a wizard JSON payload (from file or DB) into a PracticeProfile."""
     practice = raw.get("practice") or {}
     return PracticeProfile(
         practice_name=practice.get("name") or "your practice",
@@ -301,3 +294,34 @@ def load_profile() -> PracticeProfile:
         mode=raw.get("mode") or "existing",
         configured_at=raw.get("configured_at") or "",
     )
+
+
+def load_profile(org_id: str | None = None) -> PracticeProfile:
+    """Load the practice profile for an org.
+
+    If org_id is given, reads from the org_profiles DB table.
+    Falls back to the legacy practice_profile.json flat file for
+    backwards-compat with dev environments that haven't signed up yet.
+    """
+    if org_id:
+        try:
+            from .db import get_engine
+            from .models import OrgProfile
+            from sqlalchemy.orm import Session
+            with Session(get_engine()) as s:
+                row = s.get(OrgProfile, org_id)
+                if row and row.data:
+                    return _raw_to_profile(row.data)
+        except Exception:
+            pass
+        return PracticeProfile()
+
+    # Legacy flat-file path (dev / pre-signup)
+    p = _profile_path()
+    if not p.exists():
+        return PracticeProfile()
+    try:
+        raw = json.loads(p.read_text())
+    except Exception:
+        return PracticeProfile()
+    return _raw_to_profile(raw)

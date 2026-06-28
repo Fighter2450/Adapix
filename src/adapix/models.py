@@ -31,6 +31,19 @@ class Organization(Base):
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     users: Mapped[list["User"]] = relationship(back_populates="org", cascade="all, delete-orphan")
+    profile: Mapped["OrgProfile | None"] = relationship(back_populates="org", uselist=False, cascade="all, delete-orphan")
+
+
+class OrgProfile(Base):
+    """Per-tenant practice profile saved by the welcome wizard. Replaces practice_profile.json."""
+
+    __tablename__ = "org_profiles"
+
+    org_id: Mapped[str] = mapped_column(String(64), ForeignKey("organizations.id"), primary_key=True)
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    configured_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    org: Mapped["Organization"] = relationship(back_populates="profile")
 
 
 class User(Base):
