@@ -3,27 +3,29 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Adapt 1.0 — Adapix</title>
-<meta name="description" content="Adapix Adapt 1.0: the plug-and-play AI follow-up assistant for any business. Real estate, healthcare, auto, fitness, law — if you follow up with customers, Adapix handles it. $799 device + pay only for what you send. Ships Q3 2026." />
-<meta property="og:title" content="Adapt 1.0 — Adapix" />
-<meta property="og:description" content="AI follow-up for any business. Human-approved messages, on-device data, plug-and-play setup. Pay only for what you send. From $799." />
-<link rel="icon" type="image/svg+xml" href="adapix_mark.svg" />
+<title>Adapix — AI follow-up for any business</title>
+<meta name="description" content="Adapix is the AI follow-up assistant for any business. It runs follow-ups overnight, drafts every message for your one-tap approval, and turns cold leads into booked appointments. Start a free 14-day trial — no credit card." />
+<meta property="og:title" content="Adapix — Your AI follow-up team" />
+<meta property="og:description" content="AI that follows up for you — drafts every message, you approve, leads stop going cold. 14-day free trial, no credit card required." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMiAzMic+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSdnJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJyBzdG9wLWNvbG9yPScjYTc4YmZhJy8+PHN0b3Agb2Zmc2V0PScuNTUnIHN0b3AtY29sb3I9JyM3YzNhZWQnLz48c3RvcCBvZmZzZXQ9JzEnIHN0b3AtY29sb3I9JyMyMmQzZWUnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0nMzInIGhlaWdodD0nMzInIHJ4PSc5JyBmaWxsPSd1cmwoI2cpJy8+PHBhdGggZD0nTTE2IDcuNSBMOSAyNC41IE0xNiA3LjUgTDIzIDI0LjUgTTEyLjEgMTguMiBIMTkuOScgc3Ryb2tlPScjZmZmJyBzdHJva2Utd2lkdGg9JzIuNicgZmlsbD0nbm9uZScgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8+PC9zdmc+" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
-  "@type":"Product",
-  "name":"Adapix Adapt 1.0",
-  "description":"AI-powered follow-up assistant for any business. Real estate, healthcare, auto, fitness, law — handles customer follow-up via SMS and email with human approval before every send.",
+  "@type":"SoftwareApplication",
+  "name":"Adapix",
+  "applicationCategory":"BusinessApplication",
+  "operatingSystem":"Web",
+  "description":"AI follow-up assistant for any business. Drafts follow-up messages for human approval, recovers cold leads, and books appointments — all from a web dashboard.",
   "brand":{"@type":"Brand","name":"Adapix"},
   "offers":{
     "@type":"Offer",
-    "price":"799",
+    "price":"29",
     "priceCurrency":"USD",
-    "availability":"https://schema.org/PreOrder",
-    "url":"https://adapixai.com/#reserve"
+    "description":"14-day free trial, then plans from $29/month",
+    "url":"https://adapixai.com/signup"
   }
 }
 </script>
@@ -34,16 +36,20 @@
    Inter, tight letter-spacing, 24px rounded corners.
    ========================================================= */
 :root{
-  --bg:#F5F5F7; --bg-card:#FFFFFF; --bg-dark:#000; --bg-dark-2:#161617;
-  --ink:#1D1D1F; --ink-2:#6E6E73; --ink-3:#86868B;
-  --line:rgba(0,0,0,0.08); --line-dark:rgba(255,255,255,0.10);
-  --accent:#0071E3; --accent-2:#0077ED;
-  --adapix:#00B8E6; --adapix-2:#00D4FF;
-  --good:#34C759; --warn:#FF9F0A; --hot:#FF453A;
+  /* ===== DARK NEON VIBRANT — neon purple + rose + cyan on deep indigo ===== */
+  --bg:#0b0b1c; --bg-card:#16132f; --bg-dark:#0c0a1d; --bg-dark-2:#161330;
+  --ink:#ece9ff; --ink-2:#b8b2e0; --ink-3:#8079a8;
+  --line:rgba(124,58,237,0.18); --line-dark:rgba(255,255,255,0.10);
+  --accent:#7c3aed; --accent-2:#a78bfa;
+  --adapix:#22d3ee; --adapix-2:#67e8f9;
+  --good:#34d399; --warn:#fbbf24; --hot:#f43f5e;
   --r-card:22px; --r-tile:28px; --r-pill:980px;
-  --shadow-1:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
-  --shadow-2:0 4px 12px rgba(0,0,0,0.06), 0 24px 60px rgba(0,0,0,0.08);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-2:0 4px 12px rgba(0,0,0,0.4), 0 24px 60px rgba(124,58,237,0.18);
   --easing:cubic-bezier(.22,1,.36,1);
+  /* Vibrant accent spectrum */
+  --v-purple:#7c3aed; --v-violet:#a78bfa; --v-rose:#f43f5e; --v-pink:#f472b6;
+  --v-cyan:#22d3ee; --v-lime:#a3e635; --v-amber:#fbbf24;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
@@ -334,13 +340,267 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 .footer-links a{color:var(--ink-3);transition:color .15s}
 .footer-links a:hover{color:var(--ink)}
 .footer .copy{font-size:12px;letter-spacing:-.005em}
+
+/* =========================================================
+   DARK NEON VIBRANT OVERRIDE — animated, glassmorphic
+   ========================================================= */
+@keyframes orbFloat{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(0,-18px,0) scale(1.06)}}
+@keyframes orbFloat2{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(16px,14px,0)}}
+@keyframes textShine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes gradientPan{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 18px rgba(124,58,237,.3)}50%{box-shadow:0 0 36px rgba(124,58,237,.6)}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* ── Deep canvas + animated gradient orbs ── */
+body{background:#0b0b1c}
+body::before{
+  content:'';position:fixed;inset:-12%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(640px 640px at 12% 14%, rgba(124,58,237,.24), transparent 60%),
+    radial-gradient(540px 540px at 90% 8%, rgba(244,63,94,.15), transparent 60%),
+    radial-gradient(760px 760px at 80% 92%, rgba(34,211,238,.14), transparent 60%),
+    radial-gradient(560px 560px at 16% 96%, rgba(163,230,53,.08), transparent 60%);
+  animation:orbFloat 17s ease-in-out infinite alternate;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(460px 460px at 50% 42%, rgba(167,139,250,.10), transparent 70%);
+  animation:orbFloat2 24s ease-in-out infinite alternate;
+}
+.nav,section,footer,.bento-wrap,body>div{position:relative;z-index:1}
+
+/* ── Transparent sections so orbs glow through ── */
+section,.statement,.feature,.feature.alt,.specs,.faq,.pilot,.pricing,.reserve,.compare,.bento-wrap,.footer{background:transparent}
+body>div[style]{background:transparent !important}
+
+/* ── Nav: dark glass ── */
+.nav{
+  background:rgba(12,10,29,.72);
+  backdrop-filter:saturate(160%) blur(20px);-webkit-backdrop-filter:saturate(160%) blur(20px);
+  border-bottom:1px solid rgba(124,58,237,.2);
+}
+.nav-brand{color:var(--ink)}
+.nav-link{color:var(--ink)}
+.nav-cta{
+  background:linear-gradient(120deg,#7c3aed,#a78bfa);color:#fff;
+  box-shadow:0 4px 14px -2px rgba(124,58,237,.5);
+}
+.nav-cta:hover{background:linear-gradient(120deg,#8b4bff,#b9a3ff);box-shadow:0 8px 22px -4px rgba(124,58,237,.7)}
+
+/* ── Gradient headlines ── */
+.hero h1.h-display{
+  background:linear-gradient(90deg,#ffffff,#c4b5fd,#67e8f9,#ffffff);
+  background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:#fff;
+  animation:textShine 6s linear infinite;
+}
+.h1,.h2{
+  background:linear-gradient(180deg,#ffffff 0%,#d8d0ff 55%,#a78bfa 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff;
+}
+.lite{-webkit-text-fill-color:#9489c8;color:#9489c8}
+.eyebrow{color:var(--v-violet)}
+
+/* ── Buttons: gradient + glow ── */
+.btn-primary{
+  background:linear-gradient(120deg,#7c3aed,#a78bfa,#7c3aed);background-size:200% 100%;
+  box-shadow:0 4px 16px -2px rgba(124,58,237,.5);
+}
+.btn-primary:hover{background-position:100% 50%;transform:translateY(-2px);box-shadow:0 10px 30px -4px rgba(124,58,237,.7)}
+.btn-outline{border:1.5px solid rgba(167,139,250,.35);color:var(--ink)}
+.btn-outline:hover{border-color:rgba(167,139,250,.6);background:rgba(124,58,237,.1)}
+.hero-actions a.demo-link{color:var(--ink-2)}
+.hero-actions a.demo-link:hover{color:var(--ink)}
+
+/* ── Bento cells: glass + gradient accent ── */
+.cell{
+  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(26,22,52,.46));
+  backdrop-filter:blur(13px) saturate(1.2);-webkit-backdrop-filter:blur(13px) saturate(1.2);
+  border:1px solid rgba(124,58,237,.18);box-shadow:0 4px 18px rgba(0,0,0,.28);
+}
+.cell::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:2px;
+  background:linear-gradient(90deg,#7c3aed,#a78bfa,#22d3ee,#f43f5e);background-size:200% 100%;
+  animation:gradientPan 5s linear infinite;opacity:.8;
+}
+.cell:hover{transform:translateY(-4px);box-shadow:0 14px 36px rgba(0,0,0,.4),0 0 30px rgba(124,58,237,.22);border-color:rgba(167,139,250,.4)}
+.cell.dark{background:linear-gradient(180deg,#141033,#0c0a20);color:#fff}
+.cell.accent{background:linear-gradient(140deg,#3b1d8a 0%,#1a0f47 100%);color:#fff}
+.cell.accent .cell-eyebrow,.cell.dark .cell-eyebrow{color:var(--v-cyan)}
+.cell-eyebrow{color:var(--v-violet)}
+.cell-sub{color:var(--ink-2)}
+.cell-icon{background:linear-gradient(140deg,#7c3aed,#a78bfa);box-shadow:0 4px 16px rgba(124,58,237,.4)}
+.cell.dark .cell-icon{background:linear-gradient(140deg,#22d3ee,#67e8f9);color:#06283a}
+.cell-stat{background:linear-gradient(140deg,#a78bfa,#7c3aed,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ── Pilot / dark-blue panels recolored to purple ── */
+.cell.accent,.pilot-badge,.pilot-includes{background:linear-gradient(140deg,#3b1d8a,#1a0f47)}
+.pilot-badge{color:#c4b5fd}.pilot-badge .dot{background:#a78bfa}
+.pilot-card{
+  background:linear-gradient(180deg,rgba(40,34,72,.5),rgba(24,20,48,.42));
+  border:1px solid rgba(124,58,237,.18);
+}
+.pilot-card .n{color:#fff}
+.pilot-includes li::before{color:var(--v-cyan)}
+
+/* ── Feature art panels ── */
+.feature-art{
+  background:linear-gradient(140deg,rgba(40,34,72,.55),rgba(20,17,42,.5));
+  border:1px solid rgba(124,58,237,.16);box-shadow:0 10px 34px rgba(0,0,0,.34);
+}
+.feature-art.dark{background:linear-gradient(140deg,#141033,#0a0818)}
+.phone-screen,.mini-dash{background:linear-gradient(180deg,#160f3a 0%,#0c0a24 100%)}
+.phone-btn{background:linear-gradient(180deg,#a78bfa,#7c3aed);color:#fff}
+.mini-stat.cyan .n{color:#67e8f9}.mini-stat.cyan{border-color:rgba(103,232,249,.35)}
+.mini-stat{border-color:rgba(124,58,237,.25)}
+
+/* ── Security strip: deep purple ── */
+.security{background:linear-gradient(160deg,#1a0f47 0%,#0c0a20 100%)}
+.security::before{background:linear-gradient(90deg,transparent,rgba(124,58,237,.45) 30%,rgba(34,211,238,.6) 50%,rgba(124,58,237,.45) 70%,transparent)}
+.security .h2{-webkit-text-fill-color:#fff;color:#fff}
+.sec-pill{background:rgba(124,58,237,.1);border:1px solid rgba(167,139,250,.22);transition:transform .3s var(--easing),box-shadow .3s,border-color .3s}
+.sec-pill:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.45);box-shadow:0 10px 28px rgba(0,0,0,.34),0 0 24px rgba(124,58,237,.2)}
+
+/* ── Specs ── */
+.spec{border-color:var(--line)}
+.spec-val{color:var(--ink)}
+
+/* ── Pricing cards: glass ── */
+.price-card,.price-ex{
+  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(22,18,45,.48));
+  backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);
+  border:1px solid rgba(124,58,237,.2);box-shadow:0 10px 36px rgba(0,0,0,.34);
+}
+.price-ex{transition:transform .3s var(--easing),box-shadow .3s,border-color .3s}
+.price-ex:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.4);box-shadow:0 12px 30px rgba(0,0,0,.36),0 0 24px rgba(124,58,237,.2)}
+.price-ex-total{color:var(--v-violet)}
+.price-ex-calc{background:rgba(124,58,237,.1);color:var(--ink-2)}
+.price-card .product{color:var(--v-violet)}
+.price-card .product-name{color:var(--ink)}
+.price-row b{color:var(--ink)}
+
+/* ── Compare table ── */
+.compare-table th:nth-child(2){color:var(--v-violet);background:rgba(124,58,237,.1);border-bottom-color:var(--v-purple)}
+.compare-table td:nth-child(2){background:rgba(124,58,237,.07);color:var(--ink)}
+.compare-table td:first-child{color:var(--ink)}
+.compare-table .hl{background:rgba(124,58,237,.06)}
+.compare-table .hl td:first-child{color:var(--v-violet)}
+.check{color:var(--good)}
+.compare-table td:nth-child(2) .check{filter:drop-shadow(0 0 5px rgba(52,211,153,.5))}
+
+/* ── FAQ ── */
+.faq-q{color:var(--ink)}
+.faq-q .icon{background:rgba(124,58,237,.12);color:var(--ink-2)}
+.faq-item.open .faq-q .icon{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff}
+.faq-item.open .faq-q{color:var(--v-violet)}
+.faq-a-inner{color:var(--ink-2);border-left-color:rgba(167,139,250,.4)}
+.faq-a-inner a{color:var(--v-violet)}
+
+/* ── Reserve ── */
+.step-num{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.4)}
+.reserve-form input{
+  background:rgba(40,34,72,.5);border:1px solid rgba(124,58,237,.22);color:var(--ink);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.reserve-form input::placeholder{color:var(--ink-3)}
+.reserve-form input:focus{border-color:var(--v-purple);box-shadow:0 0 0 4px rgba(124,58,237,.2)}
+.reserve-success{background:rgba(40,34,72,.5);border:1px solid rgba(124,58,237,.22);color:var(--ink)}
+.reserve-fine a{color:var(--v-violet)}
+
+/* ── Device mockup glow on dark ── */
+.device-led,.device-led-hard{background:linear-gradient(90deg,transparent,rgba(167,139,250,.9) 15%,rgba(124,58,237,1) 50%,rgba(34,211,238,.9) 85%,transparent)}
+.device-mark-img{filter:drop-shadow(0 0 16px rgba(167,139,250,.7))}
+.device-shadow{background:radial-gradient(ellipse,rgba(124,58,237,.5) 0%,rgba(34,211,238,.14) 45%,transparent 72%)}
+
+/* ── Richer reveal motion ── */
+.reveal{transform:translateY(40px) scale(.985)}
+.reveal.in{transform:translateY(0) scale(1)}
+
+/* ── Footer ── */
+.footer{border-top:1px solid rgba(124,58,237,.18)}
+.footer-links a:hover{color:var(--v-violet)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-track{background:#0b0b1c}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#7c3aed,#22d3ee);border-radius:9px;border:2px solid #0b0b1c}
+
+/* ── Hero trust line + chip ── */
+.hero-trust{margin:-32px auto 40px;font-size:13px;color:var(--ink-3);letter-spacing:-.005em}
+.trust-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(34,211,238,.1));
+  border:1px solid rgba(167,139,250,.3);color:#c4b5fd;
+  border-radius:var(--r-pill);padding:7px 18px;font-size:13px;font-weight:600;letter-spacing:-.005em;
+}
+.trust-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:pulse 2s infinite}
+
+/* ── Hero app-window mockup ── */
+.app-window{
+  width:min(720px,94vw);margin:0 auto;text-align:left;
+  border-radius:16px;overflow:hidden;position:relative;z-index:1;
+  background:linear-gradient(180deg,rgba(34,28,66,.92),rgba(18,15,40,.92));
+  border:1px solid rgba(167,139,250,.28);
+  box-shadow:0 30px 90px -20px rgba(0,0,0,.7),0 0 60px -10px rgba(124,58,237,.4);
+  animation:floatY 7s ease-in-out infinite;
+}
+.app-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(167,139,250,.16);background:rgba(12,10,29,.6)}
+.app-bar .dot{width:11px;height:11px;border-radius:50%}
+.app-bar .dot.r{background:#ff5f57}.app-bar .dot.y{background:#febc2e}.app-bar .dot.g{background:#28c840}
+.app-url{margin-left:12px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.app-body{display:grid;grid-template-columns:150px 1fr;min-height:300px}
+@media(max-width:560px){.app-body{grid-template-columns:1fr}.app-side{display:none}}
+.app-side{border-right:1px solid rgba(167,139,250,.14);padding:14px 10px;display:flex;flex-direction:column;gap:4px;background:rgba(12,10,29,.4)}
+.app-nav{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--ink-3);font-weight:500}
+.app-nav span{width:14px;height:14px;border-radius:4px;background:rgba(167,139,250,.3)}
+.app-nav.on{background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(34,211,238,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(167,139,250,.3)}
+.app-nav.on span{background:linear-gradient(135deg,#a78bfa,#22d3ee)}
+.app-main{padding:18px 18px 16px;display:flex;flex-direction:column;gap:9px}
+.app-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-bottom:2px}
+.app-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,rgba(48,40,86,.6),rgba(30,25,58,.5));border:1px solid rgba(167,139,250,.16)}
+.app-row::before{content:'';width:3px;align-self:stretch;border-radius:3px;background:linear-gradient(180deg,#a78bfa,#22d3ee)}
+.app-row-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.app-row-txt b{font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-row-txt span{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(167,139,250,.1));color:#c4b5fd;flex-shrink:0}
+.app-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:5px}
+.app-stat{background:rgba(124,58,237,.1);border:1px solid rgba(167,139,250,.18);border-radius:10px;padding:11px 12px}
+.app-stat-n{font-size:22px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-variant-numeric:tabular-nums}
+.app-stat-l{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:2px}
+
+/* ── Pricing plan grid ── */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:980px;margin:56px auto 0;text-align:left}
+@media(max-width:820px){.plan-grid{grid-template-columns:1fr;max-width:440px}}
+.plan{
+  position:relative;border-radius:var(--r-tile);padding:32px 28px;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(22,18,45,.48));
+  backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);
+  border:1px solid rgba(124,58,237,.2);box-shadow:0 10px 34px rgba(0,0,0,.32);
+  transition:transform .35s var(--easing),box-shadow .35s,border-color .35s;
+}
+.plan:hover{transform:translateY(-5px);border-color:rgba(167,139,250,.4);box-shadow:0 18px 44px rgba(0,0,0,.4),0 0 34px rgba(124,58,237,.24)}
+.plan.featured{border-color:rgba(167,139,250,.5);box-shadow:0 14px 44px rgba(124,58,237,.3),0 0 0 1px rgba(167,139,250,.3)}
+.plan.featured::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(135deg,#7c3aed,#22d3ee,#f43f5e);background-size:200% 100%;animation:gradientPan 5s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.plan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 14px;border-radius:var(--r-pill);box-shadow:0 4px 14px rgba(124,58,237,.5)}
+.plan-name{font-size:15px;font-weight:600;color:var(--v-violet);letter-spacing:-.01em;margin-bottom:10px}
+.plan-price{font-size:44px;font-weight:800;letter-spacing:-.03em;color:var(--ink);line-height:1;margin-bottom:10px}
+.plan-price span{font-size:16px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+.plan-tag{font-size:14px;color:var(--ink-2);line-height:1.45;margin-bottom:20px;min-height:40px}
+.plan-feats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:26px;flex:1}
+.plan-feats li{font-size:14px;color:var(--ink-2);line-height:1.4;display:flex;align-items:flex-start;gap:10px}
+.plan-feats li::before{content:'✓';color:var(--v-cyan);font-weight:700;flex-shrink:0}
+
+/* ── Reduced motion ── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
 </style>
 </head>
 <body>
 
 <nav class="nav">
   <div class="nav-inner">
-    <a class="nav-brand" href="#"><span class="mark"><img src="adapix_mark.svg" alt="Adapix" /></span>Adapix</a>
+    <a class="nav-brand" href="#"><span class="mark"><svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="Adapix" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="adx-mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset=".55" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#adx-mark)"/><path d="M16 7.5 L9 24.5 M16 7.5 L23 24.5 M12.1 18.2 H19.9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Adapix</a>
     <div class="nav-links">
       <a class="nav-link" href="#story">How It Works</a>
       <a class="nav-link" href="#features">Features</a>
@@ -348,32 +608,40 @@ section{padding:88px 22px;position:relative;overflow:hidden}
       <a class="nav-link" href="#pricing">Pricing</a>
       <a class="nav-link" href="#faq">FAQ</a>
     </div>
-    <a class="nav-cta" href="#reserve">Reserve</a>
+    <a class="nav-cta" href="/signup">Start free trial</a>
   </div>
 </nav>
 
 <section class="hero">
-  <div class="eyebrow reveal">Introducing Adapt 1.0</div>
+  <div class="eyebrow reveal">The AI follow-up assistant for any business</div>
   <h1 class="h-display reveal reveal-d1">Your best employee.<br><span class="lite">Never sleeps.</span></h1>
-  <p class="kicker reveal reveal-d2">Adapix gives you a full team of AI specialists — running follow-ups, building automations, and connecting your business tools — 24 hours a day, without a day off.</p>
+  <p class="kicker reveal reveal-d2">Adapix runs your follow-ups around the clock — drafting every message, recovering cold leads, and booking appointments. You approve with one tap. No new hire, no hardware, no setup fees.</p>
   <div class="hero-actions reveal reveal-d3">
-    <a href="#reserve" class="btn btn-primary btn-lg">Reserve Adapt 1.0</a>
+    <a href="/signup" class="btn btn-primary btn-lg">Start free trial</a>
     <a href="mailto:hello@adapixai.com?subject=Demo+Request" class="demo-link">Book a 15-min demo instead</a>
   </div>
+  <div class="hero-trust reveal reveal-d3">14-day free trial · No credit card · Cancel anytime</div>
   <div class="hero-visual reveal">
-    <div class="device-3d">
-      <div class="device-shell">
-        <div class="device-shell-inner">
-          <img class="device-mark-img" src="adapix_mark.svg" alt="Adapix" />
+    <div class="app-window">
+      <div class="app-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="app-url">adapixai.com/app</span></div>
+      <div class="app-body">
+        <div class="app-side">
+          <div class="app-nav on"><span></span>Inbox</div>
+          <div class="app-nav"><span></span>Contacts</div>
+          <div class="app-nav"><span></span>Results</div>
+          <div class="app-nav"><span></span>AI Team</div>
         </div>
-        <div class="device-ports">
-          <div class="device-port usbc"></div>
-          <div class="device-port"></div>
-          <div class="device-port"></div>
+        <div class="app-main">
+          <div class="app-eyebrow">Drafts awaiting approval · 3</div>
+          <div class="app-row"><div class="app-row-txt"><b>Lina K. — appointment reminder</b><span>Hi Lina! Just a reminder you're booked for Friday at 2pm…</span></div><span class="app-pill">draft</span></div>
+          <div class="app-row"><div class="app-row-txt"><b>Jorge R. — financing follow-up</b><span>Hi Jorge, following up on the quote — happy to walk through options…</span></div><span class="app-pill">draft</span></div>
+          <div class="app-row"><div class="app-row-txt"><b>Maria L. — went quiet (day 7)</b><span>Hey Maria, checking in — still want to move forward? …</span></div><span class="app-pill">draft</span></div>
+          <div class="app-stat-row">
+            <div class="app-stat"><div class="app-stat-n">47</div><div class="app-stat-l">Sent today</div></div>
+            <div class="app-stat"><div class="app-stat-n">12</div><div class="app-stat-l">Booked</div></div>
+            <div class="app-stat"><div class="app-stat-n">98%</div><div class="app-stat-l">Approved</div></div>
+          </div>
         </div>
-        <div class="device-led"></div>
-        <div class="device-led-hard"></div>
-        <div class="device-shadow"></div>
       </div>
     </div>
   </div>
@@ -384,9 +652,9 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 </section>
 
 <div style="padding:16px 22px 0;text-align:center">
-  <div style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#003E66,#001A2E);color:#00D4FF;border-radius:980px;padding:6px 18px;font-size:13px;font-weight:600;letter-spacing:-.005em">
-    <span style="width:7px;height:7px;border-radius:50%;background:#00D4FF;animation:pulse 2s infinite;display:inline-block"></span>
-    Pilot program — 12 spots remaining across 4 industries
+  <div class="trust-chip">
+    <span class="trust-dot"></span>
+    Live now — start your free trial in under 2 minutes
   </div>
 </div>
 
@@ -406,30 +674,30 @@ section{padding:88px 22px;position:relative;overflow:hidden}
       </div>
     </div>
 
-    <!-- PRICE -->
+    <!-- FREE TRIAL -->
     <div class="cell span-2 reveal">
-      <div class="cell-eyebrow">One-time hardware</div>
-      <div class="cell-stat">$799</div>
-      <div class="cell-sub" style="margin-top:8px">Then $29/mo + $0.20 per message sent. You only pay when Adapix actually does something.</div>
+      <div class="cell-eyebrow">Start for</div>
+      <div class="cell-stat">$0</div>
+      <div class="cell-sub" style="margin-top:8px">14-day free trial, no credit card. After that, plans start at $29/mo. You only ever pay for value Adapix actually delivers.</div>
     </div>
 
     <!-- 3. EASY SETUP -->
     <div class="cell span-2 reveal">
       <div class="cell-eyebrow">Setup takes</div>
-      <div class="cell-stat" style="font-size:clamp(36px,4vw,64px)">10 min</div>
-      <div class="cell-sub" style="margin-top:8px">Plug it in. Connect your email. Tell Adapix about your business. That's it — no IT team, no developers, no setup fees.</div>
+      <div class="cell-stat" style="font-size:clamp(36px,4vw,64px)">5 min</div>
+      <div class="cell-sub" style="margin-top:8px">Sign up, connect your email, tell Adapix about your business. That's it — no IT team, no developers, no installs.</div>
     </div>
 
-    <!-- 2. AUTOMATES YOUR BUSINESS -->
+    <!-- 2. AI SPECIALISTS -->
     <div class="cell accent span-3 reveal">
       <div class="cell-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg></div>
       <div class="cell-title">A full team of AI specialists, on demand.</div>
       <div class="cell-sub">Strategy, marketing, finance, operations — Adapix has a specialist for every part of your business. Pick a task and your team gets to work.</div>
     </div>
 
-    <!-- 4. CUSTOMIZABLE OPERATIONS -->
+    <!-- 4. AUTOMATIONS -->
     <div class="cell span-3 reveal">
-      <div class="cell-icon" style="background:linear-gradient(140deg,#34C759,#00C7BE)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></svg></div>
+      <div class="cell-icon" style="background:linear-gradient(140deg,#34d399,#22d3ee)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></svg></div>
       <div class="cell-title">Automations and connections that run your business.</div>
       <div class="cell-sub">Connect your tools, set your rules, and let Adapix handle the rest. Follow-ups, sequences, reminders — all running without you lifting a finger.</div>
     </div>
@@ -473,7 +741,7 @@ section{padding:88px 22px;position:relative;overflow:hidden}
             <b>Adapix · Draft</b>
             Hi Lisa — quick reminder that we have you down for Friday at 2pm. Reply YES to confirm or pick a new time here…
           </div>
-          <div class="phone-msg" style="background:rgba(121,224,142,.10);border-color:rgba(121,224,142,.3);color:#aef0c7">
+          <div class="phone-msg" style="background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3);color:#d8d0ff">
             <b>To: Lisa K.</b>
             Looks great. Send.
           </div>
@@ -491,30 +759,30 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 <section class="security" id="security">
   <div class="wrap reveal">
     <div>
-      <div class="eyebrow" style="color:var(--adapix-2)">Security & privacy</div>
-      <h2 class="h2">Your data stays<br>in your building.</h2>
-      <p class="kicker" style="margin-top:16px">On-device storage, encrypted at rest, and human approval before every send. For regulated industries like healthcare and legal, HIPAA-ready architecture and BAA are included.</p>
+      <div class="eyebrow" style="color:var(--adapix-2)">Security &amp; privacy</div>
+      <h2 class="h2">Enterprise-grade security,<br>built in.</h2>
+      <p class="kicker" style="margin-top:16px">Your data is encrypted in transit and at rest, isolated per business, and never shared. Every message requires human approval before it sends. For regulated industries like healthcare and legal, HIPAA-ready architecture and a BAA are available.</p>
     </div>
     <div class="security-pillars">
       <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(0,212,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2" fill="rgba(0,212,255,.9)" stroke="none"/></svg></div>
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2" fill="rgba(167,139,250,.95)" stroke="none"/></svg></div>
         <div class="title">AES-256 Encryption</div>
-        <div class="desc">All patient data encrypted at rest and in transit, on the device.</div>
+        <div class="desc">All customer data encrypted at rest and in transit, every step of the way.</div>
       </div>
       <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(0,212,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
         <div class="title">Compliance-Ready</div>
-        <div class="desc">HIPAA BAA available for healthcare. Built to work in regulated industries out of the box.</div>
+        <div class="desc">HIPAA BAA available for healthcare. Built to work in regulated industries.</div>
       </div>
       <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(0,212,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8a5 5 0 0 0-9.8-1.4A3.5 3.5 0 0 0 4 10a3.5 3.5 0 0 0 3.5 3.5h9A3 3 0 0 0 20 10a3 3 0 0 0-3-2z"/><line x1="4" y1="4" x2="20" y2="20" stroke="rgba(255,80,80,.8)"/></svg></div>
-        <div class="title">No Cloud Storage</div>
-        <div class="desc">Patient records never leave your office. The only outbound call is the AI model request — no PHI included.</div>
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><polyline points="9,12 11,14 15,10"/></svg></div>
+        <div class="title">Isolated Per Business</div>
+        <div class="desc">Every account's data is logically separated. Your contacts are never mixed or shared.</div>
       </div>
       <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(0,212,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M20 11h2v2h-2"/><polyline points="7,11 10,8 10,16 13,13" stroke-width="1.6"/></svg></div>
-        <div class="title">Power & WiFi Resilience</div>
-        <div class="desc">Built-in UPS battery backup. If WiFi drops, queued messages send when connection restores. No messages lost.</div>
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="title">Human Approval First</div>
+        <div class="desc">Nothing sends on its own. Every message waits for a person to approve it — opt-out handling included.</div>
       </div>
     </div>
   </div>
@@ -523,64 +791,52 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 
 <section class="pricing" id="pricing">
   <div class="eyebrow reveal">Pricing</div>
-  <h2 class="h2 reveal">Pay for what you use.<br><span class="lite">Not what you don't.</span></h2>
-  <p class="kicker reveal">One hardware purchase. Then a small base to keep things running. After that, you only pay when Adapix actually sends something — the more value it delivers, the more it costs. That's how it should work.</p>
+  <h2 class="h2 reveal">Start free.<br><span class="lite">Pay as you grow.</span></h2>
+  <p class="kicker reveal">Try Adapix free for 14 days — no credit card. When you're ready, pick the plan that fits your volume. No contracts, cancel anytime.</p>
 
-  <div class="price-card reveal">
-    <div class="product">Adapt 1.0</div>
-    <div class="product-name">How it works.</div>
-    <div class="product-tag">Three simple pieces. No contracts. No surprises.</div>
-
-    <div class="price-row big" style="background:linear-gradient(90deg, rgba(0,113,227,.04) 0%, rgba(0,184,230,.04) 100%);margin:0 -20px;padding-left:20px;padding-right:20px;border-radius:12px;border-top:1px solid var(--line)">
-      <span>Adapt 1.0 device<span class="note">One-time · yours forever · free shipping</span></span>
-      <b style="font-size:38px;letter-spacing:-.03em;background:linear-gradient(140deg,var(--accent),var(--adapix));-webkit-background-clip:text;background-clip:text;color:transparent">$799</b>
+  <div class="plan-grid reveal">
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">$29<span>/mo</span></div>
+      <div class="plan-tag">For solo operators and small teams just getting started.</div>
+      <ul class="plan-feats">
+        <li>Up to 150 approved messages / mo</li>
+        <li>AI follow-up &amp; reminders</li>
+        <li>1 connected inbox (Gmail or Outlook)</li>
+        <li>CSV contact import</li>
+        <li>Email support</li>
+      </ul>
+      <a href="/signup" class="btn btn-outline" style="justify-content:center;width:100%">Start free trial</a>
     </div>
-
-    <div class="price-row big">
-      <span>Monthly base<span class="note">Keeps the device active · includes 50 messages/mo · cancel anytime</span></span>
-      <b>$29<span style="font-size:18px;font-weight:500;letter-spacing:0"> / mo</span></b>
+    <div class="plan featured">
+      <div class="plan-badge">Most popular</div>
+      <div class="plan-name">Growth</div>
+      <div class="plan-price">$99<span>/mo</span></div>
+      <div class="plan-tag">For growing businesses that follow up at real volume.</div>
+      <ul class="plan-feats">
+        <li>Up to 750 approved messages / mo</li>
+        <li>Everything in Starter, plus:</li>
+        <li>Automations &amp; sequences</li>
+        <li>Multiple inboxes &amp; staff logins</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="/signup" class="btn btn-primary" style="justify-content:center;width:100%">Start free trial</a>
     </div>
-
-    <div class="price-row big">
-      <span>Per message above 50<span class="note">SMS or email · only charged when a message is sent and approved</span></span>
-      <b>$0.20</b>
-    </div>
-
-    <div class="price-row"><span>Onboarding &amp; setup call</span><b>Included</b></div>
-    <div class="price-row"><span>Unlimited staff logins</span><b>Included</b></div>
-    <div class="price-row"><span>HIPAA BAA (if applicable)</span><b>Included</b></div>
-
-    <div class="price-total">
-      <a href="#reserve" class="btn btn-primary btn-lg">Reserve Adapt 1.0 — no payment now</a>
-      <div class="price-guarantee">30-day return on hardware if it's not the right fit</div>
+    <div class="plan">
+      <div class="plan-name">Scale</div>
+      <div class="plan-price">$1,500<span>/mo</span></div>
+      <div class="plan-tag">For high-volume and multi-location operations.</div>
+      <ul class="plan-feats">
+        <li>High-volume sending</li>
+        <li>Full AI specialist team</li>
+        <li>HIPAA BAA included</li>
+        <li>Multi-location support</li>
+        <li>Dedicated onboarding</li>
+      </ul>
+      <a href="mailto:hello@adapixai.com?subject=Adapix+Scale" class="btn btn-outline" style="justify-content:center;width:100%">Talk to us</a>
     </div>
   </div>
-
-  <!-- PRICING EXAMPLES -->
-  <div class="price-examples reveal">
-    <div class="eyebrow" style="margin-bottom:28px">Real-world examples</div>
-    <div class="price-ex-grid">
-      <div class="price-ex">
-        <div class="price-ex-biz">Small salon</div>
-        <div class="price-ex-detail">Sends ~35 appointment reminders/mo</div>
-        <div class="price-ex-calc">35 messages → under your 50 included</div>
-        <div class="price-ex-total">$29 / mo</div>
-      </div>
-      <div class="price-ex">
-        <div class="price-ex-biz">Real estate agent</div>
-        <div class="price-ex-detail">Sends ~120 follow-ups/mo across active leads</div>
-        <div class="price-ex-calc">50 included + 70 extra × $0.20</div>
-        <div class="price-ex-total">$43 / mo</div>
-      </div>
-      <div class="price-ex">
-        <div class="price-ex-biz">Auto dealership</div>
-        <div class="price-ex-detail">Sends ~600 messages/mo across service + sales</div>
-        <div class="price-ex-calc">50 included + 550 extra × $0.20</div>
-        <div class="price-ex-total">$139 / mo</div>
-      </div>
-    </div>
-    <p class="price-ex-note">A message is only charged when it's sent — drafts you reject cost nothing. You're never paying for AI to spin its wheels.</p>
-  </div>
+  <p class="price-ex-note" style="margin-top:32px">Every plan starts with a 14-day free trial — no credit card. A message only counts when it's sent and approved; drafts you reject cost nothing.</p>
 </section>
 
 <!-- COMPARE TO ALTERNATIVES -->
@@ -600,7 +856,7 @@ section{padding:88px 22px;position:relative;overflow:hidden}
       <tbody>
         <tr class="hl">
           <td>Monthly cost</td>
-          <td>$29 base + $0.20/msg</td>
+          <td>From $29/mo · free trial</td>
           <td>$2,000+</td>
           <td>$200–400 flat</td>
         </tr>
@@ -623,10 +879,10 @@ section{padding:88px 22px;position:relative;overflow:hidden}
           <td><span class="check">✓</span></td>
         </tr>
         <tr class="hl">
-          <td>Customer data stays in your office</td>
-          <td><span class="check">✓</span></td>
+          <td>Your data encrypted &amp; isolated</td>
           <td><span class="check">✓</span></td>
           <td><span class="cross">—</span></td>
+          <td>Varies</td>
         </tr>
         <tr>
           <td>HIPAA-ready / BAA available</td>
@@ -645,8 +901,8 @@ section{padding:88px 22px;position:relative;overflow:hidden}
   </div>
 </section>
 
-<div style="padding:0 22px 64px;background:var(--bg);text-align:center">
-  <a href="#reserve" class="btn btn-primary btn-lg">Reserve Adapt 1.0 — no payment now</a>
+<div style="padding:0 22px 64px;text-align:center">
+  <a href="/signup" class="btn btn-primary btn-lg">Start your free trial</a>
 </div>
 
 <!-- FAQ -->
@@ -658,37 +914,37 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 
       <div class="faq-item">
         <div class="faq-q">Does this work with Outlook? Or only Gmail?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Both. Adapix connects to Google Workspace (Gmail) and Microsoft 365 (Outlook) via OAuth. You sign in once and messages go out from your real practice address — no forwarding or aliases.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Both. Adapix connects to Google Workspace (Gmail) and Microsoft 365 (Outlook) via secure OAuth. You sign in once and messages go out from your real business address — no forwarding or aliases.</div></div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">Do I need my own Anthropic or Claude account?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">No. Adapix manages the Claude API on your behalf — it's included in your $29/month base plan. You don't need to sign up for anything with Anthropic. The only account you need is Adapix.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">No. Adapix manages the AI on your behalf — it's included in your plan. You don't need to sign up for anything with Anthropic. The only account you need is Adapix.</div></div>
       </div>
 
       <div class="faq-item">
-        <div class="faq-q">What if the device loses power or my WiFi drops?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Adapt 1.0 includes a UPS battery backup so brief power blips don't interrupt anything. If your internet goes down, outbound messages queue locally and send the moment connectivity restores — nothing is lost. Your dashboard stays accessible on your local network even without internet.</div></div>
+        <div class="faq-q">Is this software or hardware? What do I need to install?<span class="icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Adapix is cloud software — there's nothing to install and no hardware to buy. Sign up, open it in your browser, connect your email, and you're running. It works on any computer, tablet, or phone.</div></div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">Is this HIPAA compliant? What about sensitive customer data?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">All customer data is AES-256 encrypted and stored only on the Adapt device in your office — it never goes to a third-party cloud. For healthcare, legal, and other regulated industries, we provide a Business Associate Agreement (BAA) as part of every subscription. The AI call is made without sending full records — only the message context needed to compose a reply.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">All customer data is AES-256 encrypted in transit and at rest, and isolated per business. For healthcare, legal, and other regulated industries, we provide a Business Associate Agreement (BAA). The AI composes replies from the minimum context needed — it doesn't send full records anywhere.</div></div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">What if I have multiple staff members?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Unlimited staff logins are included — your whole team sees the same approval queue and inbox. Everyone can review and approve drafts. Multi-location support is available; <a href="mailto:hello@adapixai.com">reach out</a> for a quote.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Staff logins are included on Growth and Scale plans — your whole team sees the same approval queue and inbox. Everyone can review and approve drafts. Multi-location support is available; <a href="mailto:hello@adapixai.com">reach out</a> for a quote.</div></div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">What if a message goes out wrong — am I liable?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Adapix requires a human approval tap before any message is sent (unless you switch to auto-mode, which is off by default). Your staff reviews every draft. If something looks off, you edit or reject it. The tool helps you follow up faster — your team stays in control of what actually goes out.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Adapix requires a human approval tap before any message is sent (unless you switch on auto-mode, which is off by default). Your staff reviews every draft. If something looks off, you edit or reject it. The tool helps you follow up faster — your team stays in control of what actually goes out.</div></div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">Can I use my existing CRM or business software?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Yes, via CSV export today. Export your customer or contact list from your CRM, PMS, or spreadsheet and Adapix ingests it in seconds. Direct integrations with popular CRMs and industry-specific software are on the roadmap for Q4 2026. <a href="mailto:hello@adapixai.com">Tell us what software you use</a> and we'll prioritize accordingly.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Yes, via CSV import today. Export your customer or contact list from your CRM, PMS, or spreadsheet and Adapix ingests it in seconds. Direct integrations with popular CRMs are on the roadmap. <a href="mailto:hello@adapixai.com">Tell us what software you use</a> and we'll prioritize accordingly.</div></div>
       </div>
 
       <div class="faq-item">
@@ -702,13 +958,13 @@ section{padding:88px 22px;position:relative;overflow:hidden}
       </div>
 
       <div class="faq-item">
-        <div class="faq-q">What happens after the pilot ends? Am I locked in?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">No contracts, no lock-in. After the pilot, you move to standard pricing ($799 device + $29/mo base) or you return the hardware under the 30-day return policy. We do not auto-charge without your confirmation.</div></div>
+        <div class="faq-q">Am I locked into a contract?<span class="icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">No contracts, no lock-in. Start with a 14-day free trial, then pick a monthly plan. Cancel anytime from your account — we never auto-charge without your confirmation at the end of the trial.</div></div>
       </div>
 
       <div class="faq-item">
-        <div class="faq-q">What exactly does reserving do? Is there a payment now?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Reserving holds your spot in the first batch — no payment today. Within 48 hours we'll email you to confirm details and discuss whether the pilot program is a fit. If you're selected as a pilot partner, your hardware is free for 60 days. General availability ships Q3 2026.</div></div>
+        <div class="faq-q">What does the free trial include? Is there a payment now?<span class="icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">The 14-day free trial gives you full access with no credit card and no payment today. Connect your email, import contacts, and let Adapix start drafting follow-ups. If it's a fit, pick a plan when the trial ends — otherwise it simply stops, no charge.</div></div>
       </div>
 
     </div>
@@ -718,13 +974,13 @@ section{padding:88px 22px;position:relative;overflow:hidden}
 <section class="reserve" id="reserve">
   <div class="wrap">
     <div class="eyebrow reveal">Get started</div>
-    <h2 class="h2 reveal">Here's exactly<br><span class="lite">how it works.</span></h2>
+    <h2 class="h2 reveal">Up and running<br><span class="lite">in minutes.</span></h2>
 
     <div class="reserve-steps reveal">
       <div class="reserve-step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <div class="step-title">Fill out the form</div>
+          <div class="step-title">Start your free trial</div>
           <div class="step-desc">No payment. 30 seconds. Just your name and email.</div>
         </div>
       </div>
@@ -732,35 +988,26 @@ section{padding:88px 22px;position:relative;overflow:hidden}
       <div class="reserve-step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">We call you within 48 hours</div>
-          <div class="step-desc">Quick conversation. We learn your business, configure Adapix for you, and answer any questions.</div>
+          <div class="step-title">Connect your email &amp; contacts</div>
+          <div class="step-desc">Sign in with Gmail or Outlook and import your list. Tell Adapix about your business.</div>
         </div>
       </div>
       <div class="step-arrow">→</div>
       <div class="reserve-step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <div class="step-title">Your device ships</div>
-          <div class="step-desc">Plug it in. We walk you through the 10-minute setup. Adapix is running the same day.</div>
+          <div class="step-title">Adapix starts following up</div>
+          <div class="step-desc">It drafts; you approve. Watch leads turn into booked appointments — same day.</div>
         </div>
       </div>
     </div>
 
-    <form class="reserve-form reveal" name="reserve" method="POST" data-netlify="true" onsubmit="handleReserve(event)">
-      <input type="hidden" name="form-name" value="reserve" />
-      <input type="text"  name="name"     placeholder="Your name" required />
-      <input type="email" name="email"    placeholder="Work email" required />
-      <input type="text"  name="industry" placeholder="Your industry (e.g. dental, real estate, auto) — optional" />
-      <button type="submit" class="btn btn-primary btn-lg">Reserve my spot — no payment now</button>
-    </form>
-
-    <p class="reserve-fine reveal">First batch ships Q3 2026 &nbsp;·&nbsp; $799 device &nbsp;·&nbsp; 30-day return policy &nbsp;·&nbsp; <a href="mailto:hello@adapixai.com?subject=Demo+Request">Prefer a demo first?</a></p>
-    <p class="reserve-fine" style="margin-top:10px">Questions? Email us directly: <a href="mailto:hello@adapixai.com" style="color:var(--accent)">hello@adapixai.com</a></p>
-
-    <div id="reserveDone" class="reserve-success" style="display:none">
-      <b>You're on the list.</b><br>
-      We'll reach out within 48 hours to set up your call. Questions in the meantime? Write us at <a href="mailto:hello@adapixai.com" style="color:var(--accent)">hello@adapixai.com</a>.
+    <div style="text-align:center">
+      <a href="/signup" class="btn btn-primary btn-lg" style="justify-content:center">Start free trial — no credit card</a>
     </div>
+
+    <p class="reserve-fine reveal">14-day free trial &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; <a href="mailto:hello@adapixai.com?subject=Demo+Request">Prefer a demo first?</a></p>
+    <p class="reserve-fine" style="margin-top:10px">Questions? Email us directly: <a href="mailto:hello@adapixai.com" style="color:var(--v-violet)">hello@adapixai.com</a></p>
   </div>
 </section>
 

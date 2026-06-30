@@ -701,7 +701,7 @@ def manifest():
         {
             "name": "Adapix",
             "short_name": "Adapix",
-            "description": "Live escalations and one-tap approvals for OMS practices.",
+            "description": "See what needs you and approve messages in one tap.",
             "start_url": "/app",
             "scope": "/app",
             "display": "standalone",
@@ -724,7 +724,7 @@ def service_worker():
     We do NOT cache the JSON API — escalations must always be fresh.
     """
     sw = """
-const CACHE = 'adapix-shell-v1';
+const CACHE = 'adapix-shell-v3';
 const SHELL = ['/app', '/app/manifest.json', '/app/icon-192.png', '/app/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -745,6 +745,21 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.pathname.startsWith('/api/')) return; // never cache API
   if (e.request.method !== 'GET') return;
+  // Network-first for the HTML shell so UI updates show immediately when
+  // online; fall back to the cached shell only when offline (keeps PWA).
+  if (e.request.mode === 'navigate' || url.pathname === '/app') {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('/app', copy));
+          return res;
+        })
+        .catch(() => caches.match('/app'))
+    );
+    return;
+  }
+  // Cache-first for static assets (icons, manifest)
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
@@ -1573,7 +1588,7 @@ def api_patients_list(_user: str = Depends(verify_admin)):
 def api_contacts_template(_user: str = Depends(verify_admin)):
     """Download a blank CSV template pre-filled with one example row."""
     headers = "first_name,last_name,phone,email,preferred_channel,consult_date,service_type,deal_value,notes,external_id"
-    example = "Jane,Smith,+14125550100,jane@email.com,sms,2024-01-15,Full Treatment,6000,Interested but needs financing info,EXT-001"
+    example = "Jane,Smith,+14125550100,jane@email.com,sms,2024-01-15,Premium Package,6000,Interested but needs pricing info,EXT-001"
     return PlainTextResponse(
         content=f"{headers}\n{example}\n",
         media_type="text/csv",
@@ -1645,6 +1660,69 @@ async def api_contacts_import(
                 skipped += 1
 
     return {"imported": imported, "skipped": skipped, "errors": errors}
+
+
+class ContactAddBody(BaseModel):
+    first_name: str = ""
+    last_name: str = ""
+    phone: str = ""
+    email: str = ""
+    preferred_channel: str = ""
+    service_type: str = ""
+    deal_value: str = ""
+    notes: str = ""
+    status: str = ""
+
+
+@router.post("/api/v1/contacts/add")
+def api_contacts_add(body: ContactAddBody, _user: str = Depends(verify_admin)):
+    """Add a single contact straight from the dashboard — no CSV needed."""
+    first = (body.first_name or "").strip()
+    last = (body.last_name or "").strip()
+    phone = (body.phone or "").strip() or None
+    email = (body.email or "").strip() or None
+
+    if not first and not last:
+        raise HTTPException(status_code=400, detail="Add a name so you know who this is.")
+    if not phone and not email:
+        raise HTTPException(status_code=400, detail="Add a phone number or an email so Adapix can reach them.")
+
+    amount = None
+    raw_amount = (body.deal_value or "").strip()
+    if raw_amount:
+        try:
+            amount = float(raw_amount.replace(",", "").replace("$", ""))
+        except ValueError:
+            pass
+
+    channel = (body.preferred_channel or "").strip() or ("sms" if phone else "email")
+
+    # "consulted_not_started" = a lead Adapix follows up to win.
+    # "treatment_started" = an existing customer (no convert-follow-up).
+    allowed_status = {
+        "consulted_not_started", "treatment_started",
+        "explicitly_declined", "paused",
+    }
+    status = (body.status or "").strip()
+    if status not in allowed_status:
+        status = "consulted_not_started"
+
+    with get_session() as s:
+        p = Patient(
+            practice_id=_user,
+            first_name=first,
+            last_name=last,
+            phone=phone,
+            email=email,
+            preferred_channel=channel,
+            treatment_type=(body.service_type or "").strip() or None,
+            treatment_plan_amount=amount,
+            notes=(body.notes or "").strip() or None,
+            status=status,
+        )
+        s.add(p)
+        s.flush()
+        return {"ok": True, "id": p.id}
 
 
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")
