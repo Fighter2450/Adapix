@@ -116,6 +116,11 @@ def create_app() -> FastAPI:
         mgr.reject(message_id, reason=reason or None)
         return RedirectResponse(url="/approvals", status_code=303)
 
+    @app.get("/health")
+    def health():
+        """Railway healthcheck endpoint — returns 200 when the server is ready."""
+        return {"ok": True}
+
     return app
 
 

@@ -1,0 +1,35 @@
+[phases.setup]
+nixPkgs = [
+  "python312",
+  "chromium",
+  "nss",
+  "nspr",
+  "atk",
+  "cups",
+  "libdrm",
+  "dbus",
+  "libxkbcommon",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXrandr",
+  "mesa",
+  "expat",
+  "xorg.libxcb",
+  "libxshmfence",
+  "pango",
+  "cairo",
+  "alsa-lib",
+  "postgresql_16",
+]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "playwright install chromium --with-deps || true",
+]
+
+[start]
+cmd = "python -m uvicorn src.adapix.api.main:app --host 0.0.0.0 --port $PORT"
