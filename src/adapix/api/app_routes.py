@@ -1126,6 +1126,8 @@ def api_calls_list(org_id: str = Depends(verify_admin)):
                 "status": m.status,
                 "goal": m.body if m.direction == "outbound" else None,
                 "summary": m.subject if m.direction == "inbound" else None,
+                "transcript": m.body if m.direction == "inbound" else None,
+                "recording_url": (m.metadata_json or {}).get("recording_url"),
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             })
 

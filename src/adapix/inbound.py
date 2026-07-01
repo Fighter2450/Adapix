@@ -134,6 +134,7 @@ class InboundProcessor:
         campaign_id: int | None = None,
         from_number: str | None = None,
         provider_id: str | None = None,
+        recording_url: str | None = None,
     ) -> InboundResult:
         """Store a finished AI call's transcript, classify what happened, and
         raise an escalation into the Inbox when it needs a human — the voice
@@ -169,7 +170,11 @@ class InboundProcessor:
                 body=(transcript or summary or "(call ended — no transcript)"),
                 status="received",
                 provider_id=provider_id,
-                metadata_json={"kind": "call_outcome", "ended_reason": ended_reason},
+                metadata_json={
+                    "kind": "call_outcome",
+                    "ended_reason": ended_reason,
+                    **({"recording_url": recording_url} if recording_url else {}),
+                },
             )
             s.add(rec)
             s.flush()

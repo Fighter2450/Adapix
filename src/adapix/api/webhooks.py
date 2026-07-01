@@ -105,7 +105,16 @@ async def vapi_call_events(request: Request):
         ended = msg.get("endedReason") or ""
         summary = (msg.get("summary") or "").strip()
         transcript = (msg.get("transcript") or "").strip()
-        print(f"[adapix] call ended to={number or '?'} reason={ended or '?'}")
+        # Recording lives under `artifact` on newer Vapi payloads; some older/
+        # alternate shapes put it at the top level. Check both defensively.
+        artifact = msg.get("artifact") or call.get("artifact") or {}
+        recording_url = (
+            artifact.get("recordingUrl")
+            or artifact.get("stereoRecordingUrl")
+            or msg.get("recordingUrl")
+            or ""
+        )
+        print(f"[adapix] call ended to={number or '?'} reason={ended or '?'} recording={'yes' if recording_url else 'no'}")
 
         try:
             result = InboundProcessor().process_call_outcome(
@@ -116,6 +125,7 @@ async def vapi_call_events(request: Request):
                 campaign_id=meta.get("campaign_id"),
                 from_number=number or None,
                 provider_id=call.get("id"),
+                recording_url=recording_url or None,
             )
             cat = result.classification.category if result.classification else "n/a"
             print(f"[adapix]   call outcome: status={result.status} category={cat}")
