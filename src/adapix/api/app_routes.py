@@ -1075,6 +1075,101 @@ def api_reject(message_id: int, body: RejectBody, _user: str = Depends(verify_ad
 
 
 # ---------------------------------------------------------------------------
+# Calls — the dashboard's home for queuing + reviewing AI phone calls.
+# Web equivalent of the `queue-call` / `approve` / `pending-approvals` CLI.
+# ---------------------------------------------------------------------------
+
+@router.get("/api/v1/calls")
+def api_calls_list(org_id: str = Depends(verify_admin)):
+    """Everything the Calls tab needs: pending call plans + recent call history."""
+    with get_session() as s:
+        pending_rows = (
+            s.query(Message, Campaign, Patient)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .join(Patient, Campaign.patient_id == Patient.id)
+            .filter(
+                Campaign.practice_id == org_id,
+                Message.channel == "call",
+                Message.status == "pending_approval",
+            )
+            .order_by(Message.created_at.asc())
+            .all()
+        )
+        pending = [
+            {
+                "id": m.id,
+                "patient": _patient_label(p),
+                "patient_id": p.id,
+                "phone": p.phone,
+                "goal": m.body,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m, c, p in pending_rows
+        ]
+
+        history_rows = (
+            s.query(Message, Campaign, Patient)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .join(Patient, Campaign.patient_id == Patient.id)
+            .filter(Campaign.practice_id == org_id, Message.channel == "call")
+            .filter(Message.status != "pending_approval")
+            .order_by(Message.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        history = []
+        for m, c, p in history_rows:
+            history.append({
+                "id": m.id,
+                "patient": _patient_label(p),
+                "direction": m.direction,   # outbound = placed; inbound = outcome/transcript
+                "status": m.status,
+                "goal": m.body if m.direction == "outbound" else None,
+                "summary": m.subject if m.direction == "inbound" else None,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            })
+
+        return {"pending": pending, "history": history}
+
+
+class QueueCallBody(BaseModel):
+    patient_id: int
+    goal: str
+
+
+@router.post("/api/v1/calls/queue")
+def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
+    """Queue an AI call for a contact — the human approves the GOAL up front
+    (a live call can't be approved word-by-word); approving it places the call."""
+    goal = body.goal.strip()
+    if not goal:
+        raise HTTPException(status_code=400, detail="Describe what the call should accomplish.")
+
+    with get_session() as s:
+        patient = s.query(Patient).filter(
+            Patient.id == body.patient_id, Patient.practice_id == org_id
+        ).first()
+        if patient is None:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        if not patient.phone:
+            raise HTTPException(status_code=400, detail="This contact has no phone number on file.")
+
+        camp = Campaign(practice_id=org_id, workflow_id="voice_call", patient_id=patient.id)
+        s.add(camp)
+        s.flush()
+        msg = Message(
+            campaign_id=camp.id,
+            direction="outbound",
+            channel="call",
+            body=goal,
+            status="pending_approval",
+        )
+        s.add(msg)
+        s.flush()
+        return {"ok": True, "id": msg.id}
+
+
+# ---------------------------------------------------------------------------
 # Dynamic dashboard — the widgets Adapix has decided to show.
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/dashboard")

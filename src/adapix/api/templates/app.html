@@ -998,6 +998,10 @@ body::after{
         <span class="nav-badge" id="ct-inbox"></span>
       </button>
       <button class="nav-item" data-view="contacts"><i data-lucide="users"></i><span>Contacts</span></button>
+      <button class="nav-item" data-view="calls">
+        <i data-lucide="phone"></i><span>Calls</span>
+        <span class="nav-badge" id="ct-calls"></span>
+      </button>
       <button class="nav-item" data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
       <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
       <button class="nav-item" data-view="workshop"><i data-lucide="zap"></i><span>Workshop</span></button>
@@ -1020,8 +1024,8 @@ body::after{
 <nav class="mobile-nav" id="bn">
   <button data-view="inbox"><i data-lucide="inbox"></i><span>Inbox</span></button>
   <button data-view="contacts"><i data-lucide="users"></i><span>Contacts</span></button>
+  <button data-view="calls"><i data-lucide="phone"></i><span>Calls</span></button>
   <button data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
-  <button data-view="team"><i data-lucide="bot"></i><span>Team</span></button>
   <button data-view="settings"><i data-lucide="settings"></i><span>Settings</span></button>
 </nav>
 
@@ -1035,7 +1039,7 @@ body::after{
   const main = $('main');
 
   const state = {
-    view: 'inbox', feed: null, dashboard: null, patients: null, settingsPage: null, contactsPage: null,
+    view: 'inbox', feed: null, dashboard: null, patients: null, settingsPage: null, contactsPage: null, calls: null,
   };
 
   // Plain-English labels for the internal contact statuses.
@@ -1078,12 +1082,14 @@ body::after{
   async function load(){
     try{
       $('loader').textContent = 'loading…';
-      const [feed, dashboard] = await Promise.all([
+      const [feed, dashboard, calls] = await Promise.all([
         api('/api/v1/feed').catch(()=>({escalations:[], approvals:[], digest:{}})),
         api('/api/v1/dashboard').catch(()=>({widgets:[]})),
+        api('/api/v1/calls').catch(()=>({pending:[], history:[]})),
       ]);
       state.feed = feed;
       state.dashboard = dashboard;
+      state.calls = calls;
       render();
     } catch(e){
       main.innerHTML = '<div class="fail">Could not load. ' + escapeHTML(e.message) + '</div>';
@@ -1101,8 +1107,13 @@ body::after{
     const badge = $('ct-inbox');
     if (badge) { badge.textContent = total || ''; badge.style.display = total ? '' : 'none'; badge.classList.toggle('hot', escCount > 0); }
 
+    const callsPending = (state.calls && state.calls.pending) ? state.calls.pending.length : 0;
+    const callsBadge = $('ct-calls');
+    if (callsBadge) { callsBadge.textContent = callsPending || ''; callsBadge.style.display = callsPending ? '' : 'none'; }
+
     if (state.view === 'inbox')      renderInboxView();
     else if (state.view === 'contacts')  renderPatientsView();
+    else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'results')   renderResultsView();
     else if (state.view === 'team')      renderTeam();
     else if (state.view === 'workshop')  renderWorkshop();
@@ -1251,6 +1262,127 @@ body::after{
     `;
     renderLucide(main);
     refreshActivity();
+  }
+
+  // -------- CALLS view --------
+  async function renderCallsView(){
+    main.innerHTML = '<div class="loader">loading…</div>';
+
+    let calls;
+    try { calls = await api('/api/v1/calls'); }
+    catch(_){ calls = { pending: [], history: [] }; }
+    state.calls = calls;
+
+    if (!state.patients){
+      try { state.patients = (await api('/api/v1/patients')).patients || []; }
+      catch(_){ state.patients = []; }
+    }
+    const callable = state.patients.filter(p => p.phone);
+
+    const contactOptions = callable.length
+      ? callable.map(p => `<option value="${p.id}">${escapeHTML((p.first_name||'')+' '+(p.last_name||''))} — ${escapeHTML(p.phone)}</option>`).join('')
+      : '<option value="">No contacts with a phone number yet</option>';
+
+    const pendingRows = calls.pending.length
+      ? calls.pending.map(c => `
+        <div class="row-card" data-call-id="${c.id}">
+          <div class="text">
+            <b>${escapeHTML(c.patient)}</b>
+            <span>Goal: ${escapeHTML((c.goal||'').slice(0,160))}</span>
+          </div>
+          <span class="pill">awaiting approval</span>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="call-approve" data-id="${c.id}">Approve &amp; call</button>
+            <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="call-reject" data-id="${c.id}">Reject</button>
+          </div>
+        </div>`).join('')
+      : '<div class="activity-empty">No calls waiting on you right now.</div>';
+
+    const historyRows = calls.history.length
+      ? calls.history.map(c => {
+          const placed = c.direction === 'outbound';
+          const icon = placed ? 'phone-outgoing' : (c.status === 'failed' ? 'phone-off' : 'phone-incoming');
+          const label = placed
+            ? (c.status === 'failed' ? 'Call could not be placed' : 'Call placed — goal: ' + (c.goal||'').slice(0,120))
+            : (c.summary || 'Call ended');
+          return `
+          <div class="activity-row activity-${placed ? (c.status==='failed'?'call_failed':'call_placed') : 'call_outcome'}">
+            <div class="activity-icon"><i data-lucide="${icon}"></i></div>
+            <div class="activity-body">
+              <div class="activity-label">${escapeHTML(c.patient)}</div>
+              <div class="activity-preview">${escapeHTML(label)}</div>
+            </div>
+            <div class="activity-ts">${c.created_at ? timeAgo(new Date(c.created_at)) : ''}</div>
+          </div>`;
+        }).join('')
+      : '<div class="activity-empty">No calls yet — queue one above to get started.</div>';
+
+    main.innerHTML = `
+      <div class="section-eyebrow">Calls</div>
+
+      <div class="scard" style="margin-bottom:20px">
+        <div class="scard-title">Queue a call</div>
+        <div class="sform-row">
+          <label class="sform-label">Who to call</label>
+          <select class="sform-input sform-select" id="cv-contact">${contactOptions}</select>
+        </div>
+        <div class="sform-row">
+          <label class="sform-label">What should the call accomplish?</label>
+          <textarea class="sform-input" id="cv-goal" rows="2" placeholder="e.g. Follow up on their quote, answer questions, and offer to book a time."></textarea>
+          <div class="sform-hint">This is the plan you're approving — Adapix can't have a live call approved word-by-word, so you approve the goal up front and review what happened afterward.</div>
+        </div>
+        <button class="sform-save" id="cv-queue">Queue call</button>
+      </div>
+
+      <div class="section-eyebrow" style="margin-bottom:12px">Awaiting your approval · ${calls.pending.length}</div>
+      <div class="rows" id="cv-pending" style="margin-bottom:24px">${pendingRows}</div>
+
+      <div class="section-eyebrow" style="margin-bottom:12px">Recent calls</div>
+      <div class="activity-feed" id="cv-history">${historyRows}</div>
+    `;
+    renderLucide(main);
+
+    main.querySelector('#cv-queue').addEventListener('click', async () => {
+      const patientId = main.querySelector('#cv-contact').value;
+      const goal = main.querySelector('#cv-goal').value.trim();
+      if (!patientId) { toast('Add a contact with a phone number first', true); return; }
+      if (!goal) { toast('Describe what the call should accomplish', true); return; }
+      const btn = main.querySelector('#cv-queue');
+      btn.disabled = true; btn.textContent = 'Queuing…';
+      try {
+        await api('/api/v1/calls/queue', { method:'POST', body: JSON.stringify({ patient_id: Number(patientId), goal }) });
+        toast('Call queued — approve it below to place it');
+        renderCallsView();
+      } catch(e){
+        toast('Could not queue the call', true);
+        btn.disabled = false; btn.textContent = 'Queue call';
+      }
+    });
+
+    main.querySelectorAll('[data-action="call-approve"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        btn.disabled = true; btn.textContent = 'Calling…';
+        try {
+          await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify({}) });
+          toast('Placing the call now');
+          renderCallsView();
+        } catch(e){
+          toast('Could not place the call', true);
+          btn.disabled = false; btn.textContent = 'Approve & call';
+        }
+      });
+    });
+    main.querySelectorAll('[data-action="call-reject"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        try {
+          await api(`/api/v1/approvals/${id}/reject`, { method:'POST', body: JSON.stringify({}) });
+          toast('Call plan rejected');
+          renderCallsView();
+        } catch(e){ toast('Could not reject', true); }
+      });
+    });
   }
 
   // -------- CONTACTS / PATIENTS view --------
