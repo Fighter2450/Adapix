@@ -126,6 +126,10 @@ class VoiceChannel:
                 headers={
                     "Authorization": f"Bearer {self.settings.vapi_api_key}",
                     "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    # Vapi's API is behind Cloudflare, which blocks the default
+                    # Python-urllib User-Agent (403 error 1010). Send a real one.
+                    "User-Agent": "Adapix/1.0 (+https://adapixai.com)",
                 },
             )
             with urlrequest.urlopen(req, timeout=30) as resp:
