@@ -221,11 +221,11 @@ async def api_chat_send(
 #   connected → show "Test" + "Disconnect"
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/connectors")
-def api_connectors_status():
+def api_connectors_status(org_id: str = Depends(verify_admin)):
     from ..config import Settings
     from ..oauth import status as oauth_status
     s = Settings()
-    oauth = oauth_status()
+    oauth = oauth_status(org_id)
     return {
         "connectors": [
             {
