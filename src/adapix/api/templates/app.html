@@ -1162,7 +1162,8 @@ body::after{
   function renderInboxView(){
     const feed = state.feed || {};
     const escs  = feed.escalations || [];
-    const apprs = feed.approvals   || [];
+    // Pending calls have their own home in the Calls tab — don't duplicate them here.
+    const apprs = (feed.approvals || []).filter(m => m.channel !== 'call');
     const total = escs.length + apprs.length;
     const hasEsc = escs.length > 0;
 
@@ -1204,23 +1205,47 @@ body::after{
       }
       if (apprs.length){
         html += '<div class="section-eyebrow" style="margin-top:24px;margin-bottom:12px">Ready to send — just say OK · ' + apprs.length + '</div>';
-        html += '<div class="rows">' + apprs.map(m => {
-          const isCall = m.channel === 'call';
-          const label = isCall
-            ? `<i data-lucide="phone" style="width:12px;height:12px"></i> Call plan`
-            : 'draft';
-          const preview = isCall ? 'Goal: ' + (m.body || '') : (m.body || '');
-          return `
-          <div class="row-card" style="cursor:pointer" onclick="goView('contacts')" title="${isCall ? 'Review the call plan' : 'Open conversation'}">
-            <div class="text"><b>${escapeHTML(m.patient)}</b><span>${escapeHTML(preview.slice(0,200))}</span></div>
-            <span class="pill" style="${isCall ? 'display:inline-flex;align-items:center;gap:4px;color:var(--cyan)' : ''}">${label}</span>
-            <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
-          </div>`;
-        }).join('') + '</div>';
+        html += '<div class="rows">' + apprs.map(m => `
+          <div class="row-card" data-draft-id="${m.id}" style="cursor:default;align-items:flex-start">
+            <div class="text">
+              <b>${escapeHTML(m.patient)}</b>
+              ${m.subject ? `<span style="color:var(--ink);font-weight:600">${escapeHTML(m.subject)}</span>` : ''}
+              <span>${escapeHTML((m.body||'').slice(0,220))}</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="draft-approve" data-id="${m.id}">Send</button>
+              <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="draft-reject" data-id="${m.id}">Reject</button>
+            </div>
+          </div>`).join('') + '</div>';
       }
     }
     main.innerHTML = html;
     renderLucide(main);
+
+    main.querySelectorAll('[data-action="draft-approve"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        btn.disabled = true; btn.textContent = 'Sending…';
+        try {
+          await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify({}) });
+          toast('Sent');
+          load();
+        } catch(e){
+          toast('Could not send', true);
+          btn.disabled = false; btn.textContent = 'Send';
+        }
+      });
+    });
+    main.querySelectorAll('[data-action="draft-reject"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        try {
+          await api(`/api/v1/approvals/${id}/reject`, { method:'POST', body: JSON.stringify({}) });
+          toast('Draft rejected');
+          load();
+        } catch(e){ toast('Could not reject', true); }
+      });
+    });
   }
 
   // -------- RESULTS view (stats dashboard + activity) --------
