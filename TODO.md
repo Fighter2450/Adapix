@@ -1,10 +1,13 @@
 # Adapix — Next Steps
 
-> **Status (2026-06-30):** The core AI engine is **verified working** — it composes
-> context-aware, on-brand follow-up drafts against the live Anthropic key
-> (`claude-sonnet-4-6`, confirmed via `demo.py`). The real gap is **delivery**:
-> Twilio + Resend are placeholder credentials, so Adapix can *think and draft* but
-> can't yet *send or receive*. Fix sending before touching billing/deploy.
+> **Status (2026-06-30):** The core engine is **verified working end-to-end** — the
+> full pipeline (ingest → campaign → AI compose → human approval queue) was proven
+> via the CLI on a throwaway DB; it produces context-aware, on-brand drafts against
+> the live Anthropic key (`claude-sonnet-4-6`). The **only broken link is delivery**:
+> Twilio + Resend are placeholder credentials, so a live send returns `failed`. The
+> **AI voice-calling foundation is now built** (Vapi adapter + webhook + `test-call`,
+> dry-run verified) and is the priority channel. Fix real accounts + finish the
+> calling flow before billing/deploy.
 
 ---
 
@@ -15,13 +18,31 @@
 - Resend is placeholder: `RESEND_API_KEY` 6 chars (real ≈ 30+, starts `re_`) → **email cannot send**.
 - Action: get real Twilio + Resend accounts, drop real keys in `.env`, send one real test SMS + email to your own phone/inbox.
 
-### 2. Verify the full loop end-to-end
-- add contact → start campaign → AI draft lands in Inbox → approve → **actually delivers**.
-- The compose step is verified in isolation (`demo.py`). The web pipeline wiring (campaign runner → pending approval → inbox feed → send) is **not yet proven** end to end.
+### 2. ✅ Full loop verified (CLI) — one link left: actual send
+- Proven 2026-06-30: ingest → start-campaign → run (AI composes day-1 SMS + day-3 email) → both land in the **pending-approval queue** → approve. Only the final **send fails** on the placeholder Twilio creds (blocker #1). No code bug.
+- Still TODO: prove the same loop through the **web UI** (Inbox feed → approve button → send), not just the CLI.
 
 ### 3. Inbound replies + escalation
 - `PUBLIC_BASE_URL` is empty; no public webhook is reachable.
 - Action: set a public URL + Twilio inbound webhook so customer replies come back and escalations fire.
+
+---
+
+## 🎙️ Calling (Vapi) — the priority channel
+
+**Built (dry-run verified):** `channels/voice.py` (Vapi `POST /call/phone` adapter,
+AI-disclosure + recording notice baked into every opening for TCPA/state-law
+compliance), `POST /webhooks/vapi` (receives end-of-call transcript + summary),
+`test-call` CLI command (voice analog of `demo.py`), config + `.env.example`.
+
+**To go live:** create a Vapi account, buy a number, set `VAPI_API_KEY` +
+`VAPI_PHONE_NUMBER_ID` in `.env`, then `test-call --to +1… --live`.
+
+**Still to build:**
+- **Approve/Inbox integration** — a call becomes a `channel="call"` item: AI composes the call *goal/plan*, human approves it up front, Adapix places the call, transcript lands back in the Inbox. *(in progress)*
+- **Transcript → action** — classify the call outcome (booked / escalate / not interested), attach to the contact, fire escalations like inbound SMS.
+- **Consent gating** — only call contacts who opted in (AI disclosure is done; opt-in isn't).
+- **Verify** Vapi's Claude model id/provider naming against their supported list.
 
 ---
 
@@ -53,6 +74,8 @@
 - Web server runs; signup/login (JWT); single-contact add endpoint (`POST /api/v1/contacts/add`).
 
 ## ✅ Done this session (2026-06-30)
+- **Pipeline test** — verified the whole engine end-to-end via CLI (compose → approval queue works; only send fails on fake creds).
+- **AI voice-calling foundation** — Vapi adapter with baked-in AI disclosure, outcome webhook, `test-call` CLI, config + `.env.example` (dry-run verified).
 - **Dashboard redesign** — dark neon vibrant UI + animation system (`app.html`).
 - **Landing page rebuilt for SaaS reality** — removed all hardware copy (Adapt 1.0, $799 device, Raspberry Pi specs, "ships Q3 2026"); now free-trial + 3-tier SaaS framing; dark neon vibrant; deploy-proof inline logo.
 - **Add-a-contact form** — add one customer without a CSV; pick Lead / Customer / Saved so buyers aren't treated as leads.

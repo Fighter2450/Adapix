@@ -81,6 +81,40 @@ async def twilio_inbound_sms(request: Request):
     return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
 
 
+@router.post("/vapi")
+async def vapi_call_events(request: Request):
+    """Vapi call events. The important one is 'end-of-call-report', which
+    carries the transcript + summary once a call finishes.
+
+    For now we log the outcome (proves the round-trip: call placed → AI talked →
+    result came back). Next step: classify the transcript for booking/escalation
+    and attach it to the contact's history, same as inbound SMS.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    msg = payload.get("message") or {}
+    event = msg.get("type") or ""
+
+    if event == "end-of-call-report":
+        call = msg.get("call") or {}
+        number = ((call.get("customer") or {}).get("number")) or "?"
+        ended = msg.get("endedReason") or "?"
+        summary = (msg.get("summary") or "").strip()
+        transcript = (msg.get("transcript") or "").strip()
+        print(f"[adapix] call ended to={number} reason={ended}")
+        if summary:
+            print(f"[adapix]   summary: {summary[:400]}")
+        if transcript:
+            print(f"[adapix]   transcript ({len(transcript)} chars) captured")
+    else:
+        print(f"[adapix] vapi event: {event or '(unknown)'}")
+
+    return {"ok": True}
+
+
 @router.post("/dev/sms")
 async def dev_inbound_sms(payload: dict):
     """Dev-only simulator. Body: {"from": "+1...", "body": "..."}"""

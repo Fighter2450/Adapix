@@ -193,5 +193,39 @@ def cmd_simulate_inbound(
         typer.echo(f"reason:        {result.reason}")
 
 
+@app.command("test-call")
+def cmd_test_call(
+    to: str = typer.Option(..., "--to", help="Number to call, e.g. +14125550123"),
+    goal: str = typer.Option(
+        "Follow up on their recent inquiry, answer quick questions, and offer to book a time.",
+        "--goal", help="What the AI should try to accomplish on the call",
+    ),
+    business: str = typer.Option("", "--business", help="Business name spoken in the AI disclosure"),
+    dry_run: bool = typer.Option(True, "--dry-run/--live", help="Print the plan vs place a real call"),
+):
+    """Place one AI phone call via Vapi — the voice analog of demo.py.
+
+    --dry-run (default) prints the call plan without dialing (no Vapi account
+    needed). --live places a real call (needs VAPI_API_KEY + VAPI_PHONE_NUMBER_ID).
+    """
+    from .channels.voice import VoiceChannel
+
+    settings = Settings()
+    biz = business or settings.business_name or "our office"
+    system_prompt = (
+        f"You are a warm, professional voice assistant calling on behalf of {biz}. "
+        f"Your goal for this call: {goal} "
+        "Keep it brief and natural, listen more than you talk, and never pressure. "
+        "You already disclosed that you're an AI in your opening line. If the person "
+        "asks something you can't answer, wants pricing you don't have, or asks for a "
+        "human, warmly offer to have someone call them back, then end the call politely."
+    )
+    ch = VoiceChannel(settings, dry_run=dry_run)
+    res = ch.place_call(to=to, system_prompt=system_prompt, goal=goal, business_name=biz)
+    typer.echo(f"call: status={res.status}  id={res.provider_id or '-'}")
+    if res.error:
+        typer.echo(f"error: {res.error}")
+
+
 if __name__ == "__main__":
     app()

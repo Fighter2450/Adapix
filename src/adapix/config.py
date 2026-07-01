@@ -32,6 +32,21 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = ""
 
+    # Vapi (AI voice calling). Vapi handles telephony + speech + turn-taking;
+    # we bring the model (Claude) and the prompt. Get these from the Vapi
+    # dashboard after buying a phone number.
+    vapi_api_key: str = ""
+    vapi_phone_number_id: str = ""          # the Vapi number that places calls
+    vapi_voice_provider: str = "11labs"     # ElevenLabs voice by default
+    vapi_voice_id: str = "burt"
+    # Vapi model provider/name may differ from the SMS/email model id — verify
+    # against Vapi's supported list. Defaults to Anthropic + your adapix_model.
+    vapi_model_provider: str = "anthropic"
+
+    # Business name spoken in the AI-disclosure opening line on calls.
+    # Falls back to this if the practice profile doesn't supply one.
+    business_name: str = "our office"
+
     # Database
     database_url: str = "sqlite:///./adapix.db"
 
