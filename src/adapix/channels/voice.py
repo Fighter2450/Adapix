@@ -35,6 +35,44 @@ _VAPI_HEADERS_BASE = {
 }
 
 
+def fetch_vapi_call(settings: Settings, call_id: str) -> dict | None:
+    """GET the full call record from Vapi by id — used as a fallback to find
+    the recording when the end-of-call-report webhook payload doesn't carry it
+    directly (schema has varied across Vapi versions)."""
+    if not (settings.vapi_api_key and call_id):
+        return None
+    try:
+        req = urlrequest.Request(
+            f"https://api.vapi.ai/call/{call_id}",
+            method="GET",
+            headers={"Authorization": f"Bearer {settings.vapi_api_key}", **_VAPI_HEADERS_BASE},
+        )
+        with urlrequest.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+
+def extract_recording_url(call_or_report: dict) -> str:
+    """Pull the recording URL out of a Vapi call/report object, checking every
+    shape Vapi has used: top-level recordingUrl, artifact.recordingUrl, and
+    the nested artifact.recording.mono.combinedUrl. Falls back to stereo."""
+    if not call_or_report:
+        return ""
+    artifact = call_or_report.get("artifact") or {}
+    recording = artifact.get("recording") or {}
+    mono = recording.get("mono") or {}
+    return (
+        call_or_report.get("recordingUrl")
+        or artifact.get("recordingUrl")
+        or mono.get("combinedUrl")
+        or call_or_report.get("stereoRecordingUrl")
+        or artifact.get("stereoRecordingUrl")
+        or recording.get("stereoUrl")
+        or ""
+    )
+
+
 def create_vapi_number(
     settings: Settings, *, area_code: str | None = None, name: str | None = None
 ) -> tuple[str, str] | None:

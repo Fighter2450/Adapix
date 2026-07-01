@@ -105,15 +105,18 @@ async def vapi_call_events(request: Request):
         ended = msg.get("endedReason") or ""
         summary = (msg.get("summary") or "").strip()
         transcript = (msg.get("transcript") or "").strip()
-        # Recording lives under `artifact` on newer Vapi payloads; some older/
-        # alternate shapes put it at the top level. Check both defensively.
-        artifact = msg.get("artifact") or call.get("artifact") or {}
-        recording_url = (
-            artifact.get("recordingUrl")
-            or artifact.get("stereoRecordingUrl")
-            or msg.get("recordingUrl")
-            or ""
-        )
+        # Recording location varies by Vapi payload version — check every known
+        # shape (top-level, artifact, and the nested mono/stereo forms).
+        from ..channels.voice import extract_recording_url, fetch_vapi_call
+        from ..config import Settings as _Settings
+
+        recording_url = extract_recording_url(msg) or extract_recording_url(call)
+        call_id = call.get("id") or msg.get("id")
+        if not recording_url and call_id:
+            # Webhook sometimes fires before the recording finishes uploading —
+            # the GET /call/{id} API reliably has it once the call has ended.
+            fetched = fetch_vapi_call(_Settings(), call_id)
+            recording_url = extract_recording_url(fetched or {})
         print(f"[adapix] call ended to={number or '?'} reason={ended or '?'} recording={'yes' if recording_url else 'no'}")
 
         try:
