@@ -76,6 +76,29 @@ reputation (Free Caller Registry, CNAM, STIR/SHAKEN) as a platform service.
 
 ---
 
+## 📧 Per-org email (OAuth Gmail/Outlook) — same "connect your own" model as calling
+
+**Decided (mirrors calling):** never a shared Adapix sender — each business
+connects its own Gmail or Microsoft 365 inbox via OAuth, and the OAuth login
+itself is the ownership proof. Adapix then sends follow-ups **as them**
+(their real from-address), falling back to the shared Resend sender only if
+the org hasn't connected anything.
+
+**✅ Built this session (2026-07-01):**
+- **Per-org token storage (done)** — new `email_connections` table (`src/adapix/models.py`), keyed by `org_id`, replaces the old single flat-file `email_tokens.json`. `src/adapix/oauth.py`'s `load_tokens`/`save_tokens`/`get_provider`/`disconnect`/`google_access_token`/`microsoft_access_token`/`google_send`/`microsoft_send`/`send_email`/`status` all now take `org_id` and read/write that org's row.
+- **OAuth routes (done)** — `GET /oauth/google/start`, `/oauth/google/callback`, `/oauth/microsoft/start`, `/oauth/microsoft/callback` in `src/adapix/api/app_routes.py`, all behind `verify_admin` (session cookie identifies the org on both the redirect-out and the callback — no extra CSRF header needed beyond the existing `state` nonce). Callback exchanges the code, pulls the real connected email (Google `userinfo`, Microsoft Graph `/me`), stores it per-org, redirects to `/app?tab=settings`.
+- **Status/disconnect endpoints (done)** — `GET /api/v1/email/status` (mirrors `GET /api/v1/phone`: `configured`/`connected`/`provider`/`email`), `POST /api/v1/email/disconnect`.
+- **Send-as-the-org wiring (done)** — `ApprovalManager._send_one` in `src/adapix/approval.py` now checks `oauth.is_connected(org_id)` for `channel == "email"`; if connected, sends via `oauth.send_email(org_id, ...)` as the business; otherwise falls back to the existing Resend `EmailChannel` (exact same fallback shape as the calling-number pattern).
+- **Settings UI (done)** — new "Your email connection" card in Messaging & channels (`src/adapix/api/templates/app.html`, `loadEmailCard()`), mirroring `loadPhoneCard()`: shows "Connect Gmail" / "Connect Outlook" links (plain `<a href>` full-page nav, not fetch, since OAuth requires leaving the page) when not connected, or "Connected as {email}" + Disconnect button when connected. Shows "Email connect isn't set up yet" if neither `GOOGLE_CLIENT_ID` nor `MICROSOFT_CLIENT_ID` is configured (same graceful-degrade pattern as the Vapi phone card).
+- Verified against a throwaway SQLite DB: table creation, save/load/disconnect round-trip, `/api/v1/email/status` + `/api/v1/email/disconnect` via `TestClient`, `/oauth/google/start` + `/oauth/microsoft/start` returning a clean 503 when unconfigured, and `ApprovalManager.send_approved` exercising both the OAuth-connected branch (attempts a real token refresh, fails cleanly with no real client ID configured — expected) and the no-connection fallback branch (goes to the existing dry-run Resend path).
+
+**Still needed to go fully live (see top of file for exact redirect URIs):**
+- Real Google Cloud OAuth app + Microsoft Azure App Registration credentials in `.env` (`GOOGLE_CLIENT_ID`/`SECRET`, `MICROSOFT_CLIENT_ID`/`SECRET`) — currently blank, so Connect buttons show "not set up yet" and `/oauth/*/start` 503s.
+- Once credentials exist: a live click-through OAuth test (connect a real Gmail/Outlook, confirm "Connected as ___" shows, send a real approved email, confirm it lands in the recipient's inbox from the business's own address).
+- Disconnect currently allows reconnecting with a different provider (Google → Microsoft) by just running the other flow again — confirm that's the desired UX or add an explicit "switch provider" confirmation.
+
+---
+
 ## 🟡 SaaS pieces (only matter once it can send)
 
 ### 4. Deploy to Railway

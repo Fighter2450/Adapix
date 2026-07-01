@@ -1,6 +1,9 @@
 """OAuth integration for connecting practice email accounts.
 
-Google (Gmail Workspace) and Microsoft 365 supported.
+Google (Gmail Workspace) and Microsoft 365 supported. Each ORG connects its own
+inbox via OAuth (the login itself is the ownership proof) — tokens are stored
+per-org in the `email_connections` table, not a shared flat file, so every
+business sends follow-ups as themselves.
 """
 from __future__ import annotations
 
@@ -16,41 +19,72 @@ from pathlib import Path
 from typing import Any
 
 
-def _tokens_path() -> Path:
-    return Path(os.environ.get("ADAPIX_VAR", ".")) / "email_tokens.json"
+def load_tokens(org_id: str) -> dict[str, Any]:
+    """Return this org's connection as {provider: {...}} for compatibility
+    with the old flat-file shape (at most one provider is ever connected)."""
+    import calendar
+
+    from .db import get_session
+    from .models import EmailConnection
+
+    with get_session() as s:
+        row = s.get(EmailConnection, org_id)
+        if row is None:
+            return {}
+        return {
+            row.provider: {
+                "email": row.connected_email,
+                "name": row.connected_name or "",
+                "refresh_token": row.refresh_token or "",
+                "access_token": row.access_token or "",
+                "expires_at": row.expires_at,
+                # connected_at is stored as a naive UTC datetime; use calendar.timegm
+                # (not .timestamp(), which assumes local time for naive datetimes).
+                "connected_at": calendar.timegm(row.connected_at.utctimetuple()) if row.connected_at else 0,
+                "scope": row.scope or "",
+            }
+        }
 
 
-def load_tokens() -> dict[str, Any]:
-    p = _tokens_path()
-    if not p.exists():
-        return {}
-    try:
-        return json.loads(p.read_text())
-    except Exception:
-        return {}
+def save_tokens(org_id: str, provider: str, data: dict[str, Any]) -> None:
+    """Upsert this org's single email connection row."""
+    from datetime import datetime as _dt
+
+    from .db import get_session
+    from .models import EmailConnection
+
+    with get_session() as s:
+        row = s.get(EmailConnection, org_id)
+        if row is None:
+            row = EmailConnection(org_id=org_id)
+            s.add(row)
+        row.provider = provider
+        row.connected_email = data.get("email", "")
+        row.connected_name = data.get("name") or None
+        row.refresh_token = data.get("refresh_token") or None
+        row.access_token = data.get("access_token") or None
+        row.expires_at = int(data.get("expires_at", 0))
+        row.scope = data.get("scope") or None
+        connected_at = data.get("connected_at")
+        if connected_at:
+            row.connected_at = _dt.utcfromtimestamp(connected_at)
 
 
-def save_tokens(tokens: dict[str, Any]) -> None:
-    p = _tokens_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(tokens, indent=2))
-    try:
-        os.chmod(p, 0o600)
-    except Exception:
-        pass
+def get_provider(org_id: str, provider: str) -> dict[str, Any]:
+    return load_tokens(org_id).get(provider, {})
 
 
-def get_provider(provider: str) -> dict[str, Any]:
-    return load_tokens().get(provider, {})
+def disconnect(org_id: str) -> bool:
+    """Remove this org's email connection (whichever provider it is)."""
+    from .db import get_session
+    from .models import EmailConnection
 
-
-def disconnect(provider: str) -> bool:
-    tokens = load_tokens()
-    if provider in tokens:
-        del tokens[provider]
-        save_tokens(tokens)
+    with get_session() as s:
+        row = s.get(EmailConnection, org_id)
+        if row is None:
+            return False
+        s.delete(row)
         return True
-    return False
 
 
 def _states_path() -> Path:
@@ -200,28 +234,25 @@ def google_refresh(refresh_token: str) -> dict[str, Any]:
     })
 
 
-def google_complete_connection(code: str, redirect_uri: str) -> dict[str, Any]:
+def google_complete_connection(org_id: str, code: str, redirect_uri: str) -> dict[str, Any]:
     tk = google_exchange_code(code, redirect_uri)
     access_token = tk["access_token"]
     info = _http_get_json(GOOGLE_USERINFO_URL, bearer=access_token)
-    tokens = load_tokens()
-    tokens["google"] = {
+    data = {
         "email": info.get("email", ""),
         "name": info.get("name", ""),
-        "picture": info.get("picture", ""),
         "refresh_token": tk.get("refresh_token", ""),
         "access_token": access_token,
         "expires_at": int(time.time()) + int(tk.get("expires_in", 3600)),
         "connected_at": int(time.time()),
         "scope": tk.get("scope", ""),
     }
-    save_tokens(tokens)
-    return {"email": tokens["google"]["email"], "name": tokens["google"]["name"]}
+    save_tokens(org_id, "google", data)
+    return {"email": data["email"], "name": data["name"]}
 
 
-def google_access_token() -> str | None:
-    tokens = load_tokens()
-    g = tokens.get("google")
+def google_access_token(org_id: str) -> str | None:
+    g = load_tokens(org_id).get("google")
     if not g or not g.get("refresh_token"):
         return None
     if g.get("access_token") and time.time() < g.get("expires_at", 0) - 60:
@@ -233,18 +264,17 @@ def google_access_token() -> str | None:
         return None
     g["access_token"] = new["access_token"]
     g["expires_at"] = int(time.time()) + int(new.get("expires_in", 3600))
-    tokens["google"] = g
-    save_tokens(tokens)
+    save_tokens(org_id, "google", g)
     return g["access_token"]
 
 
-def google_send(to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
-    tok = google_access_token()
+def google_send(org_id: str, to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
+    tok = google_access_token(org_id)
     if not tok:
         return {"ok": False, "error": "Google email not connected"}
-    tokens = load_tokens()
-    practice_email = tokens["google"]["email"]
-    practice_name = from_name or tokens["google"].get("name") or practice_email
+    g = load_tokens(org_id)["google"]
+    practice_email = g["email"]
+    practice_name = from_name or g.get("name") or practice_email
     from_header = f"{practice_name} <{practice_email}>"
     raw = "\r\n".join([
         f"From: {from_header}",
@@ -317,12 +347,11 @@ def microsoft_refresh(refresh_token: str) -> dict[str, Any]:
     )
 
 
-def microsoft_complete_connection(code: str, redirect_uri: str) -> dict[str, Any]:
+def microsoft_complete_connection(org_id: str, code: str, redirect_uri: str) -> dict[str, Any]:
     tk = microsoft_exchange_code(code, redirect_uri)
     access_token = tk["access_token"]
     info = _http_get_json("https://graph.microsoft.com/v1.0/me", bearer=access_token)
-    tokens = load_tokens()
-    tokens["microsoft"] = {
+    data = {
         "email": info.get("mail") or info.get("userPrincipalName") or "",
         "name": info.get("displayName", ""),
         "refresh_token": tk.get("refresh_token", ""),
@@ -330,13 +359,12 @@ def microsoft_complete_connection(code: str, redirect_uri: str) -> dict[str, Any
         "expires_at": int(time.time()) + int(tk.get("expires_in", 3600)),
         "connected_at": int(time.time()),
     }
-    save_tokens(tokens)
-    return {"email": tokens["microsoft"]["email"], "name": tokens["microsoft"]["name"]}
+    save_tokens(org_id, "microsoft", data)
+    return {"email": data["email"], "name": data["name"]}
 
 
-def microsoft_access_token() -> str | None:
-    tokens = load_tokens()
-    m = tokens.get("microsoft")
+def microsoft_access_token(org_id: str) -> str | None:
+    m = load_tokens(org_id).get("microsoft")
     if not m or not m.get("refresh_token"):
         return None
     if m.get("access_token") and time.time() < m.get("expires_at", 0) - 60:
@@ -350,13 +378,12 @@ def microsoft_access_token() -> str | None:
     m["expires_at"] = int(time.time()) + int(new.get("expires_in", 3600))
     if new.get("refresh_token"):
         m["refresh_token"] = new["refresh_token"]
-    tokens["microsoft"] = m
-    save_tokens(tokens)
+    save_tokens(org_id, "microsoft", m)
     return m["access_token"]
 
 
-def microsoft_send(to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
-    tok = microsoft_access_token()
+def microsoft_send(org_id: str, to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
+    tok = microsoft_access_token(org_id)
     if not tok:
         return {"ok": False, "error": "Microsoft email not connected"}
     payload = {
@@ -374,19 +401,21 @@ def microsoft_send(to: str, subject: str, body: str, from_name: str | None = Non
         return {"ok": False, "error": str(e)}
 
 
-def send_email(to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
-    tokens = load_tokens()
+def send_email(org_id: str, to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
+    tokens = load_tokens(org_id)
     if tokens.get("google", {}).get("refresh_token"):
-        r = google_send(to, subject, body, from_name=from_name)
+        r = google_send(org_id, to, subject, body, from_name=from_name)
         return {**r, "provider": "google"}
     if tokens.get("microsoft", {}).get("refresh_token"):
-        r = microsoft_send(to, subject, body, from_name=from_name)
+        r = microsoft_send(org_id, to, subject, body, from_name=from_name)
         return {**r, "provider": "microsoft"}
     return {"ok": False, "error": "no email provider connected", "provider": None}
 
 
-def status() -> dict[str, Any]:
-    tokens = load_tokens()
+def status(org_id: str) -> dict[str, Any]:
+    """This org's email connection status — used by the Settings UI. At most
+    one provider is connected at a time (connecting one replaces the other)."""
+    tokens = load_tokens(org_id)
     out = {}
     for prov in ("google", "microsoft"):
         t = tokens.get(prov, {})
@@ -401,3 +430,8 @@ def status() -> dict[str, Any]:
         else:
             out[prov] = {"connected": False}
     return out
+
+
+def is_connected(org_id: str) -> bool:
+    tokens = load_tokens(org_id)
+    return bool(tokens.get("google", {}).get("refresh_token") or tokens.get("microsoft", {}).get("refresh_token"))

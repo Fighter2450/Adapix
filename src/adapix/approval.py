@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .channels import EmailChannel, SmsChannel, VoiceChannel
+from .channels import EmailChannel, EmailResult, SmsChannel, VoiceChannel
 from .config import Settings
 from .db import get_session
 from .models import Campaign, Message, Organization, Patient
@@ -166,6 +166,7 @@ class ApprovalManager:
                     m, patient, sms, email, voice,
                     org.vapi_phone_number_id if org else None,
                     org.name if org else None,
+                    campaign.practice_id,
                 )
                 attempted += 1
         return attempted
@@ -192,6 +193,7 @@ class ApprovalManager:
                 m, patient, sms, email, voice,
                 org.vapi_phone_number_id if org else None,
                 org.name if org else None,
+                campaign.practice_id if campaign else None,
             )
             return m.status
 
@@ -220,12 +222,30 @@ class ApprovalManager:
         voice: VoiceChannel,
         org_phone_number_id: str | None = None,
         org_business_name: str | None = None,
+        org_id: str | None = None,
     ) -> None:
         if message.channel == "sms":
             result = sms.send(patient.phone or "", message.body)
         elif message.channel == "email":
             subject = message.subject or "A note from your practice"
-            result = email.send(patient.email or "", subject, message.body)
+            # If the org connected their own Gmail/Outlook, send AS them.
+            # Otherwise fall back to the shared Resend sender.
+            oauth_result = None
+            if org_id:
+                from . import oauth
+                if oauth.is_connected(org_id):
+                    oauth_result = oauth.send_email(
+                        org_id, patient.email or "", subject, message.body,
+                        from_name=org_business_name,
+                    )
+            if oauth_result is not None:
+                result = EmailResult(
+                    provider_id=oauth_result.get("provider_id"),
+                    status="sent" if oauth_result.get("ok") else "failed",
+                    error=oauth_result.get("error"),
+                )
+            else:
+                result = email.send(patient.email or "", subject, message.body)
         elif message.channel == "call":
             # message.body is the human-approved CALL PLAN (goal + talking points).
             # It becomes the assistant's instructions; the opening line auto-discloses AI.

@@ -1247,8 +1247,9 @@ def api_dashboard_reset():
 
 
 # ---------------------------------------------------------------------------
-# Email OAuth — Connect Gmail Workspace or Microsoft 365 so Adapix can
-# send patient emails from the practice's actual email address.
+# Email OAuth — each org connects its OWN Gmail/Outlook so Adapix sends
+# follow-ups as them (their real address), not a shared sender. OAuth login
+# IS the ownership verification; tokens are stored per-org (see EmailConnection).
 # ---------------------------------------------------------------------------
 def _oauth_redirect_uri(request: Request, provider: str) -> str:
     """Build the redirect URI Google/Microsoft sends the user back to.
@@ -1257,79 +1258,91 @@ def _oauth_redirect_uri(request: Request, provider: str) -> str:
     from ..config import Settings
     s = Settings()
     base = (s.public_base_url or str(request.base_url)).rstrip("/")
-    return f"{base}/api/v1/oauth/{provider}/callback"
+    return f"{base}/oauth/{provider}/callback"
 
 
-@router.get("/api/v1/oauth/google/start")
-def api_oauth_google_start(request: Request):
-    """Return the Google consent URL the frontend should redirect to."""
+@router.get("/oauth/google/start")
+def oauth_google_start(request: Request, org_id: str = Depends(verify_admin)):
+    """Kick off the Google consent flow for this org. state is a pure CSRF
+    nonce — the org is identified from the session cookie on callback."""
+    from fastapi.responses import RedirectResponse
     from ..oauth import google_auth_url, new_state
     try:
         state = new_state("google")
         url = google_auth_url(_oauth_redirect_uri(request, "google"), state)
-        return {"url": url}
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    return RedirectResponse(url=url, status_code=302)
 
 
-@router.get("/api/v1/oauth/google/callback")
-def api_oauth_google_callback(request: Request, code: str = "", state: str = ""):
-    """Google sends the user back here after consent. Exchange code → tokens,
-    persist them, then redirect the user back to /app Settings."""
+@router.get("/oauth/google/callback")
+def oauth_google_callback(request: Request, code: str = "", state: str = "", org_id: str = Depends(verify_admin)):
+    """Google sends the user back here after consent (browser redirect keeps
+    the session cookie, so org_id resolves the same as any other request)."""
     from fastapi.responses import RedirectResponse
     from ..oauth import consume_state, google_complete_connection
     if not code or not consume_state(state, "google"):
         raise HTTPException(status_code=400, detail="invalid or expired auth state")
     try:
-        google_complete_connection(code, _oauth_redirect_uri(request, "google"))
+        google_complete_connection(org_id, code, _oauth_redirect_uri(request, "google"))
     except Exception as e:
         return HTMLResponse(f"<h1>Connection failed</h1><pre>{e}</pre>")
-    return RedirectResponse(url="/app?email_connected=google", status_code=302)
+    return RedirectResponse(url="/app?tab=settings", status_code=302)
 
 
-@router.get("/api/v1/oauth/microsoft/start")
-def api_oauth_microsoft_start(request: Request):
+@router.get("/oauth/microsoft/start")
+def oauth_microsoft_start(request: Request, org_id: str = Depends(verify_admin)):
+    from fastapi.responses import RedirectResponse
     from ..oauth import microsoft_auth_url, new_state
     try:
         state = new_state("microsoft")
         url = microsoft_auth_url(_oauth_redirect_uri(request, "microsoft"), state)
-        return {"url": url}
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    return RedirectResponse(url=url, status_code=302)
 
 
-@router.get("/api/v1/oauth/microsoft/callback")
-def api_oauth_microsoft_callback(request: Request, code: str = "", state: str = ""):
+@router.get("/oauth/microsoft/callback")
+def oauth_microsoft_callback(request: Request, code: str = "", state: str = "", org_id: str = Depends(verify_admin)):
     from fastapi.responses import RedirectResponse
     from ..oauth import consume_state, microsoft_complete_connection
     if not code or not consume_state(state, "microsoft"):
         raise HTTPException(status_code=400, detail="invalid or expired auth state")
     try:
-        microsoft_complete_connection(code, _oauth_redirect_uri(request, "microsoft"))
+        microsoft_complete_connection(org_id, code, _oauth_redirect_uri(request, "microsoft"))
     except Exception as e:
         return HTMLResponse(f"<h1>Connection failed</h1><pre>{e}</pre>")
-    return RedirectResponse(url="/app?email_connected=microsoft", status_code=302)
+    return RedirectResponse(url="/app?tab=settings", status_code=302)
 
 
-@router.get("/api/v1/oauth/status")
-def api_oauth_status():
-    """Which email providers are currently connected — used by Settings UI."""
+@router.get("/api/v1/email/status")
+def api_email_status(org_id: str = Depends(verify_admin)):
+    """This org's connected email provider (if any) — used by the Settings
+    channels card, mirroring the /api/v1/phone status shape."""
+    from ..config import Settings
     from ..oauth import status
-    return status()
+    s = Settings()
+    configured = bool(s.google_client_id or s.microsoft_client_id)
+    st = status(org_id)
+    connected_provider = None
+    for prov in ("google", "microsoft"):
+        if st.get(prov, {}).get("connected"):
+            connected_provider = prov
+            break
+    return {
+        "configured": configured,
+        "connected": connected_provider is not None,
+        "provider": connected_provider,
+        "email": st.get(connected_provider, {}).get("email") if connected_provider else None,
+    }
 
 
-class OAuthDisconnectBody(BaseModel):
-    provider: str
-
-
-@router.post("/api/v1/oauth/disconnect")
-def api_oauth_disconnect(body: OAuthDisconnectBody):
+@router.post("/api/v1/email/disconnect")
+def api_email_disconnect(org_id: str = Depends(verify_admin)):
     from ..oauth import disconnect
-    if body.provider not in ("google", "microsoft"):
-        raise HTTPException(status_code=400, detail="unknown provider")
-    if not disconnect(body.provider):
+    if not disconnect(org_id):
         raise HTTPException(status_code=404, detail="not connected")
-    return {"ok": True, "provider": body.provider}
+    return {"ok": True}
 
 
 class TestEmailBody(BaseModel):
@@ -1339,11 +1352,12 @@ class TestEmailBody(BaseModel):
 
 
 @router.post("/api/v1/email/test")
-def api_email_test(body: TestEmailBody, _user: str = Depends(verify_admin)):
-    """Send a test email via the connected provider — verifies the OAuth
-    setup is working before pointing it at a real customer."""
+def api_email_test(body: TestEmailBody, org_id: str = Depends(verify_admin)):
+    """Send a test email via this org's connected provider — verifies the
+    OAuth setup is working before pointing it at a real customer."""
     from ..oauth import send_email
     result = send_email(
+        org_id,
         to=body.to,
         subject=body.subject or "Hello from Adapix",
         body=body.body or "This is a test email sent by Adapix on your behalf.\n\nIf you got this, the connection is working.",

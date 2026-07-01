@@ -2838,6 +2838,51 @@ body::after{
     });
   }
 
+  // Settings → Your email connection card
+  async function loadEmailCard(){
+    const el = document.getElementById('email-card-body');
+    if (!el) return;
+    let data;
+    try { data = await api('/api/v1/email/status'); }
+    catch(_){ el.textContent = 'Could not load your email connection.'; return; }
+
+    if (!data.configured){
+      el.innerHTML = `<div style="line-height:1.55">Email connect isn't set up yet. Ask Adapix to finish Google/Microsoft OAuth setup to enable this.</div>`;
+      renderLucide(el);
+      return;
+    }
+
+    if (data.connected){
+      const label = data.provider === 'google' ? 'Gmail' : 'Outlook';
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <i data-lucide="mail" style="width:16px;height:16px;color:var(--cyan)"></i>
+          <span style="font-size:15px;font-weight:700;color:var(--ink)">Connected as ${escapeHTML(data.email || '')}</span>
+          <span class="sch-badge">${label}</span>
+        </div>
+        <div class="sform-hint">Follow-up emails send from this address, as your business — not a shared Adapix sender.</div>
+        <div style="margin-top:12px"><button class="sch-connect" id="email-disconnect">Disconnect</button></div>`;
+      renderLucide(el);
+      const btn = document.getElementById('email-disconnect');
+      if (btn) btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Disconnecting…';
+        try {
+          const r = await api('/api/v1/email/disconnect', { method:'POST', body: JSON.stringify({}) });
+          if (r.ok) { toast('Email disconnected'); loadEmailCard(); }
+          else { toast('Could not disconnect', true); btn.disabled = false; btn.textContent = 'Disconnect'; }
+        } catch(_){ toast('Could not disconnect', true); btn.disabled = false; btn.textContent = 'Disconnect'; }
+      });
+    } else {
+      el.innerHTML = `
+        <div style="margin-bottom:12px;line-height:1.55">Connect your real Gmail or Outlook so follow-up emails go out as your business, not a shared address.</div>
+        <div style="display:flex;gap:10px">
+          <a class="btn btn-primary" href="/oauth/google/start" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i data-lucide="mail" style="width:14px;height:14px"></i> Connect Gmail</a>
+          <a class="btn btn-primary" href="/oauth/microsoft/start" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i data-lucide="mail" style="width:14px;height:14px"></i> Connect Outlook</a>
+        </div>`;
+      renderLucide(el);
+    }
+  }
+
   // Settings → Your calling number card
   async function loadPhoneCard(){
     const el = document.getElementById('phone-card-body');
@@ -2920,6 +2965,10 @@ body::after{
           <div class="scard-title">Your calling number</div>
           <div id="phone-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
         </div>
+        <div class="scard" id="email-card">
+          <div class="scard-title">Your email connection</div>
+          <div id="email-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
+        </div>
         <div class="scard">
           <div class="scard-title">Connected channels</div>
           <div class="sch-row">
@@ -2927,12 +2976,6 @@ body::after{
             <div class="sch-body"><div class="sch-name">SMS</div><div class="sch-val">Not configured</div></div>
             <span class="sch-badge off">Disconnected</span>
             <button class="sch-connect" data-action="connect-sms">Connect</button>
-          </div>
-          <div class="sch-row">
-            <div class="sch-icon"><i data-lucide="mail" style="width:16px;height:16px"></i></div>
-            <div class="sch-body"><div class="sch-name">Email</div><div class="sch-val">Not configured</div></div>
-            <span class="sch-badge off">Disconnected</span>
-            <button class="sch-connect" data-action="connect-email">Connect</button>
           </div>
         </div>
         <div class="scard">
@@ -3042,7 +3085,7 @@ body::after{
 
     renderLucide(main);
 
-    if (page === 'channels') loadPhoneCard();
+    if (page === 'channels') { loadPhoneCard(); loadEmailCard(); }
 
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 
@@ -3055,8 +3098,6 @@ body::after{
     if (deact) deact.addEventListener('click', () => toast('Contact support to deactivate your account', true));
     const conSms = main.querySelector('[data-action="connect-sms"]');
     if (conSms) conSms.addEventListener('click', () => toast('SMS setup coming soon'));
-    const conEmail = main.querySelector('[data-action="connect-email"]');
-    if (conEmail) conEmail.addEventListener('click', () => toast('Email setup coming soon'));
 
     main.querySelectorAll('.stone-opt').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3245,6 +3286,11 @@ body::after{
     if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': '1.75' } });
     await loadFeed();
     document.getElementById('loader')?.remove();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'settings') {
+      state.view = 'settings';
+      state.settingsPage = 'channels';
+    }
     render();
     setInterval(()=>{ try { renderRightPane(); } catch(_){} }, 60000);
   })();

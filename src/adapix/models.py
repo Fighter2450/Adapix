@@ -40,6 +40,24 @@ class Organization(Base):
     profile: Mapped["OrgProfile | None"] = relationship(back_populates="org", uselist=False, cascade="all, delete-orphan")
 
 
+class EmailConnection(Base):
+    """Per-org OAuth email connection (Gmail or Outlook). The business connects
+    its OWN real inbox via OAuth login (that login IS the ownership proof), so
+    follow-up emails go out as them, not a shared Adapix sender."""
+
+    __tablename__ = "email_connections"
+
+    org_id: Mapped[str] = mapped_column(String(64), ForeignKey("organizations.id"), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(16))  # google | microsoft
+    connected_email: Mapped[str] = mapped_column(String(255))
+    connected_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[int] = mapped_column(Integer, default=0)  # unix timestamp
+    scope: Mapped[str | None] = mapped_column(Text, nullable=True)
+    connected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class OrgProfile(Base):
     """Per-tenant practice profile saved by the welcome wizard. Replaces practice_profile.json."""
 
