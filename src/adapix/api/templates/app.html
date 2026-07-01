@@ -2635,6 +2635,40 @@ body::after{
     });
   }
 
+  // Settings → Your calling number card
+  async function loadPhoneCard(){
+    const el = document.getElementById('phone-card-body');
+    if (!el) return;
+    let data;
+    try { data = await api('/api/v1/phone'); }
+    catch(_){ el.textContent = 'Could not load your number.'; return; }
+
+    if (data.has_number){
+      const registered = data.status === 'registered';
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <i data-lucide="phone" style="width:16px;height:16px;color:var(--cyan)"></i>
+          <span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${escapeHTML(data.number || 'Assigned')}</span>
+          <span class="sch-badge${registered ? '' : ' off'}">${registered ? 'Registered' : 'Active'}</span>
+        </div>
+        <div class="sform-hint">This is the number Adapix calls your customers from — it shows your business name. ${registered ? '' : 'To stop it showing as “Spam Likely,” register it (free) at <a href="https://www.freecallerregistry.com" target="_blank" rel="noopener" style="color:var(--cyan)">freecallerregistry.com</a>.'}</div>`;
+    } else {
+      el.innerHTML = `
+        <div style="margin-bottom:12px;line-height:1.55">Adapix calls your customers from a dedicated number that shows your business name — no phone setup on your end.</div>
+        <button class="btn btn-primary" id="phone-provision"><i data-lucide="phone" style="width:14px;height:14px"></i> Set up my calling line</button>`;
+      const btn = document.getElementById('phone-provision');
+      if (btn) btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Setting up…';
+        try {
+          const r = await api('/api/v1/phone/provision', { method:'POST', body: JSON.stringify({}) });
+          if (r.ok) { toast('Your calling line is ready'); loadPhoneCard(); }
+          else { toast('Could not set up a number right now', true); btn.disabled = false; btn.textContent = 'Set up my calling line'; }
+        } catch(_){ toast('Could not set up a number right now', true); btn.disabled = false; btn.textContent = 'Set up my calling line'; }
+      });
+    }
+    renderLucide(el);
+  }
+
   function renderSettingsPage(page){
     const pages = {
       profile:  { title:'Practice profile',     sub:'How Adapix represents your business when writing to customers.' },
@@ -2679,6 +2713,10 @@ body::after{
 
     } else if (page === 'channels'){
       body = `
+        <div class="scard" id="phone-card">
+          <div class="scard-title">Your calling number</div>
+          <div id="phone-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
+        </div>
         <div class="scard">
           <div class="scard-title">Connected channels</div>
           <div class="sch-row">
@@ -2800,6 +2838,8 @@ body::after{
       </div>`;
 
     renderLucide(main);
+
+    if (page === 'channels') loadPhoneCard();
 
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 

@@ -1584,6 +1584,34 @@ def api_patients_list(_user: str = Depends(verify_admin)):
         }
 
 
+@router.get("/api/v1/phone")
+def api_phone_get(org_id: str = Depends(verify_admin)):
+    """The org's dedicated calling number + provisioning status (Settings UI)."""
+    from ..models import Organization
+
+    with get_session() as s:
+        org = s.get(Organization, org_id)
+        if org is None:
+            return {"has_number": False, "status": "none", "number": None}
+        return {
+            "has_number": bool(org.vapi_phone_number_id),
+            "status": org.phone_status,
+            "number": org.phone_number,
+        }
+
+
+class ProvisionBody(BaseModel):
+    area_code: str = ""
+
+
+@router.post("/api/v1/phone/provision")
+def api_phone_provision(body: ProvisionBody, org_id: str = Depends(verify_admin)):
+    """On-demand: give this business its dedicated calling number (Settings button)."""
+    from ..provisioning import ensure_org_number
+
+    return ensure_org_number(org_id, area_code=(body.area_code.strip() or None))
+
+
 @router.get("/api/v1/contacts/template.csv", response_class=PlainTextResponse)
 def api_contacts_template(_user: str = Depends(verify_admin)):
     """Download a blank CSV template pre-filled with one example row."""

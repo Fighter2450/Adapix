@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Business name spoken in the AI-disclosure opening line on calls.
     # Falls back to this if the practice profile doesn't supply one.
     business_name: str = "our office"
+    # Auto-provision a dedicated calling number for each org at signup.
+    # Set false while testing so test signups don't each create a number.
+    auto_provision_numbers: bool = True
 
     # Database
     database_url: str = "sqlite:///./adapix.db"

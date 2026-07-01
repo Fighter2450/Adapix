@@ -24,6 +24,45 @@ from urllib.error import HTTPError, URLError
 from ..config import Settings
 
 VAPI_CALL_URL = "https://api.vapi.ai/call/phone"
+VAPI_NUMBER_URL = "https://api.vapi.ai/phone-number"
+
+# Vapi's API sits behind Cloudflare, which blocks the default Python-urllib
+# User-Agent. Send these on every request.
+_VAPI_HEADERS_BASE = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": "Adapix/1.0 (+https://adapixai.com)",
+}
+
+
+def create_vapi_number(
+    settings: Settings, *, area_code: str | None = None, name: str | None = None
+) -> tuple[str, str] | None:
+    """Buy a free Vapi US number for a business. Returns (phone_number_id, number)
+    or None on failure. Swap this for a Twilio buy+import when you productionize
+    reputation management (Twilio gives A-level attestation + CNAM control)."""
+    if not settings.vapi_api_key:
+        return None
+    body: dict = {"provider": "vapi"}
+    if area_code:
+        body["numberDesiredAreaCode"] = str(area_code)[:3]
+    if name:
+        body["name"] = name[:40]
+    try:
+        req = urlrequest.Request(
+            VAPI_NUMBER_URL,
+            data=json.dumps(body).encode(),
+            method="POST",
+            headers={"Authorization": f"Bearer {settings.vapi_api_key}", **_VAPI_HEADERS_BASE},
+        )
+        with urlrequest.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+        pid = data.get("id")
+        if pid:
+            return pid, data.get("number") or ""
+    except Exception:
+        return None
+    return None
 
 
 @dataclass
