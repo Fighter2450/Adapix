@@ -100,15 +100,27 @@ async def vapi_call_events(request: Request):
 
     if event == "end-of-call-report":
         call = msg.get("call") or {}
-        number = ((call.get("customer") or {}).get("number")) or "?"
-        ended = msg.get("endedReason") or "?"
+        meta = call.get("metadata") or msg.get("metadata") or {}
+        number = ((call.get("customer") or {}).get("number")) or ""
+        ended = msg.get("endedReason") or ""
         summary = (msg.get("summary") or "").strip()
         transcript = (msg.get("transcript") or "").strip()
-        print(f"[adapix] call ended to={number} reason={ended}")
-        if summary:
-            print(f"[adapix]   summary: {summary[:400]}")
-        if transcript:
-            print(f"[adapix]   transcript ({len(transcript)} chars) captured")
+        print(f"[adapix] call ended to={number or '?'} reason={ended or '?'}")
+
+        try:
+            result = InboundProcessor().process_call_outcome(
+                transcript=transcript,
+                summary=summary,
+                ended_reason=ended,
+                patient_id=meta.get("patient_id"),
+                campaign_id=meta.get("campaign_id"),
+                from_number=number or None,
+                provider_id=call.get("id"),
+            )
+            cat = result.classification.category if result.classification else "n/a"
+            print(f"[adapix]   call outcome: status={result.status} category={cat}")
+        except Exception as e:
+            print(f"[adapix]   call-outcome processing error: {e}")
     else:
         print(f"[adapix] vapi event: {event or '(unknown)'}")
 

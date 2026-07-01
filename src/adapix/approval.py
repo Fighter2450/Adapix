@@ -247,6 +247,13 @@ class ApprovalManager:
                 goal=message.body,
                 business_name=biz,
                 phone_number_id=org_phone_number_id,
+                # so the end-of-call-report webhook can link the outcome back
+                metadata={
+                    "patient_id": patient.id,
+                    "campaign_id": message.campaign_id,
+                    "org_id": patient.practice_id,
+                    "message_id": message.id,
+                },
             )
         else:
             return

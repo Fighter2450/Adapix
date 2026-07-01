@@ -121,6 +121,78 @@ class InboundProcessor:
             return self._dispatch(s, campaign, patient, classification, history, body)
 
     # ------------------------------------------------------------------
+    # Call outcomes (from the Vapi end-of-call-report webhook)
+    # ------------------------------------------------------------------
+
+    def process_call_outcome(
+        self,
+        *,
+        transcript: str,
+        summary: str = "",
+        ended_reason: str = "",
+        patient_id: int | None = None,
+        campaign_id: int | None = None,
+        from_number: str | None = None,
+        provider_id: str | None = None,
+    ) -> InboundResult:
+        """Store a finished AI call's transcript, classify what happened, and
+        raise an escalation into the Inbox when it needs a human — the voice
+        analog of process_sms(). Contact/campaign come from the call metadata
+        we attached when placing it, falling back to the customer's number."""
+        text = (summary or transcript or "").strip()
+        with get_session(self.settings) as s:
+            patient = None
+            if patient_id:
+                patient = s.get(Patient, int(patient_id))
+            if patient is None and from_number:
+                patient = s.query(Patient).filter(Patient.phone == from_number).first()
+            if patient is None:
+                return InboundResult(status="ignored", reason="no contact match for call")
+
+            campaign = None
+            if campaign_id:
+                campaign = s.get(Campaign, int(campaign_id))
+            if campaign is None:
+                campaign = (
+                    s.query(Campaign)
+                    .filter(Campaign.patient_id == patient.id)
+                    .order_by(Campaign.started_at.desc())
+                    .first()
+                )
+
+            # Log the call transcript as an inbound record on the contact.
+            rec = Message(
+                campaign_id=campaign.id if campaign else 0,
+                direction="inbound",
+                channel="call",
+                subject=(summary[:250] or None) if summary else None,
+                body=(transcript or summary or "(call ended — no transcript)"),
+                status="received",
+                provider_id=provider_id,
+                metadata_json={"kind": "call_outcome", "ended_reason": ended_reason},
+            )
+            s.add(rec)
+            s.flush()
+
+            # Classify what happened on the call (same engine as inbound SMS).
+            classification = self.escalator.classify(text or "(no transcript)", [])
+
+            if campaign and classification.category != "other":
+                s.add(
+                    EscalationEvent(
+                        campaign_id=campaign.id,
+                        triggered_by_message_id=rec.id,
+                        category=classification.category,
+                        confidence=classification.confidence,
+                        reasoning=classification.reasoning,
+                        suggested_action=classification.suggested_action,
+                    )
+                )
+                return InboundResult(status="escalated", classification=classification)
+
+            return InboundResult(status="logged", classification=classification)
+
+    # ------------------------------------------------------------------
     # Dispatch by classification
     # ------------------------------------------------------------------
 
