@@ -868,14 +868,24 @@ def activity(limit: int = 50, _user: str = Depends(verify_admin)) -> dict[str, A
                 body_preview = body_preview[:140] + "…"
 
             if m.direction == "outbound":
-                if m.status == "sent":
+                if m.channel == "call" and m.status == "sent":
+                    kind, label = "call_placed", f"Called {patient_name}"
+                elif m.status == "sent":
                     kind, label = "sent", f"Sent {m.channel} to {patient_name}"
+                elif m.channel == "call" and m.status == "pending_approval":
+                    kind, label = "call_plan", f"Call plan ready for {patient_name}"
                 elif m.status in ("pending_approval", "composed"):
                     kind, label = "draft", f"Drafted {m.channel} for {patient_name}"
+                elif m.channel == "call" and m.status == "failed":
+                    kind, label = "call_failed", f"Couldn't reach {patient_name} by phone"
                 elif m.status == "rejected":
                     kind, label = "rejected", f"Rejected draft for {patient_name}"
                 else:
                     kind, label = "outbound", f"{m.status} {m.channel} → {patient_name}"
+            elif m.channel == "call":
+                kind = "call_outcome"
+                label = (m.subject or f"Call with {patient_name} ended").strip()
+                body_preview = ""  # subject already carries the summary; skip raw transcript
             else:
                 kind, label = "reply", f"{patient_name} replied"
 
@@ -951,10 +961,17 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             campaign = s.get(Campaign, e.campaign_id)
             patient = s.get(Patient, campaign.patient_id) if campaign else None
             triggering_body = ""
+            channel = None
+            call_summary = None
             if e.triggered_by_message_id:
                 m = s.get(Message, e.triggered_by_message_id)
                 if m:
+                    channel = m.channel
                     triggering_body = m.body[:280]
+                    # For calls, lead with the AI's summary (stored as subject)
+                    # rather than the raw transcript — much more scannable.
+                    if channel == "call" and m.subject:
+                        call_summary = m.subject
             esc_payload.append(
                 {
                     "id": e.id,
@@ -965,6 +982,8 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
                     "reasoning": e.reasoning,
                     "suggested_action": e.suggested_action,
                     "triggering_body": triggering_body,
+                    "channel": channel,
+                    "call_summary": call_summary,
                     "ago": _ago(e.created_at),
                     "created_at": e.created_at.isoformat() if e.created_at else None,
                 }
