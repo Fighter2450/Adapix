@@ -266,8 +266,8 @@ class ApprovalManager:
             md = dict(message.metadata_json or {})
             md["dry_run"] = True
             message.metadata_json = md
-        elif result.status in ("sent", "dialing"):
-            new_status = SENT
+        elif result.status in ("sent", "dialing", "queued", "ringing", "in-progress"):
+            new_status = SENT  # a call was successfully placed (Vapi returns "queued")
         else:
             new_status = FAILED
             if result.error:
