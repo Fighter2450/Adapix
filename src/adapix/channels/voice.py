@@ -67,10 +67,13 @@ class VoiceChannel:
         business_name: str | None = None,
         first_message: str | None = None,
         metadata: dict | None = None,
+        phone_number_id: str | None = None,
     ) -> VoiceResult:
         if not to:
             return VoiceResult(None, "failed", "missing recipient phone")
 
+        # Each org calls from its OWN number; fall back to the global test number.
+        number_id = phone_number_id or self.settings.vapi_phone_number_id
         biz = business_name or self.settings.business_name or "our office"
         # Always disclose AI in the opening line (compliance). Callers may pass
         # their own first_message, but it must still disclose — so we default to
@@ -80,16 +83,17 @@ class VoiceChannel:
         if self.dry_run:
             print(
                 f"\n[DRY RUN — CALL to {to}]\n"
+                f"From number id: {number_id or '(none)'}\n"
                 f"Opening: {opening}\n"
                 f"Goal: {goal or '(none)'}\n"
                 f"System prompt:\n{system_prompt}\n"
             )
             return VoiceResult(None, "skipped (dry run)")
 
-        if not (self.settings.vapi_api_key and self.settings.vapi_phone_number_id):
+        if not (self.settings.vapi_api_key and number_id):
             return VoiceResult(
                 None, "failed",
-                "Vapi not configured (set VAPI_API_KEY and VAPI_PHONE_NUMBER_ID in .env)",
+                "No calling number for this business yet (set VAPI_API_KEY + a phone number id)",
             )
 
         assistant: dict = {
@@ -114,7 +118,7 @@ class VoiceChannel:
             }
 
         body: dict = {
-            "phoneNumberId": self.settings.vapi_phone_number_id,
+            "phoneNumberId": number_id,
             "customer": {"number": to},
             "assistant": assistant,
         }

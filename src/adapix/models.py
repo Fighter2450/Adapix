@@ -30,6 +30,12 @@ class Organization(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
+    # Calling: each org places calls from its OWN dedicated number (its caller ID).
+    # Adapix provisions + registers this per business — never a shared number.
+    vapi_phone_number_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(32), nullable=True)  # +1… for display
+    phone_status: Mapped[str] = mapped_column(String(32), default="none")  # none | provisioned | registered
+
     users: Mapped[list["User"]] = relationship(back_populates="org", cascade="all, delete-orphan")
     profile: Mapped["OrgProfile | None"] = relationship(back_populates="org", uselist=False, cascade="all, delete-orphan")
 

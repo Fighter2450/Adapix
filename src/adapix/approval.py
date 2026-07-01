@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from .channels import EmailChannel, SmsChannel, VoiceChannel
 from .config import Settings
 from .db import get_session
-from .models import Campaign, Message, Patient
+from .models import Campaign, Message, Organization, Patient
 
 
 PENDING = "pending_approval"
@@ -161,7 +161,12 @@ class ApprovalManager:
                 patient = s.get(Patient, campaign.patient_id)
                 if patient is None:
                     continue
-                self._send_one(m, patient, sms, email, voice)
+                org = s.get(Organization, campaign.practice_id)
+                self._send_one(
+                    m, patient, sms, email, voice,
+                    org.vapi_phone_number_id if org else None,
+                    org.name if org else None,
+                )
                 attempted += 1
         return attempted
 
@@ -182,7 +187,12 @@ class ApprovalManager:
             patient = s.get(Patient, campaign.patient_id) if campaign else None
             if patient is None:
                 return "no_patient"
-            self._send_one(m, patient, sms, email, voice)
+            org = s.get(Organization, campaign.practice_id) if campaign else None
+            self._send_one(
+                m, patient, sms, email, voice,
+                org.vapi_phone_number_id if org else None,
+                org.name if org else None,
+            )
             return m.status
 
     # ------------------------------------------------------------------
@@ -208,6 +218,8 @@ class ApprovalManager:
         sms: SmsChannel,
         email: EmailChannel,
         voice: VoiceChannel,
+        org_phone_number_id: str | None = None,
+        org_business_name: str | None = None,
     ) -> None:
         if message.channel == "sms":
             result = sms.send(patient.phone or "", message.body)
@@ -217,9 +229,11 @@ class ApprovalManager:
         elif message.channel == "call":
             # message.body is the human-approved CALL PLAN (goal + talking points).
             # It becomes the assistant's instructions; the opening line auto-discloses AI.
+            # The business name comes from the ORG (its own identity), not a global setting.
+            biz = org_business_name or self.settings.business_name
             system_prompt = (
                 f"You are a warm, professional voice assistant calling on behalf of "
-                f"{self.settings.business_name}. Here is what you're trying to accomplish "
+                f"{biz}. Here is what you're trying to accomplish "
                 f"on this call — approved by the business:\n{message.body}\n\n"
                 f"Who you're calling:\n{self._patient_context(patient)}\n\n"
                 "Keep it brief and natural, listen more than you talk, and never pressure. "
@@ -231,7 +245,8 @@ class ApprovalManager:
                 to=patient.phone or "",
                 system_prompt=system_prompt,
                 goal=message.body,
-                business_name=self.settings.business_name,
+                business_name=biz,
+                phone_number_id=org_phone_number_id,
             )
         else:
             return

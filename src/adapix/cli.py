@@ -193,6 +193,48 @@ def cmd_simulate_inbound(
         typer.echo(f"reason:        {result.reason}")
 
 
+@app.command("list-orgs")
+def cmd_list_orgs():
+    """List organizations (businesses) and their assigned calling number."""
+    from .models import Organization
+
+    init_db()
+    with get_session() as s:
+        orgs = s.query(Organization).all()
+        if not orgs:
+            typer.echo("No organizations yet.")
+            return
+        for o in orgs:
+            num = o.phone_number or (o.vapi_phone_number_id and "(id set)") or "— none —"
+            typer.echo(f"{o.id}  {o.name}  plan={o.plan}  number={num}  status={o.phone_status}")
+
+
+@app.command("set-org-number")
+def cmd_set_org_number(
+    org: str = typer.Option(..., "--org", help="Organization id (see list-orgs)"),
+    phone_number_id: str = typer.Option(..., "--phone-number-id", help="Vapi phone number ID (UUID)"),
+    number: str = typer.Option("", "--number", help="The +1… number, for display"),
+):
+    """Assign a dedicated calling number to one business.
+
+    Manual stand-in for auto-provisioning: in production Adapix buys + registers
+    a local number per org at signup and fills these fields automatically.
+    """
+    from .models import Organization
+
+    init_db()
+    with get_session() as s:
+        org_row = s.get(Organization, org)
+        if org_row is None:
+            typer.echo(f"No organization '{org}'. Run list-orgs to see ids.")
+            raise typer.Exit(1)
+        org_row.vapi_phone_number_id = phone_number_id
+        if number:
+            org_row.phone_number = number
+        org_row.phone_status = "provisioned"
+        typer.echo(f"{org_row.name} ({org}) → calls will now come from {number or phone_number_id}")
+
+
 @app.command("queue-call")
 def cmd_queue_call(
     phone: str = typer.Option(..., "--phone", help="Contact's phone (must match an ingested contact)"),

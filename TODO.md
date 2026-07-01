@@ -35,10 +35,27 @@ AI-disclosure + recording notice baked into every opening for TCPA/state-law
 compliance), `POST /webhooks/vapi` (receives end-of-call transcript + summary),
 `test-call` CLI command (voice analog of `demo.py`), config + `.env.example`.
 
-**To go live:** create a Vapi account, buy a number, set `VAPI_API_KEY` +
-`VAPI_PHONE_NUMBER_ID` in `.env`, then `test-call --to +1… --live`.
+**✅ Live-call verified 2026-06-30** — placed a real AI call to a cell via Vapi;
+"sounded perfect." (Cloudflare 403 fixed with a real User-Agent; voice defaults
+to Vapi's when none set.)
+
+**Onboarding model — how businesses get a calling number (decided):**
+Never a shared Adapix number. **Each business calls from its OWN dedicated
+number** (its caller ID), so customers see the business they know. Default path:
+**Adapix provisions + registers a local number per org at signup** — the business
+touches no telephony. "Bring your own number" (port / verified caller ID) is an
+advanced option, not the default. Whoever owns the number, Adapix manages its
+reputation (Free Caller Registry, CNAM, STIR/SHAKEN) as a platform service.
+
+**Pre-launch calling checklist (kill the "Spam Likely" label):**
+1. Register the number at freecallerregistry.com (free; clears in 24–72h).
+2. For production, use a **Twilio** number (A-level STIR/SHAKEN) imported into Vapi.
+3. Register **CNAM** so it shows the business name.
+4. Branded calling (Hiya/First Orion) later, for max answer rates.
 
 **Still to build:**
+- ✅ **Per-org calling number (done)** — `Organization` now stores `vapi_phone_number_id` / `phone_number` / `phone_status`; `ApprovalManager` looks up the calling org and places the call from **its** number, announcing **its** name (falls back to the global test number/name for the single-tenant CLI). Manual assign via `set-org-number` / `list-orgs`. Verified in dry-run. Additive DB migration in `init_db`.
+- **Auto-provision numbers** — buy + register a local number per org at signup (Twilio/Vapi API) and fill those fields automatically; today it's manual via `set-org-number`.
 - ✅ **Approve/Inbox integration (done)** — a call is a `channel="call"` item in the same approval queue: `queue-call` creates it, it shows in the Inbox with a "Call plan" pill, and approving it routes through `ApprovalManager._send_one` → `VoiceChannel.place_call` (builds the assistant prompt from the approved plan + contact context). Verified via CLI in dry-run.
 - **Transcript → action** — the `/webhooks/vapi` handler logs the end-of-call transcript/summary; next is classifying the outcome (booked / escalate / not interested), attaching it to the contact, and firing escalations like inbound SMS.
 - **Web approve button** — the Inbox *shows* pending items (incl. calls) but the approve/reject buttons aren't wired in the web UI yet for ANY channel; the approve endpoints exist (`POST /api/v1/approvals/{id}/approve|reject`). Wire them.

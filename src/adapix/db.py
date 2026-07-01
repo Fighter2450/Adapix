@@ -4,7 +4,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings
@@ -52,9 +52,38 @@ def get_engine(settings: Settings | None = None) -> Engine:
     return _engine
 
 
+# Additive columns that `create_all` won't add to an already-existing table.
+# Keep this list in sync when you add a nullable column to an existing model.
+_ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "organizations": [
+        ("vapi_phone_number_id", "VARCHAR(128)"),
+        ("phone_number", "VARCHAR(32)"),
+        ("phone_status", "VARCHAR(32) DEFAULT 'none'"),
+    ],
+}
+
+
+def _run_additive_migrations(engine: Engine) -> None:
+    """Lightweight, dependency-free migration: ADD COLUMN for any model column
+    missing from an existing table. Works on SQLite + Postgres. Idempotent."""
+    insp = inspect(engine)
+    for table, cols in _ADDITIVE_COLUMNS.items():
+        if not insp.has_table(table):
+            continue
+        existing = {c["name"] for c in insp.get_columns(table)}
+        missing = [(n, ddl) for n, ddl in cols if n not in existing]
+        if not missing:
+            continue
+        with engine.begin() as conn:
+            for name, ddl in missing:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+
+
 def init_db(settings: Settings | None = None) -> None:
-    """Create all tables. Idempotent."""
-    Base.metadata.create_all(bind=get_engine(settings))
+    """Create all tables + apply additive column migrations. Idempotent."""
+    engine = get_engine(settings)
+    Base.metadata.create_all(bind=engine)
+    _run_additive_migrations(engine)
 
 
 @contextmanager
