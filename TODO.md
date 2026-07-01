@@ -1,13 +1,20 @@
 # Adapix — Next Steps
 
-> **Status (2026-06-30):** The core engine is **verified working end-to-end** — the
-> full pipeline (ingest → campaign → AI compose → human approval queue) was proven
-> via the CLI on a throwaway DB; it produces context-aware, on-brand drafts against
-> the live Anthropic key (`claude-sonnet-4-6`). The **only broken link is delivery**:
-> Twilio + Resend are placeholder credentials, so a live send returns `failed`. The
-> **AI voice-calling foundation is now built** (Vapi adapter + webhook + `test-call`,
-> dry-run verified) and is the priority channel. Fix real accounts + finish the
-> calling flow before billing/deploy.
+> **Status (2026-07-01):** **Calling works end-to-end, live, for real** —
+> capstone test: `queue-call` → approve → AI called a real cell from Adapix's
+> own number, had a real conversation, and the transcript flowed back through a
+> Cloudflare tunnel to `/webhooks/vapi`, got classified, and created a real
+> `callback_request` escalation in the Inbox. Every link in the calling chain is
+> proven. **Texting/email are the opposite** — the pipeline is proven (ingest →
+> campaign → AI compose → approval queue) but Twilio + Resend are still
+> placeholder creds, so a live send returns `failed`. Fix those next, or move to
+> deploy/billing now that the flagship channel (calling) is solid.
+>
+> **Dev-session-only setup, not persistent:** the local server + Cloudflare
+> quick tunnel were restarted mid-session (they die when the shell/session
+> ends). `PUBLIC_BASE_URL` in `.env` currently points at a temporary
+> `trycloudflare.com` URL that changes every restart — fine for testing, but
+> Railway deploy gives a permanent one.
 
 ---
 
