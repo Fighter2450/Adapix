@@ -99,11 +99,14 @@ class VoiceChannel:
                 "systemPrompt": system_prompt,
             },
             "firstMessage": opening,
-            "voice": {
+        }
+        # Only pin a voice if one is configured; otherwise use Vapi's default
+        # (avoids failing on an invalid voice id).
+        if self.settings.vapi_voice_id:
+            assistant["voice"] = {
                 "provider": self.settings.vapi_voice_provider,
                 "voiceId": self.settings.vapi_voice_id,
-            },
-        }
+            }
         # Route call events (incl. end-of-call-report with transcript) back to us.
         if self.settings.public_base_url:
             assistant["server"] = {
