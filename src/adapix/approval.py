@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .channels import EmailChannel, SmsChannel
+from .channels import EmailChannel, SmsChannel, VoiceChannel
 from .config import Settings
 from .db import get_session
 from .models import Campaign, Message, Patient
@@ -143,6 +143,7 @@ class ApprovalManager:
         """Send all messages currently in 'approved' status. Returns count attempted."""
         sms = SmsChannel(self.settings, dry_run=self.dry_run)
         email = EmailChannel(self.settings, dry_run=self.dry_run)
+        voice = VoiceChannel(self.settings, dry_run=self.dry_run)
         attempted = 0
         with get_session(self.settings) as s:
             messages = (
@@ -160,7 +161,7 @@ class ApprovalManager:
                 patient = s.get(Patient, campaign.patient_id)
                 if patient is None:
                     continue
-                self._send_one(m, patient, sms, email)
+                self._send_one(m, patient, sms, email, voice)
                 attempted += 1
         return attempted
 
@@ -172,6 +173,7 @@ class ApprovalManager:
             return "not_found_or_not_pending"
         sms = SmsChannel(self.settings, dry_run=self.dry_run)
         email = EmailChannel(self.settings, dry_run=self.dry_run)
+        voice = VoiceChannel(self.settings, dry_run=self.dry_run)
         with get_session(self.settings) as s:
             m = s.get(Message, message_id)
             if m is None or m.status != APPROVED:
@@ -180,12 +182,24 @@ class ApprovalManager:
             patient = s.get(Patient, campaign.patient_id) if campaign else None
             if patient is None:
                 return "no_patient"
-            self._send_one(m, patient, sms, email)
+            self._send_one(m, patient, sms, email, voice)
             return m.status
 
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _patient_context(patient: Patient) -> str:
+        """Compact who-you're-talking-to summary for the call assistant."""
+        bits = [f"Name: {patient.first_name} {patient.last_name}".strip()]
+        if patient.treatment_type:
+            bits.append(f"Interested in: {patient.treatment_type}")
+        if patient.treatment_plan_amount:
+            bits.append(f"Quote: ${patient.treatment_plan_amount:,.0f}")
+        if patient.notes:
+            bits.append(f"Notes: {patient.notes}")
+        return "\n".join(bits)
 
     def _send_one(
         self,
@@ -193,22 +207,44 @@ class ApprovalManager:
         patient: Patient,
         sms: SmsChannel,
         email: EmailChannel,
+        voice: VoiceChannel,
     ) -> None:
         if message.channel == "sms":
             result = sms.send(patient.phone or "", message.body)
         elif message.channel == "email":
             subject = message.subject or "A note from your practice"
             result = email.send(patient.email or "", subject, message.body)
+        elif message.channel == "call":
+            # message.body is the human-approved CALL PLAN (goal + talking points).
+            # It becomes the assistant's instructions; the opening line auto-discloses AI.
+            system_prompt = (
+                f"You are a warm, professional voice assistant calling on behalf of "
+                f"{self.settings.business_name}. Here is what you're trying to accomplish "
+                f"on this call — approved by the business:\n{message.body}\n\n"
+                f"Who you're calling:\n{self._patient_context(patient)}\n\n"
+                "Keep it brief and natural, listen more than you talk, and never pressure. "
+                "You already disclosed you're an AI in your opening line. If they ask "
+                "something you can't answer or want a person, warmly offer a callback and "
+                "end politely."
+            )
+            result = voice.place_call(
+                to=patient.phone or "",
+                system_prompt=system_prompt,
+                goal=message.body,
+                business_name=self.settings.business_name,
+            )
         else:
             return
 
-        # Map result.status into our terminal states
+        # Map result.status into our terminal states.
+        # ("dialing" = a call was successfully placed; the transcript arrives
+        #  later via the /webhooks/vapi end-of-call-report.)
         if result.status.startswith("skipped"):
             new_status = SENT  # treat dry-run as sent for state machine cleanliness
             md = dict(message.metadata_json or {})
             md["dry_run"] = True
             message.metadata_json = md
-        elif result.status == "sent":
+        elif result.status in ("sent", "dialing"):
             new_status = SENT
         else:
             new_status = FAILED

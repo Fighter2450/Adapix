@@ -1182,12 +1182,19 @@ body::after{
       }
       if (apprs.length){
         html += '<div class="section-eyebrow" style="margin-top:24px;margin-bottom:12px">Ready to send — just say OK · ' + apprs.length + '</div>';
-        html += '<div class="rows">' + apprs.map(m => `
-          <div class="row-card" style="cursor:pointer" onclick="goView('contacts')" title="Open conversation">
-            <div class="text"><b>${escapeHTML(m.patient)}</b><span>${escapeHTML((m.body||'').slice(0,200))}</span></div>
-            <span class="pill">draft</span>
+        html += '<div class="rows">' + apprs.map(m => {
+          const isCall = m.channel === 'call';
+          const label = isCall
+            ? `<i data-lucide="phone" style="width:12px;height:12px"></i> Call plan`
+            : 'draft';
+          const preview = isCall ? 'Goal: ' + (m.body || '') : (m.body || '');
+          return `
+          <div class="row-card" style="cursor:pointer" onclick="goView('contacts')" title="${isCall ? 'Review the call plan' : 'Open conversation'}">
+            <div class="text"><b>${escapeHTML(m.patient)}</b><span>${escapeHTML(preview.slice(0,200))}</span></div>
+            <span class="pill" style="${isCall ? 'display:inline-flex;align-items:center;gap:4px;color:var(--cyan)' : ''}">${label}</span>
             <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
-          </div>`).join('') + '</div>';
+          </div>`;
+        }).join('') + '</div>';
       }
     }
     main.innerHTML = html;

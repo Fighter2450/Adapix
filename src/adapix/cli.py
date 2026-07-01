@@ -193,6 +193,47 @@ def cmd_simulate_inbound(
         typer.echo(f"reason:        {result.reason}")
 
 
+@app.command("queue-call")
+def cmd_queue_call(
+    phone: str = typer.Option(..., "--phone", help="Contact's phone (must match an ingested contact)"),
+    practice: str = typer.Option(..., "--practice"),
+    goal: str = typer.Option(..., "--goal", help="What the call should accomplish — this IS the plan the human approves"),
+):
+    """Queue an AI phone call for a contact.
+
+    Creates a channel='call' item in the same approval queue the Inbox reads.
+    Approve it to actually dial:  approve <id> --live
+    """
+    from .models import Campaign, Message
+
+    init_db()
+    with get_session() as s:
+        patient = (
+            s.query(Patient)
+            .filter(Patient.practice_id == practice, Patient.phone == phone)
+            .first()
+        )
+        if patient is None:
+            typer.echo(f"No contact with phone {phone} in practice '{practice}'. Ingest them first.")
+            raise typer.Exit(1)
+        camp = Campaign(practice_id=practice, workflow_id="voice_call", patient_id=patient.id)
+        s.add(camp)
+        s.flush()
+        msg = Message(
+            campaign_id=camp.id,
+            direction="outbound",
+            channel="call",
+            body=goal,
+            status="pending_approval",
+        )
+        s.add(msg)
+        s.flush()
+        typer.echo(
+            f"Queued call #{msg.id} for {patient.first_name} {patient.last_name} ({phone}).\n"
+            f"Approve to dial:  python -m adapix.cli approve {msg.id} --live"
+        )
+
+
 @app.command("test-call")
 def cmd_test_call(
     to: str = typer.Option(..., "--to", help="Number to call, e.g. +14125550123"),

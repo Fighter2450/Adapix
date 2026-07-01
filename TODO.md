@@ -39,8 +39,10 @@ compliance), `POST /webhooks/vapi` (receives end-of-call transcript + summary),
 `VAPI_PHONE_NUMBER_ID` in `.env`, then `test-call --to +1… --live`.
 
 **Still to build:**
-- **Approve/Inbox integration** — a call becomes a `channel="call"` item: AI composes the call *goal/plan*, human approves it up front, Adapix places the call, transcript lands back in the Inbox. *(in progress)*
-- **Transcript → action** — classify the call outcome (booked / escalate / not interested), attach to the contact, fire escalations like inbound SMS.
+- ✅ **Approve/Inbox integration (done)** — a call is a `channel="call"` item in the same approval queue: `queue-call` creates it, it shows in the Inbox with a "Call plan" pill, and approving it routes through `ApprovalManager._send_one` → `VoiceChannel.place_call` (builds the assistant prompt from the approved plan + contact context). Verified via CLI in dry-run.
+- **Transcript → action** — the `/webhooks/vapi` handler logs the end-of-call transcript/summary; next is classifying the outcome (booked / escalate / not interested), attaching it to the contact, and firing escalations like inbound SMS.
+- **Web approve button** — the Inbox *shows* pending items (incl. calls) but the approve/reject buttons aren't wired in the web UI yet for ANY channel; the approve endpoints exist (`POST /api/v1/approvals/{id}/approve|reject`). Wire them.
+- **Compose a richer call plan** — `queue-call` stores the raw goal as the plan; have the agent draft a structured plan (goal + talking points) for the human to review.
 - **Consent gating** — only call contacts who opted in (AI disclosure is done; opt-in isn't).
 - **Verify** Vapi's Claude model id/provider naming against their supported list.
 
