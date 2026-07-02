@@ -42,6 +42,9 @@ def load_tokens(org_id: str) -> dict[str, Any]:
                 # (not .timestamp(), which assumes local time for naive datetimes).
                 "connected_at": calendar.timegm(row.connected_at.utctimetuple()) if row.connected_at else 0,
                 "scope": row.scope or "",
+                "smtp_host": row.smtp_host or "",
+                "smtp_port": row.smtp_port or 0,
+                "smtp_password": row.smtp_password or "",
             }
         }
 
@@ -401,6 +404,123 @@ def microsoft_send(org_id: str, to: str, subject: str, body: str, from_name: str
         return {"ok": False, "error": str(e)}
 
 
+# ---------------------------------------------------------------------------
+# SMTP — the long-tail connector. OAuth covers Google/Microsoft (~85-90% of
+# business email, including custom domains hosted on Workspace/M365); plain
+# SMTP with an app-specific password covers everyone else (iCloud, Yahoo,
+# AOL, Zoho, Fastmail, ...) without a per-provider integration.
+# ---------------------------------------------------------------------------
+
+# Known SMTP settings by email domain — used to prefill the connect form so
+# most people only type their app password. Anything not listed falls back to
+# smtp.<their-domain> and stays editable in the UI.
+SMTP_PRESETS: dict[str, tuple[str, int]] = {
+    "icloud.com": ("smtp.mail.me.com", 587),
+    "me.com": ("smtp.mail.me.com", 587),
+    "mac.com": ("smtp.mail.me.com", 587),
+    "yahoo.com": ("smtp.mail.yahoo.com", 465),
+    "aol.com": ("smtp.aol.com", 465),
+    "verizon.net": ("smtp.aol.com", 465),   # Verizon mail migrated to AOL
+    "comcast.net": ("smtp.comcast.net", 587),
+    "att.net": ("outbound.att.net", 465),
+    "zoho.com": ("smtp.zoho.com", 587),
+    "fastmail.com": ("smtp.fastmail.com", 465),
+    "gmail.com": ("smtp.gmail.com", 587),           # OAuth is preferred; SMTP works too
+    "outlook.com": ("smtp-mail.outlook.com", 587),  # ditto
+    "hotmail.com": ("smtp-mail.outlook.com", 587),
+    "live.com": ("smtp-mail.outlook.com", 587),
+}
+
+
+def detect_smtp_settings(email: str) -> dict[str, Any]:
+    """Best-guess SMTP server/port for an email address."""
+    domain = (email.rsplit("@", 1)[-1] or "").strip().lower()
+    host, port = SMTP_PRESETS.get(domain, (f"smtp.{domain}" if domain else "", 587))
+    return {"host": host, "port": port, "known": domain in SMTP_PRESETS}
+
+
+def _smtp_client(host: str, port: int):
+    """Open an SMTP connection: implicit TLS on 465, STARTTLS otherwise."""
+    import smtplib
+    import ssl
+
+    ctx = ssl.create_default_context()
+    if int(port) == 465:
+        return smtplib.SMTP_SSL(host, int(port), timeout=20, context=ctx)
+    client = smtplib.SMTP(host, int(port), timeout=20)
+    client.starttls(context=ctx)
+    return client
+
+
+def verify_smtp(host: str, port: int, email: str, password: str) -> dict[str, Any]:
+    """Try to log in. Returns {"ok": True} or {"ok": False, "error": <plain-English>}."""
+    import smtplib
+
+    try:
+        with _smtp_client(host, port) as client:
+            client.login(email, password)
+        return {"ok": True}
+    except smtplib.SMTPAuthenticationError:
+        return {"ok": False, "error": "The email or app password wasn't accepted. Most providers need an app-specific password here, not your normal login password."}
+    except (OSError, smtplib.SMTPException) as e:
+        return {"ok": False, "error": f"Couldn't reach {host}:{port} — check the server settings. ({e})"}
+
+
+def save_smtp_connection(
+    org_id: str, *, email: str, password: str,
+    host: str, port: int, name: str | None = None,
+    verify: bool = True,
+) -> dict[str, Any]:
+    """Verify the login (unless told not to), then store the connection."""
+    import time as _time
+
+    from .db import get_session
+    from .models import EmailConnection
+
+    if verify:
+        check = verify_smtp(host, port, email, password)
+        if not check.get("ok"):
+            return check
+
+    with get_session() as s:
+        row = s.get(EmailConnection, org_id)
+        if row is None:
+            row = EmailConnection(org_id=org_id)
+            s.add(row)
+        row.provider = "smtp"
+        row.connected_email = email
+        row.connected_name = name or None
+        row.access_token = None
+        row.refresh_token = None
+        row.expires_at = 0
+        row.scope = None
+        row.smtp_host = host
+        row.smtp_port = int(port)
+        row.smtp_password = password
+    return {"ok": True, "email": email}
+
+
+def smtp_send(org_id: str, to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
+    from email.mime.text import MIMEText
+
+    conn = load_tokens(org_id).get("smtp")
+    if not conn or not conn.get("smtp_host"):
+        return {"ok": False, "error": "SMTP email not connected"}
+    sender = conn["email"]
+    display = from_name or conn.get("name") or sender
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["From"] = f"{display} <{sender}>"
+    msg["To"] = to
+    msg["Subject"] = subject
+    try:
+        with _smtp_client(conn["smtp_host"], conn["smtp_port"]) as client:
+            client.login(sender, conn["smtp_password"])
+            client.sendmail(sender, [to], msg.as_string())
+        return {"ok": True, "provider_id": None}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 def send_email(org_id: str, to: str, subject: str, body: str, from_name: str | None = None) -> dict[str, Any]:
     tokens = load_tokens(org_id)
     if tokens.get("google", {}).get("refresh_token"):
@@ -409,7 +529,16 @@ def send_email(org_id: str, to: str, subject: str, body: str, from_name: str | N
     if tokens.get("microsoft", {}).get("refresh_token"):
         r = microsoft_send(org_id, to, subject, body, from_name=from_name)
         return {**r, "provider": "microsoft"}
+    if tokens.get("smtp", {}).get("smtp_host"):
+        r = smtp_send(org_id, to, subject, body, from_name=from_name)
+        return {**r, "provider": "smtp"}
     return {"ok": False, "error": "no email provider connected", "provider": None}
+
+
+def _provider_connected(prov: str, t: dict[str, Any]) -> bool:
+    if prov == "smtp":
+        return bool(t.get("smtp_host") and t.get("smtp_password"))
+    return bool(t.get("refresh_token"))
 
 
 def status(org_id: str) -> dict[str, Any]:
@@ -417,9 +546,9 @@ def status(org_id: str) -> dict[str, Any]:
     one provider is connected at a time (connecting one replaces the other)."""
     tokens = load_tokens(org_id)
     out = {}
-    for prov in ("google", "microsoft"):
+    for prov in ("google", "microsoft", "smtp"):
         t = tokens.get(prov, {})
-        if t.get("refresh_token"):
+        if _provider_connected(prov, t):
             out[prov] = {
                 "connected": True,
                 "email": t.get("email", ""),
@@ -434,4 +563,4 @@ def status(org_id: str) -> dict[str, Any]:
 
 def is_connected(org_id: str) -> bool:
     tokens = load_tokens(org_id)
-    return bool(tokens.get("google", {}).get("refresh_token") or tokens.get("microsoft", {}).get("refresh_token"))
+    return any(_provider_connected(p, t) for p, t in tokens.items())

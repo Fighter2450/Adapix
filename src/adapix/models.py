@@ -41,20 +41,25 @@ class Organization(Base):
 
 
 class EmailConnection(Base):
-    """Per-org OAuth email connection (Gmail or Outlook). The business connects
-    its OWN real inbox via OAuth login (that login IS the ownership proof), so
-    follow-up emails go out as them, not a shared Adapix sender."""
+    """Per-org email connection. Three ways a business sends as itself:
+    OAuth (Gmail / Outlook — the login IS the ownership proof) or plain SMTP
+    with an app-specific password (covers iCloud, Yahoo, AOL, Zoho, everyone
+    else). Either way, follow-up emails go out as them, not a shared sender."""
 
     __tablename__ = "email_connections"
 
     org_id: Mapped[str] = mapped_column(String(64), ForeignKey("organizations.id"), primary_key=True)
-    provider: Mapped[str] = mapped_column(String(16))  # google | microsoft
+    provider: Mapped[str] = mapped_column(String(16))  # google | microsoft | smtp
     connected_email: Mapped[str] = mapped_column(String(255))
     connected_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     expires_at: Mapped[int] = mapped_column(Integer, default=0)  # unix timestamp
     scope: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # SMTP-only fields (provider == "smtp")
+    smtp_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    smtp_password: Mapped[str | None] = mapped_column(Text, nullable=True)  # app-specific password
     connected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

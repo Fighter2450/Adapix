@@ -60,6 +60,11 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("phone_number", "VARCHAR(32)"),
         ("phone_status", "VARCHAR(32) DEFAULT 'none'"),
     ],
+    "email_connections": [
+        ("smtp_host", "VARCHAR(255)"),
+        ("smtp_port", "INTEGER"),
+        ("smtp_password", "TEXT"),
+    ],
 }
 
 

@@ -11,10 +11,14 @@
 > deploy/billing now that the flagship channel (calling) is solid.
 >
 > **Dev-session-only setup, not persistent:** the local server + Cloudflare
-> quick tunnel were restarted mid-session (they die when the shell/session
-> ends). `PUBLIC_BASE_URL` in `.env` currently points at a temporary
-> `trycloudflare.com` URL that changes every restart — fine for testing, but
-> Railway deploy gives a permanent one.
+> quick tunnel die when the shell/session ends and get restarted with a NEW
+> `trycloudflare.com` URL each time (`PUBLIC_BASE_URL` in `.env` is updated to
+> match). **Every tunnel rotation silently breaks two externally-registered
+> URLs** until they're updated: (1) the Google OAuth redirect URI in Google
+> Cloud Console → add the new `<tunnel>/oauth/google/callback` before any NEW
+> Gmail connect (already-connected accounts keep sending fine), and (2) the
+> Twilio inbound-SMS webhook on the phone number's Messaging Configuration.
+> Railway deploy gives a permanent URL and kills this whole class of problem.
 
 ---
 
@@ -97,6 +101,14 @@ the org hasn't connected anything.
 - **Gotcha that cost a debugging round-trip:** the OAuth consent screen's "Scopes" step was originally skipped (assumed the code's own scope request in the auth URL was enough) — it is NOT. Google silently issues a token missing the scope if it isn't explicitly declared under **Data Access → Add or remove scopes** on the OAuth consent screen, even though the requested scope shows correctly in the auth URL. First real send attempt failed with `ACCESS_TOKEN_SCOPE_INSUFFICIENT`. Fix: add `https://www.googleapis.com/auth/gmail.send` under Data Access, then **disconnect + reconnect** (existing tokens don't retroactively gain the scope).
 - Live click-through done end-to-end: connected `roccochenet95@gmail.com` via the real consent screen, "Connected as roccochenet95@gmail.com" rendered correctly in Settings, `POST /api/v1/email/test` returned `{"ok": true, "provider": "google", "provider_id": "19f20c8393d2d347"}` — a real Gmail message ID.
 - The old May-30 client secret (never rotated, unusable since Google only shows secrets once) was replaced with a fresh one; the old one is still enabled on Google's side and can be deleted once the new one's been running a while without issue.
+
+**✅ SMTP — the long-tail connector (built 2026-07-01):**
+- Why: Gmail/Outlook OAuth covers ~85-90% of business email (custom domains hosted on Workspace/M365 use the same buttons), but iCloud/Yahoo/AOL/Zoho/etc. need a universal fallback. One generic SMTP connection with an app-specific password covers all of them — no per-provider integrations, ever.
+- `provider="smtp"` on the same `email_connections` row (new `smtp_host`/`smtp_port`/`smtp_password` columns, additive migration applied to the live DB). `oauth.py` gains `SMTP_PRESETS` (iCloud/Yahoo/AOL/Verizon→AOL/Comcast/AT&T/Zoho/Fastmail + graceful `smtp.<domain>` fallback), `detect_smtp_settings`, `verify_smtp` (logs in before saving — a bad app password fails at connect time with a plain-English error, not on the first customer send), `save_smtp_connection`, `smtp_send` (465 = implicit TLS, else STARTTLS). `send_email` dispatch + `status`/`is_connected` now cover all three providers, so `ApprovalManager`'s email branch works unchanged.
+- API: `GET /api/v1/email/smtp/detect` (prefills server/port from the address), `POST /api/v1/email/smtp/connect`. `GET /api/v1/email/status` now always reports `configured: true` (SMTP needs no app credentials) plus `oauth_configured` for the Gmail/Outlook buttons.
+- Settings card: "Another email (iCloud, Yahoo…)" button expands an inline form — email, app password, auto-detected server/port (editable). Disconnect works the same for all providers.
+- Verified on a throwaway DB: preset + fallback detection, storage round-trip, status/is_connected, clean error on unreachable host, disconnect. Endpoints registered on the live server (401 when unauthenticated). **Not yet live-tested against a real provider** — the natural test is an iCloud/Yahoo account with an app-specific password.
+- Hardening note (applies to OAuth tokens too): SMTP passwords are stored plaintext in the DB; at-rest encryption is a pre-launch item.
 
 **Microsoft/Outlook — explicitly deferred:**
 - Signing in to Azure Portal with a personal (non-tenant) Microsoft account shows "no directory" — Microsoft deprecated creating App Registrations outside a directory. Getting one needs either the free M365 Developer Program (a sandbox tenant, no card needed) or a paid Azure subscription. User hit a paywall partway through and chose to defer Microsoft rather than pay — decision made 2026-07-01.

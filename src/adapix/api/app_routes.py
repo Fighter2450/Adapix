@@ -1322,19 +1322,59 @@ def api_email_status(org_id: str = Depends(verify_admin)):
     from ..config import Settings
     from ..oauth import status
     s = Settings()
-    configured = bool(s.google_client_id or s.microsoft_client_id)
+    # SMTP needs no app credentials, so email connect is always available —
+    # `oauth_configured` tells the UI whether the Gmail/Outlook buttons work.
+    oauth_configured = bool(s.google_client_id or s.microsoft_client_id)
     st = status(org_id)
     connected_provider = None
-    for prov in ("google", "microsoft"):
+    for prov in ("google", "microsoft", "smtp"):
         if st.get(prov, {}).get("connected"):
             connected_provider = prov
             break
     return {
-        "configured": configured,
+        "configured": True,
+        "oauth_configured": oauth_configured,
         "connected": connected_provider is not None,
         "provider": connected_provider,
         "email": st.get(connected_provider, {}).get("email") if connected_provider else None,
     }
+
+
+@router.get("/api/v1/email/smtp/detect")
+def api_smtp_detect(email: str = "", _user: str = Depends(verify_admin)):
+    """Best-guess SMTP server/port for an address — prefills the connect form."""
+    from ..oauth import detect_smtp_settings
+    return detect_smtp_settings(email)
+
+
+class SmtpConnectBody(BaseModel):
+    email: str
+    password: str          # app-specific password
+    host: str = ""
+    port: int = 587
+    name: str = ""
+
+
+@router.post("/api/v1/email/smtp/connect")
+def api_smtp_connect(body: SmtpConnectBody, org_id: str = Depends(verify_admin)):
+    """Connect any email account over SMTP. Verifies the login actually works
+    before saving — a bad app password fails here, not on the first customer."""
+    from ..oauth import detect_smtp_settings, save_smtp_connection
+
+    email = body.email.strip().lower()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="Enter a valid email address")
+    if not body.password.strip():
+        raise HTTPException(status_code=400, detail="Enter the app password for this account")
+
+    host = body.host.strip() or detect_smtp_settings(email)["host"]
+    result = save_smtp_connection(
+        org_id, email=email, password=body.password.strip(),
+        host=host, port=body.port, name=body.name.strip() or None,
+    )
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error") or "Could not connect")
+    return result
 
 
 @router.post("/api/v1/email/disconnect")

@@ -2846,14 +2846,8 @@ body::after{
     try { data = await api('/api/v1/email/status'); }
     catch(_){ el.textContent = 'Could not load your email connection.'; return; }
 
-    if (!data.configured){
-      el.innerHTML = `<div style="line-height:1.55">Email connect isn't set up yet. Ask Adapix to finish Google/Microsoft OAuth setup to enable this.</div>`;
-      renderLucide(el);
-      return;
-    }
-
     if (data.connected){
-      const label = data.provider === 'google' ? 'Gmail' : 'Outlook';
+      const label = data.provider === 'google' ? 'Gmail' : data.provider === 'microsoft' ? 'Outlook' : 'SMTP';
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <i data-lucide="mail" style="width:16px;height:16px;color:var(--cyan)"></i>
@@ -2873,13 +2867,72 @@ body::after{
         } catch(_){ toast('Could not disconnect', true); btn.disabled = false; btn.textContent = 'Disconnect'; }
       });
     } else {
-      el.innerHTML = `
-        <div style="margin-bottom:12px;line-height:1.55">Connect your real Gmail or Outlook so follow-up emails go out as your business, not a shared address.</div>
-        <div style="display:flex;gap:10px">
+      const oauthButtons = data.oauth_configured ? `
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
           <a class="btn btn-primary" href="/oauth/google/start" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i data-lucide="mail" style="width:14px;height:14px"></i> Connect Gmail</a>
           <a class="btn btn-primary" href="/oauth/microsoft/start" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i data-lucide="mail" style="width:14px;height:14px"></i> Connect Outlook</a>
+          <button class="btn btn-ghost" id="smtp-toggle" style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="at-sign" style="width:14px;height:14px"></i> Another email (iCloud, Yahoo…)</button>
+        </div>` : `
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" id="smtp-toggle" style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="at-sign" style="width:14px;height:14px"></i> Connect my email</button>
+        </div>`;
+      el.innerHTML = `
+        <div style="margin-bottom:12px;line-height:1.55">Connect your real email so follow-ups go out as your business, not a shared address. Gmail and Outlook connect in one click — anything else (iCloud, Yahoo, AOL…) works with an app password.</div>
+        ${oauthButtons}
+        <div id="smtp-form" hidden style="margin-top:16px;max-width:440px">
+          <div class="sform-row"><label class="sform-label">Email address</label><input class="sform-input" id="smtp-email" type="email" placeholder="you@icloud.com" autocomplete="email"></div>
+          <div class="sform-row">
+            <label class="sform-label">App password</label>
+            <input class="sform-input" id="smtp-password" type="password" placeholder="app-specific password" autocomplete="off">
+            <div class="sform-hint">Not your normal login password — most providers (iCloud, Yahoo, AOL) have an "app-specific password" you create in your account's security settings.</div>
+          </div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Mail server</label><input class="sform-input" id="smtp-host" placeholder="auto-detected"></div>
+            <div class="sform-row"><label class="sform-label">Port</label><input class="sform-input" id="smtp-port" type="number" value="587"></div>
+          </div>
+          <button class="sform-save" id="smtp-connect">Connect</button>
         </div>`;
       renderLucide(el);
+
+      const toggle = document.getElementById('smtp-toggle');
+      if (toggle) toggle.addEventListener('click', () => {
+        const form = document.getElementById('smtp-form');
+        form.hidden = !form.hidden;
+        if (!form.hidden) document.getElementById('smtp-email').focus();
+      });
+
+      // Prefill server/port from the email domain once it's typed
+      const emailInput = document.getElementById('smtp-email');
+      if (emailInput) emailInput.addEventListener('blur', async () => {
+        const v = emailInput.value.trim();
+        if (!v.includes('@')) return;
+        try {
+          const d = await api('/api/v1/email/smtp/detect?email=' + encodeURIComponent(v));
+          const hostEl = document.getElementById('smtp-host');
+          const portEl = document.getElementById('smtp-port');
+          if (hostEl && !hostEl.value) hostEl.value = d.host || '';
+          if (portEl && d.port) portEl.value = d.port;
+        } catch(_){}
+      });
+
+      const connect = document.getElementById('smtp-connect');
+      if (connect) connect.addEventListener('click', async () => {
+        const val = id => (document.getElementById(id)?.value || '').trim();
+        if (!val('smtp-email').includes('@')) { toast('Enter your email address', true); return; }
+        if (!val('smtp-password')) { toast('Enter the app password', true); return; }
+        connect.disabled = true; connect.textContent = 'Checking the connection…';
+        try {
+          await api('/api/v1/email/smtp/connect', { method:'POST', body: JSON.stringify({
+            email: val('smtp-email'), password: val('smtp-password'),
+            host: val('smtp-host'), port: Number(val('smtp-port')) || 587,
+          })});
+          toast('Email connected');
+          loadEmailCard();
+        } catch(e){
+          toast('Could not connect — check the app password and server', true);
+          connect.disabled = false; connect.textContent = 'Connect';
+        }
+      });
     }
   }
 
