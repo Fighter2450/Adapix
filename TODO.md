@@ -33,20 +33,11 @@
 > of problem and is the clear next step.
 ---
 
-## 🔴 Blockers — "does it actually work for a customer?" (do these FIRST)
+## ✅ Former blockers — ALL CLEARED 2026-07-02 (see status header)
 
-### 1. Real sending credentials
-- Twilio is placeholder: `ACCOUNT_SID` 5 chars (real = 34, starts `AC`), `AUTH_TOKEN` 3 chars (real = 32), `FROM_NUMBER` 5 chars → **SMS cannot send**.
-- Resend is placeholder: `RESEND_API_KEY` 6 chars (real ≈ 30+, starts `re_`) → **email cannot send**.
-- Action: get real Twilio + Resend accounts, drop real keys in `.env`, send one real test SMS + email to your own phone/inbox.
-
-### 2. ✅ Full loop verified (CLI) — one link left: actual send
-- Proven 2026-06-30: ingest → start-campaign → run (AI composes day-1 SMS + day-3 email) → both land in the **pending-approval queue** → approve. Only the final **send fails** on the placeholder Twilio creds (blocker #1). No code bug.
-- Still TODO: prove the same loop through the **web UI** (Inbox feed → approve button → send), not just the CLI.
-
-### 3. Inbound replies + escalation
-- `PUBLIC_BASE_URL` is empty; no public webhook is reachable.
-- Action: set a public URL + Twilio inbound webhook so customer replies come back and escalations fire.
+1. ✅ **Real sending credentials** — real Twilio + Resend keys in `.env`; live SMS and email both delivered.
+2. ✅ **Full loop through the web UI** — contact → draft → Inbox Send click → real delivery (Gmail id `19f234a41921dbc5`; Resend fallback also proven).
+3. 🟡 **Inbound replies** — `PUBLIC_BASE_URL` points at the current tunnel and the Vapi call webhook works end to end; the Twilio inbound-SMS webhook is registered but breaks on every tunnel rotation (see header). Truly solved by Railway's permanent URL; a live inbound-SMS reply test is still to do after deploy.
 
 ---
 
