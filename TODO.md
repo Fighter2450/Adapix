@@ -1,5 +1,36 @@
 # Adapix — Next Steps
 
+## 🚀 DEPLOYED TO RAILWAY (2026-07-02)
+
+**Live at: https://adapix-web-production.up.railway.app** — permanent URL, Postgres-backed.
+
+- Project `adapix` (service `adapix-web` + Postgres) on ChenetTech's Railway.
+  Made room by deleting the old WebsiteBot project (user's call; NEXUS kept).
+- All env vars pushed from local `.env`; `DATABASE_URL` references the Railway
+  Postgres; a real `JWT_SECRET_KEY` was generated (it had been silently running
+  on the dev fallback — never set despite older notes claiming it was).
+- Build fixes: the hand-rolled nixpacks package list broke twice (bad
+  `libxshmfence` name, then bare nix python312 has no pip). Now uses the
+  nixpacks Python provider + `.python-version` = 3.12. The Playwright/Chromium
+  stack for Workshop automations is intentionally NOT in the prod image.
+- External URLs updated to the permanent domain (never need touching again):
+  Google OAuth redirect URI (added in console) and the Twilio inbound-SMS
+  webhook (set via API).
+- Gotcha fixed along the way: appending to `.env` from Windows Python wrote a
+  cp1252 em-dash that corrupted the file for UTF-8 readers (Settings() crashed
+  everywhere). Keep `.env` ASCII-only.
+
+**Prod starts with a FRESH database** — local test data stays local. First-run
+on prod: sign up, connect Gmail (against the permanent redirect URI this time),
+set up the calling line, import contacts.
+
+**Post-deploy TODO:**
+- Live smoke test on prod: signup → connect Gmail → send a draft → place a call.
+- Point a custom domain (app.adapixai.com) at the Railway service eventually.
+- Vapi call webhooks + Twilio inbound now resolve to the permanent URL via
+  PUBLIC_BASE_URL — do a live inbound-SMS + end-of-call-report test on prod.
+
+
 > **Status (2026-07-02): IT WORKS — every channel live-verified end to end.**
 > - **Calls (Vapi):** real AI calls from the org's own number, recordings playable
 >   in the dashboard, transcripts classified into Inbox escalations.
