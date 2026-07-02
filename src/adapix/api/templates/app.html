@@ -1113,7 +1113,8 @@ body::after{
   // -------- Load --------
   async function load(){
     try{
-      $('loader').textContent = 'loading…';
+      const l = $('loader');
+      if (l) l.textContent = 'loading…';  // #loader is removed after first boot
       const [feed, dashboard, calls] = await Promise.all([
         api('/api/v1/feed').catch(()=>({escalations:[], approvals:[], digest:{}})),
         api('/api/v1/dashboard').catch(()=>({widgets:[]})),
