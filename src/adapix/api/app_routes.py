@@ -766,6 +766,92 @@ def api_knowledge_delete(entry_id: str, org_id: str = Depends(verify_admin)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Database tab — one screen showing EVERYTHING Adapix knows about this
+# business, editable in place. Aggregates the org_profiles JSON blob (wizard
+# fields + knowledge base), the org's calling number, and its email
+# connection, rather than introducing a new storage model of its own.
+# ---------------------------------------------------------------------------
+class DatabaseUpdateBody(BaseModel):
+    business_name: str | None = None
+    owner_name: str | None = None
+    phone: str | None = None
+    hours: str | None = None
+    tone: str | None = None
+
+
+@router.get("/api/v1/database")
+def api_database(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from ..models import Organization
+    from ..practice import ESCALATION_LABELS, WORKFLOW_LABELS
+    from ..oauth import status as oauth_status
+    from sqlalchemy.orm import Session
+
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        org = s.get(Organization, org_id)
+        practice = data.get("practice") or {}
+
+        workflows = [
+            {"key": w, "label": WORKFLOW_LABELS.get(w, w.replace("_", " "))}
+            for w in (data.get("workflows") or []) if w != "other"
+        ]
+        if data.get("workflow_custom"):
+            workflows.append({"key": "other", "label": data["workflow_custom"]})
+
+        escalations = [
+            {"key": e, "label": (ESCALATION_LABELS.get(e, "") or e.replace("_", " ")).split(".")[0]}
+            for e in (data.get("escalations") or []) if e != "other"
+        ]
+        if data.get("escalation_custom"):
+            escalations.append({"key": "other", "label": data["escalation_custom"]})
+
+        email = oauth_status(org_id)
+        connected_email_provider = next((p for p in ("google", "microsoft", "smtp") if email.get(p, {}).get("connected")), None)
+
+        return {
+            "business_name": practice.get("name") or "",
+            "owner_name": practice.get("owner") or practice.get("doctor") or "",
+            "phone": practice.get("phone") or "",
+            "hours": practice.get("hours") or "",
+            "business_type": data.get("practice_type_label") or data.get("practice_type", "").replace("_", " "),
+            "tone": data.get("tone") or "warm_professional",
+            "workflows": workflows,
+            "escalations": escalations,
+            "knowledge_base": data.get("knowledge_base") or [],
+            "configured_at": data.get("configured_at") or "",
+            "calling_number": org.phone_number if org else None,
+            "calling_status": org.phone_status if org else "none",
+            "email_connected": connected_email_provider is not None,
+            "email_provider": connected_email_provider,
+            "email_address": email.get(connected_email_provider, {}).get("email") if connected_email_provider else None,
+        }
+
+
+@router.post("/api/v1/database")
+def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        practice = dict(data.get("practice") or {})
+        if body.business_name is not None:
+            practice["name"] = body.business_name.strip()
+        if body.owner_name is not None:
+            practice["owner"] = body.owner_name.strip()
+        if body.phone is not None:
+            practice["phone"] = body.phone.strip()
+        if body.hours is not None:
+            practice["hours"] = body.hours.strip()
+        data["practice"] = practice
+        if body.tone is not None and body.tone in ("warm_professional", "casual_friendly", "clinical_formal"):
+            data["tone"] = body.tone
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
 @router.get("/app/manifest.json")
 def manifest():
     return JSONResponse(

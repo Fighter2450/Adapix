@@ -1036,6 +1036,7 @@ body::after{
       </button>
       <button class="nav-item" data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
       <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
+      <button class="nav-item" data-view="database"><i data-lucide="database"></i><span>Database</span></button>
       <button class="nav-item" data-view="workshop"><i data-lucide="zap"></i><span>Workshop</span></button>
     </div>
     <div class="sidebar-bottom">
@@ -1150,6 +1151,7 @@ body::after{
     else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'results')   renderResultsView();
     else if (state.view === 'team')      renderTeam();
+    else if (state.view === 'database')  renderDatabaseView();
     else if (state.view === 'workshop')  renderWorkshop();
     else if (state.view === 'settings')  renderSettingsLink();
   }
@@ -1325,6 +1327,145 @@ body::after{
         : '<div class="activity-empty">Adapix is up and running. Everything it does for you will show up here.</div>';
       renderLucide(el);
     }).catch(()=>{});
+  }
+
+  // -------- DATABASE view — everything Adapix knows about the business --------
+  function renderDatabaseView(){
+    main.innerHTML = `
+      <div class="section-eyebrow">Database</div>
+      <h1 class="page-title" style="margin-bottom:6px">What Adapix knows about your business</h1>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:22px;max-width:640px">Everything here shapes how Adapix talks to your customers and what it can answer on its own. Edit anything — changes take effect on the very next message.</p>
+      <div id="db-body"><div style="padding:40px;text-align:center;color:var(--ink-3)">Loading…</div></div>
+    `;
+    renderLucide(main);
+
+    api('/api/v1/database').then(d => {
+      const toneOpts = [
+        ['warm_professional', 'Warm Professional'],
+        ['casual_friendly', 'Casual Friendly'],
+        ['clinical_formal', 'Direct & Formal'],
+      ];
+      const body = document.getElementById('db-body');
+      body.innerHTML = `
+        <div class="scard">
+          <div class="scard-title">Identity</div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" id="db-name" value="${escapeAttr(d.business_name)}" placeholder="Not set" /></div>
+            <div class="sform-row"><label class="sform-label">What I call you</label><input class="sform-input" id="db-owner" value="${escapeAttr(d.owner_name)}" placeholder="Not set" /></div>
+          </div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" id="db-phone" value="${escapeAttr(d.phone)}" placeholder="Not set" /></div>
+            <div class="sform-row"><label class="sform-label">Hours</label><input class="sform-input" id="db-hours" value="${escapeAttr(d.hours)}" placeholder="Not set" /></div>
+          </div>
+          <div class="sform-row">
+            <label class="sform-label">Business type</label>
+            <input class="sform-input" value="${escapeAttr(d.business_type || 'Not set')}" disabled style="opacity:.6" />
+            <div class="sform-hint">Set during onboarding — <a href="#" data-goto-team style="color:var(--cyan)">chat with the AI Team</a> to update it.</div>
+          </div>
+          <div class="sform-row">
+            <label class="sform-label">How I sound</label>
+            <select class="sform-input sform-select" id="db-tone">
+              ${toneOpts.map(([v,l]) => `<option value="${v}" ${v===d.tone?'selected':''}>${l}</option>`).join('')}
+            </select>
+          </div>
+          <button class="sform-save" id="db-save-identity">Save changes</button>
+        </div>
+
+        <div class="scard">
+          <div class="scard-title">Connected channels</div>
+          <div class="sch-row">
+            <div class="sch-icon"><i data-lucide="phone" style="width:16px;height:16px"></i></div>
+            <div class="sch-body"><div class="sch-name">Calling number</div><div class="sch-val">${d.calling_number ? escapeHTML(d.calling_number) : (d.calling_status === 'pending' ? 'Being set up…' : 'Not set up yet')}</div></div>
+            <span class="sch-badge ${d.calling_number ? '' : 'off'}">${d.calling_number ? 'Connected' : 'Disconnected'}</span>
+          </div>
+          <div class="sch-row">
+            <div class="sch-icon"><i data-lucide="mail" style="width:16px;height:16px"></i></div>
+            <div class="sch-body"><div class="sch-name">Email</div><div class="sch-val">${d.email_connected ? escapeHTML(d.email_address || '') + ' (' + escapeHTML(d.email_provider) + ')' : 'Not connected'}</div></div>
+            <span class="sch-badge ${d.email_connected ? '' : 'off'}">${d.email_connected ? 'Connected' : 'Disconnected'}</span>
+          </div>
+          <div class="sform-hint" style="margin-top:10px">Manage connections in <a href="#" data-goto-channels style="color:var(--cyan)">Settings → Messaging & channels</a>.</div>
+        </div>
+
+        <div class="scard">
+          <div class="scard-title">What Adapix is handling</div>
+          <div class="sform-hint" style="margin-bottom:10px">Workflows it runs automatically:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+            ${d.workflows.length ? d.workflows.map(w => `<span class="pill">${escapeHTML(w.label)}</span>`).join('') : '<span style="color:var(--ink-3);font-size:13px">None configured</span>'}
+          </div>
+          <div class="sform-hint" style="margin-bottom:10px">Always escalated to you:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${d.escalations.length ? d.escalations.map(e => `<span class="pill hot">${escapeHTML(e.label)}</span>`).join('') : '<span style="color:var(--ink-3);font-size:13px">None configured</span>'}
+          </div>
+        </div>
+
+        <div class="scard">
+          <div class="scard-title">Taught knowledge</div>
+          <div class="sform-hint" style="margin-bottom:14px">Questions Adapix answers directly instead of escalating.</div>
+          <div id="db-kb-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:520px">
+            <input class="sform-input" id="db-kb-q" placeholder="Question a customer might ask" />
+            <textarea class="sform-input" id="db-kb-a" rows="2" style="resize:vertical" placeholder="How you'd want Adapix to answer it"></textarea>
+            <button class="sch-connect" id="db-kb-add" style="align-self:flex-start">+ Add answer</button>
+          </div>
+        </div>
+      `;
+      renderLucide(body);
+
+      // Identity save
+      document.getElementById('db-save-identity').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true; btn.textContent = 'Saving…';
+        try {
+          await api('/api/v1/database', { method: 'POST', body: JSON.stringify({
+            business_name: document.getElementById('db-name').value,
+            owner_name: document.getElementById('db-owner').value,
+            phone: document.getElementById('db-phone').value,
+            hours: document.getElementById('db-hours').value,
+            tone: document.getElementById('db-tone').value,
+          })});
+          toast('Saved');
+        } catch(_){ toast('Could not save', true); }
+        btn.disabled = false; btn.textContent = 'Save changes';
+      });
+
+      body.querySelector('[data-goto-team]')?.addEventListener('click', (e) => { e.preventDefault(); goView('team'); });
+      body.querySelector('[data-goto-channels]')?.addEventListener('click', (e) => { e.preventDefault(); goSettingsView('channels'); goView('settings'); });
+
+      // Knowledge base list (same backing endpoints as Settings' copy of this card)
+      const kbList = document.getElementById('db-kb-list');
+      async function refreshKb(){
+        let entries = [];
+        try { entries = (await api('/api/v1/knowledge')).entries || []; }
+        catch(_){ kbList.innerHTML = '<div style="font-size:13px;color:var(--ink-3)">Could not load.</div>'; return; }
+        kbList.innerHTML = entries.length ? entries.map(e => `
+          <div class="row-card" style="align-items:flex-start" data-id="${escapeAttr(e.id)}">
+            <div class="text" style="flex:1"><b>${escapeHTML(e.q)}</b><span>${escapeHTML(e.a)}</span></div>
+            <button class="btn btn-ghost db-kb-del" data-id="${escapeAttr(e.id)}" style="flex:0 0 auto;padding:6px 10px;font-size:12px">Remove</button>
+          </div>`).join('') : '<div style="font-size:13px;color:var(--ink-3);padding:10px 0">Nothing taught yet.</div>';
+        kbList.querySelectorAll('.db-kb-del').forEach(btn => btn.addEventListener('click', async () => {
+          btn.disabled = true; btn.textContent = 'Removing…';
+          try { await api('/api/v1/knowledge/' + encodeURIComponent(btn.dataset.id), { method: 'DELETE' }); toast('Removed'); refreshKb(); }
+          catch(_){ toast('Could not remove', true); btn.disabled = false; btn.textContent = 'Remove'; }
+        }));
+      }
+      refreshKb();
+      document.getElementById('db-kb-add').addEventListener('click', async () => {
+        const qEl = document.getElementById('db-kb-q'), aEl = document.getElementById('db-kb-a');
+        const q = (qEl.value || '').trim(), a = (aEl.value || '').trim();
+        if (!q || !a) { toast('Enter both a question and an answer', true); return; }
+        const btn = document.getElementById('db-kb-add');
+        btn.disabled = true; btn.textContent = 'Adding…';
+        try {
+          await api('/api/v1/knowledge', { method: 'POST', body: JSON.stringify({ q, a }) });
+          qEl.value = ''; aEl.value = '';
+          toast('Added — Adapix knows this now');
+          await refreshKb();
+        } catch(_){ toast('Could not add', true); }
+        btn.disabled = false; btn.textContent = '+ Add answer';
+      });
+    }).catch(() => {
+      document.getElementById('db-body').innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-3)">Could not load — try refreshing.</div>';
+    });
   }
 
   function renderInboxView(){
