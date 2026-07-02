@@ -253,21 +253,45 @@ class PracticeProfile:
             f"  \"\"\"\n  {self.description.strip()}\n  \"\"\""
         )
 
+    @staticmethod
+    def format_service_price(e: dict) -> str:
+        """One consistent price string for a service entry, shared by the
+        prompt fragments, the classifier context, and the Database tab's
+        display list — so a subscription always reads the same way
+        everywhere: '$49/month (12-month minimum)'."""
+        price = (e.get("price") or "").strip()
+        if not price:
+            return ""
+        if (e.get("pricing_type") or "one_time") != "subscription":
+            return f"{price} (one-time)"
+        period = e.get("billing_period") or "month"
+        out = f"{price}/{period}"
+        term = str(e.get("term_length") or "").strip()
+        if term:
+            unit = "month" if period == "month" else "year"
+            # Hyphenated compound adjective ("12-month minimum") never
+            # pluralizes the unit, unlike "12 months" as a plain noun phrase.
+            out += f" ({term}-{unit} minimum)"
+        else:
+            out += " (no minimum term)"
+        return out
+
     def services_fragment(self) -> str:
         """Structured services/pricing catalog. This is the difference
         between Adapix vaguely deflecting a pricing question and actually
-        quoting a real number."""
+        quoting a real number — including whether it's a one-time charge or
+        a subscription, and how long a subscription commits the customer."""
         entries = [e for e in (self.services or []) if (e.get("name") or "").strip()]
         if not entries:
             return ""
-        lines = ["SERVICES & PRICING (quote these directly when asked what you offer or charge):"]
+        lines = ["SERVICES & PRICING (quote these directly when asked what you offer or charge — get the pricing TYPE right: don't call a subscription a one-time fee or vice versa):"]
         for e in entries:
             name = e["name"].strip()
-            price = (e.get("price") or "").strip()
+            price_str = self.format_service_price(e)
             details = (e.get("details") or "").strip()
             line = f"  - {name}"
-            if price:
-                line += f": {price}"
+            if price_str:
+                line += f": {price_str}"
             lines.append(line)
             if details:
                 lines.append(f"    {details}")
@@ -304,7 +328,7 @@ class PracticeProfile:
         services = [e for e in (self.services or []) if (e.get("name") or "").strip()]
         if services:
             names = "; ".join(
-                f"{e['name'].strip()} ({e['price'].strip()})" if (e.get("price") or "").strip() else e["name"].strip()
+                f"{e['name'].strip()} ({self.format_service_price(e)})" if (e.get("price") or "").strip() else e["name"].strip()
                 for e in services[:25]
             )
             bits.append(

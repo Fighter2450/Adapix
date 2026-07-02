@@ -328,6 +328,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',
 .spage-sub{font-size:13px;color:var(--ink-2);line-height:1.55}
 .sform-row{margin-bottom:14px}
 .sform-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sform-2col[hidden]{display:none}
 .sform-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px}
 .sform-input,.sform-select{
   width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid rgba(255,255,255,.1);
@@ -1386,7 +1387,27 @@ body::after{
           <div id="db-svc-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
           <div class="sform-2col">
             <div class="sform-row"><label class="sform-label">Service</label><input class="sform-input" id="db-svc-name" placeholder="e.g. Invisalign treatment" /></div>
-            <div class="sform-row"><label class="sform-label">Price</label><input class="sform-input" id="db-svc-price" placeholder="e.g. $3,500&ndash;$8,000" /></div>
+            <div class="sform-row"><label class="sform-label">Price</label><input class="sform-input" id="db-svc-price" placeholder="e.g. $3,500 or $49" /></div>
+          </div>
+          <div class="sform-row">
+            <label class="sform-label">Pricing type</label>
+            <select class="sform-input sform-select" id="db-svc-type">
+              <option value="one_time" selected>One-time purchase</option>
+              <option value="subscription">Subscription (recurring)</option>
+            </select>
+          </div>
+          <div class="sform-2col" id="db-svc-sub-row" hidden>
+            <div class="sform-row">
+              <label class="sform-label">Billed every</label>
+              <select class="sform-input sform-select" id="db-svc-period">
+                <option value="month" selected>Month</option>
+                <option value="year">Year</option>
+              </select>
+            </div>
+            <div class="sform-row">
+              <label class="sform-label" id="db-svc-term-label">Minimum months (optional)</label>
+              <input class="sform-input" id="db-svc-term" type="number" min="0" placeholder="e.g. 12" />
+            </div>
           </div>
           <div class="sform-row"><textarea class="sform-input" id="db-svc-details" rows="2" style="resize:vertical" placeholder="Optional details — what's included, financing options, etc."></textarea></div>
           <button class="sch-connect" id="db-svc-add" style="align-self:flex-start">+ Add service</button>
@@ -1467,11 +1488,21 @@ body::after{
 
       // Services & pricing catalog
       const svcList = document.getElementById('db-svc-list');
+      function formatServicePrice(e){
+        if (!e.price) return '';
+        if (e.pricing_type !== 'subscription') return e.price + ' (one-time)';
+        const period = e.billing_period || 'month';
+        let out = e.price + '/' + period;
+        const term = String(e.term_length || '').trim();
+        if (term) { const unit = period === 'month' ? 'month' : 'year'; out += ` (${term}-${unit} minimum)`; }
+        else out += ' (no minimum term)';
+        return out;
+      }
       function renderSvc(entries){
         svcList.innerHTML = entries.length ? entries.map(e => `
           <div class="row-card" style="align-items:flex-start" data-id="${escapeAttr(e.id)}">
             <div class="text" style="flex:1">
-              <b>${escapeHTML(e.name)}${e.price ? ' — ' + escapeHTML(e.price) : ''}</b>
+              <b>${escapeHTML(e.name)}${e.price ? ' — ' + escapeHTML(formatServicePrice(e)) : ''}</b>
               ${e.details ? `<span>${escapeHTML(e.details)}</span>` : ''}
             </div>
             <button class="btn btn-ghost db-svc-del" data-id="${escapeAttr(e.id)}" style="flex:0 0 auto;padding:6px 10px;font-size:12px">Remove</button>
@@ -1487,8 +1518,24 @@ body::after{
       }
       let svcEntries = d.services || [];
       renderSvc(svcEntries);
+
+      // Toggle the billing-period/term-length row only for subscriptions,
+      // and swap "months"/"years" in the term-length label to match.
+      const svcTypeEl = document.getElementById('db-svc-type');
+      const svcSubRow = document.getElementById('db-svc-sub-row');
+      const svcPeriodEl = document.getElementById('db-svc-period');
+      const svcTermLabel = document.getElementById('db-svc-term-label');
+      function syncSvcSubRow(){
+        svcSubRow.hidden = svcTypeEl.value !== 'subscription';
+        svcTermLabel.textContent = svcPeriodEl.value === 'year' ? 'Minimum years (optional)' : 'Minimum months (optional)';
+      }
+      svcTypeEl.addEventListener('change', syncSvcSubRow);
+      svcPeriodEl.addEventListener('change', syncSvcSubRow);
+      syncSvcSubRow();
+
       document.getElementById('db-svc-add').addEventListener('click', async () => {
         const nameEl = document.getElementById('db-svc-name'), priceEl = document.getElementById('db-svc-price'), detailsEl = document.getElementById('db-svc-details');
+        const termEl = document.getElementById('db-svc-term');
         const name = (nameEl.value || '').trim();
         if (!name) { toast('Enter a service name', true); return; }
         const btn = document.getElementById('db-svc-add');
@@ -1496,9 +1543,11 @@ body::after{
         try {
           const r = await api('/api/v1/services', { method: 'POST', body: JSON.stringify({
             name, price: priceEl.value.trim(), details: detailsEl.value.trim(),
+            pricing_type: svcTypeEl.value, billing_period: svcPeriodEl.value, term_length: termEl.value.trim(),
           })});
           svcEntries = [...svcEntries, r.entry];
-          nameEl.value = ''; priceEl.value = ''; detailsEl.value = '';
+          nameEl.value = ''; priceEl.value = ''; detailsEl.value = ''; termEl.value = '';
+          svcTypeEl.value = 'one_time'; syncSvcSubRow();
           toast('Added');
           renderSvc(svcEntries);
         } catch(_){ toast('Could not add', true); }

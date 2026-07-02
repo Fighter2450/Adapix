@@ -866,6 +866,14 @@ class ServiceEntryBody(BaseModel):
     name: str
     price: str = ""
     details: str = ""
+    # "one_time" (a single charge) or "subscription" (recurring). billing_period
+    # is only meaningful for subscriptions ("month" or "year"). term_length is
+    # how many of those periods the customer commits to when they buy (e.g.
+    # billing_period="month" + term_length="12" = a 12-month plan) — blank
+    # means no minimum commitment, just billed on that cadence indefinitely.
+    pricing_type: str = "one_time"
+    billing_period: str = "month"
+    term_length: str = ""
 
 
 @router.post("/api/v1/services")
@@ -874,9 +882,19 @@ def api_services_add(body: ServiceEntryBody, org_id: str = Depends(verify_admin)
     name = body.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Enter a service name")
+    pricing_type = body.pricing_type if body.pricing_type in ("one_time", "subscription") else "one_time"
+    billing_period = body.billing_period if body.billing_period in ("month", "year") else "month"
     from ..db import get_engine
     from sqlalchemy.orm import Session
-    entry = {"id": secrets.token_hex(4), "name": name, "price": body.price.strip(), "details": body.details.strip()}
+    entry = {
+        "id": secrets.token_hex(4),
+        "name": name,
+        "price": body.price.strip(),
+        "details": body.details.strip(),
+        "pricing_type": pricing_type,
+        "billing_period": billing_period if pricing_type == "subscription" else "",
+        "term_length": body.term_length.strip() if pricing_type == "subscription" else "",
+    }
     with Session(get_engine()) as s:
         data = _load_org_profile_data(s, org_id)
         entries = list(data.get("services") or [])
