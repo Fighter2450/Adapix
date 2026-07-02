@@ -4,18 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Adapt 1.0 — first boot</title>
-<meta name="theme-color" content="#040b1a" />
+<meta name="theme-color" content="#0b0b1c" />
 <link rel="icon" type="image/svg+xml" href="/static/adapix_mark.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --navy:#0d2c5d; --navy-2:#08193a; --navy-3:#040b1a;
-  --cyan:#00b8e6; --cyan-2:#00d4ff; --cyan-3:#aef0ff;
-  --ink:#cfe1ff; --ink-soft:#7fa0d6; --ink-dim:#4a6a99;
-  --line:rgba(0,184,230,.18);
-  --bg-grad: radial-gradient(circle at 50% 40%, #0a1f47 0%, #040b1a 70%);
+  /* ===== VIBRANT — neon purple + rose on deep indigo (matches the app) ===== */
+  --navy:#211c3d; --navy-2:#17142e; --navy-3:#0b0b1c;
+  --cyan:#7c3aed; --cyan-2:#a78bfa; --cyan-3:#e9d5ff;
+  --ink:#ece9ff; --ink-soft:#b8b2e0; --ink-dim:#827aa8;
+  --line:rgba(124,58,237,.22);
+  --bg-grad: radial-gradient(circle at 50% 40%, #16123a 0%, #0b0b1c 70%);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -33,14 +34,14 @@ body{
 .particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
 .particles::before,.particles::after{
   content:"";position:absolute;border-radius:50%;
-  background:radial-gradient(circle, rgba(0,212,255,.08) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(167,139,250,.08) 0%, transparent 70%);
   width:600px;height:600px;
   animation:drift 28s ease-in-out infinite;
   filter:blur(40px);
 }
 .particles::before{top:-100px;left:-150px;animation-delay:-5s}
 .particles::after{bottom:-100px;right:-150px;animation-delay:-14s;
-  background:radial-gradient(circle, rgba(0,184,230,.06) 0%, transparent 70%)}
+  background:radial-gradient(circle, rgba(124,58,237,.06) 0%, transparent 70%)}
 @keyframes drift{
   0%,100%{transform:translate(0,0) scale(1)}
   33%{transform:translate(60px,-30px) scale(1.05)}
@@ -58,19 +59,19 @@ body{
 }
 .core .pulse{
   width:9px;height:9px;border-radius:50%;background:var(--cyan-2);
-  box-shadow:0 0 12px var(--cyan), 0 0 24px rgba(0,184,230,.4);
+  box-shadow:0 0 12px var(--cyan), 0 0 24px rgba(124,58,237,.4);
   animation:breathe 3.5s ease-in-out infinite;
 }
 @keyframes breathe{
   0%,100%{transform:scale(.85);opacity:.6;box-shadow:0 0 8px var(--cyan)}
-  50%{transform:scale(1.15);opacity:1;box-shadow:0 0 18px var(--cyan-2),0 0 38px rgba(0,212,255,.6)}
+  50%{transform:scale(1.15);opacity:1;box-shadow:0 0 18px var(--cyan-2),0 0 38px rgba(167,139,250,.6)}
 }
 .core .label{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-dim)}
 
 /* Progress bar at the very bottom — single cyan line that grows */
 .progress-track{
   position:fixed;left:0;right:0;bottom:0;height:2px;
-  background:rgba(0,184,230,.08);z-index:10;
+  background:rgba(124,58,237,.08);z-index:10;
 }
 .progress-fill{
   height:100%;background:linear-gradient(90deg,var(--cyan),var(--cyan-2));
@@ -105,7 +106,7 @@ main{position:relative;z-index:5;height:100vh;display:flex;align-items:center;ju
   color:var(--cyan);font-weight:600;margin-bottom:18px;
   display:inline-block;padding:5px 12px;
   border:1px solid var(--line);border-radius:999px;
-  background:rgba(0,184,230,.04);
+  background:rgba(124,58,237,.04);
 }
 h1{
   font-size:clamp(34px,5.5vw,58px);font-weight:300;letter-spacing:-.025em;
@@ -131,8 +132,8 @@ p.lede{
   transition:border-color .2s, background .2s, box-shadow .2s;
 }
 .field input:focus{
-  border-color:var(--cyan);background:rgba(0,184,230,.06);
-  box-shadow:0 0 0 4px rgba(0,184,230,.12), 0 0 30px -10px rgba(0,212,255,.4);
+  border-color:var(--cyan);background:rgba(124,58,237,.06);
+  box-shadow:0 0 0 4px rgba(124,58,237,.12), 0 0 30px -10px rgba(167,139,250,.4);
 }
 /* Field labels removed — the H1 question above each input already says
    what to type, and the previous overlay-style label collided with
@@ -147,10 +148,10 @@ p.lede{
   border-radius:14px;cursor:pointer;text-align:left;
   transition:background .2s, border-color .2s, transform .15s, box-shadow .2s;
 }
-.choice:hover{background:rgba(0,184,230,.06);transform:translateY(-2px)}
+.choice:hover{background:rgba(124,58,237,.06);transform:translateY(-2px)}
 .choice.sel{
-  background:rgba(0,184,230,.10);border-color:var(--cyan);
-  box-shadow:0 0 0 1px var(--cyan), 0 12px 40px -15px rgba(0,212,255,.6);
+  background:rgba(124,58,237,.10);border-color:var(--cyan);
+  box-shadow:0 0 0 1px var(--cyan), 0 12px 40px -15px rgba(167,139,250,.6);
 }
 .choice .indicator{
   flex:0 0 18px;height:18px;border-radius:50%;
@@ -178,7 +179,7 @@ p.lede{
 }
 .other-input:focus{
   border-color:var(--cyan);
-  box-shadow:0 0 0 3px rgba(0,184,230,.15);
+  box-shadow:0 0 0 3px rgba(124,58,237,.15);
 }
 .other-card.sel .other-input{display:block}
 .other-card.sel .other-input::placeholder{color:var(--ink-dim)}
@@ -188,7 +189,7 @@ p.lede{
 /* Live message preview */
 .preview{
   margin:24px auto 0;max-width:520px;padding:18px 22px;
-  background:linear-gradient(180deg, rgba(0,184,230,.08), rgba(0,184,230,.02));
+  background:linear-gradient(180deg, rgba(124,58,237,.08), rgba(124,58,237,.02));
   border:1px solid var(--line);border-radius:14px;
   text-align:left;position:relative;
 }
@@ -216,12 +217,12 @@ p.lede{
 }
 .btn:active{transform:scale(.97)}
 .btn-primary{
-  background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:var(--navy-3);
-  box-shadow:0 10px 30px -10px rgba(0,212,255,.6), 0 0 0 1px rgba(255,255,255,.1) inset;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan-2));color:#fff;
+  box-shadow:0 10px 30px -10px rgba(124,58,237,.6), 0 0 0 1px rgba(255,255,255,.1) inset;
   font-weight:700;
 }
-.btn-primary:hover{box-shadow:0 14px 40px -10px rgba(0,212,255,.8)}
-.btn-primary[disabled]{opacity:.35;pointer-events:none;background:#2a4567;color:#5a7090;box-shadow:none}
+.btn-primary:hover{box-shadow:0 14px 40px -10px rgba(124,58,237,.8)}
+.btn-primary[disabled]{opacity:.35;pointer-events:none;background:#3a3357;color:#827aa8;box-shadow:none}
 .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
 .btn-ghost:hover{background:rgba(255,255,255,.04);color:#fff}
 .btn-skip{background:transparent;color:var(--ink-dim);font-size:13px;padding:8px 12px;text-decoration:underline;text-underline-offset:3px}
@@ -247,8 +248,8 @@ p.lede{
   transition:border-color .2s, background .2s, box-shadow .2s;
 }
 .btype-input-row input:focus{
-  border-color:var(--cyan);background:rgba(0,184,230,.06);
-  box-shadow:0 0 0 4px rgba(0,184,230,.12);
+  border-color:var(--cyan);background:rgba(124,58,237,.06);
+  box-shadow:0 0 0 4px rgba(124,58,237,.12);
 }
 .btype-clear{
   position:absolute;right:10px;top:50%;transform:translateY(-50%);
@@ -270,7 +271,7 @@ p.lede{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   transition:background .12s;
 }
-.btype-row:hover, .btype-row.kbhi{background:rgba(0,184,230,.12)}
+.btype-row:hover, .btype-row.kbhi{background:rgba(124,58,237,.12)}
 .btype-row b{color:#fff;font-weight:600;font-size:15px}
 .btype-row .cat{color:var(--ink-soft);font-size:12.5px;font-weight:400;white-space:nowrap}
 .btype-row.notlisted{border-top:1px solid var(--line);margin-top:4px;padding-top:14px;color:var(--cyan-2)}
@@ -284,7 +285,7 @@ p.lede{
 
 .btype-selected{
   margin-top:10px;padding:14px 16px;border-radius:14px;
-  background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.4);
+  background:rgba(124,58,237,.10);border:1px solid rgba(124,58,237,.4);
 }
 .btype-selected-name{color:#fff;font-weight:600;font-size:16px}
 .btype-selected-cat{color:var(--ink-soft);font-size:13px;margin-top:2px}
@@ -294,7 +295,7 @@ p.lede{
   background:rgba(255,255,255,.04);border:1px solid var(--line);
   border-radius:12px;outline:none;
 }
-#btype_custom:focus{border-color:var(--cyan);background:rgba(0,184,230,.06)}
+#btype_custom:focus{border-color:var(--cyan);background:rgba(124,58,237,.06)}
 
 /* ============================================================
    STEP 0 — Boot sequence (cinematic open)
@@ -307,12 +308,12 @@ p.lede{
 }
 .boot-logo{
   width:130px;height:auto;display:block;margin-bottom:54px;
-  filter:drop-shadow(0 0 40px rgba(0,212,255,.55));
+  filter:drop-shadow(0 0 40px rgba(167,139,250,.55));
   animation:bootPulse 2.6s ease-in-out infinite;
 }
 @keyframes bootPulse{
   0%,100%{transform:scale(.88);opacity:.78}
-  50%{transform:scale(1.06);opacity:1;filter:drop-shadow(0 0 60px rgba(0,212,255,.85))}
+  50%{transform:scale(1.06);opacity:1;filter:drop-shadow(0 0 60px rgba(167,139,250,.85))}
 }
 .boot-line{
   font-size:48px;font-weight:200;color:#fff;letter-spacing:-.01em;
@@ -325,7 +326,7 @@ p.lede{
 .scene .device-glow{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:300px;height:300px;border-radius:50%;
-  background:radial-gradient(circle, rgba(0,184,230,.15) 0%, transparent 60%);
+  background:radial-gradient(circle, rgba(124,58,237,.15) 0%, transparent 60%);
   pointer-events:none;animation:slowGlow 6s ease-in-out infinite;
 }
 @keyframes slowGlow{0%,100%{opacity:.6}50%{opacity:1}}
@@ -341,7 +342,7 @@ p.lede{
   width:100%;height:100%;border-radius:50%;
   background:linear-gradient(160deg, var(--cyan-2), var(--cyan));
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 80px var(--cyan-2), 0 0 160px rgba(0,212,255,.4);
+  box-shadow:0 0 80px var(--cyan-2), 0 0 160px rgba(167,139,250,.4);
   animation:checkPop .8s cubic-bezier(.34,1.56,.64,1);
 }
 .checkmark svg{width:55px;height:55px;stroke:var(--navy-3);stroke-width:4;

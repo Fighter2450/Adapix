@@ -10,11 +10,13 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0D1117;--bg-2:#161B22;--bg-3:#1c2128;
-  --ink:#E6EDF3;--ink-2:#8B949E;--ink-3:#58626E;
-  --cyan:#00D4FF;--cyan-2:#00B8E6;
-  --hot:#F85149;--good:#3FB950;
-  --border:rgba(255,255,255,.08);
+  /* ===== VIBRANT — neon purple + rose on deep indigo (matches the app) ===== */
+  --bg:#0b0b1c;--bg-2:#17142e;--bg-3:#211c3d;
+  --ink:#ece9ff;--ink-2:#b8b2e0;--ink-3:#827aa8;
+  --cyan:#a78bfa;--cyan-2:#7c3aed;
+  --hot:#f43f5e;--good:#34d399;
+  --border:rgba(124,58,237,.18);
+  --grad-brand:linear-gradient(135deg,#7c3aed,#a78bfa,#22d3ee);
 }
 html,body{height:100%;margin:0}
 body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);display:flex;min-height:100vh}
@@ -147,6 +149,46 @@ input[data-has-toggle]{padding-right:56px}
 @media(max-width:380px){
   .card{padding:28px 20px;border-radius:12px}
 }
+
+/* ===== VIBRANT layer — the dashboard's atmosphere, applied here ===== */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 45% at 12% 8%,rgba(124,58,237,.16) 0%,transparent 60%),
+    radial-gradient(ellipse 45% 40% at 92% 88%,rgba(34,211,238,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 35% at 85% 15%,rgba(244,63,94,.07) 0%,transparent 60%);
+}
+.auth-shell{position:relative;z-index:1}
+.auth-panel{background:rgba(23,20,46,.55)}
+.auth-panel::before{background:radial-gradient(ellipse 70% 60% at 25% 25%,rgba(124,58,237,.12) 0%,transparent 65%)}
+.auth-column{background:transparent}
+.panel-logo-mark,.logo-mark{background:var(--grad-brand);color:#fff;box-shadow:0 0 18px rgba(124,58,237,.45)}
+.panel-headline em{
+  background:linear-gradient(90deg,#a78bfa,#f472b6,#22d3ee);background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:textShine 6s linear infinite;
+}
+@keyframes textShine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.panel-quote{border-left-color:rgba(124,58,237,.4)}
+.card{
+  background:rgba(23,20,46,.8);border-color:var(--border);
+  backdrop-filter:blur(12px);
+  box-shadow:0 0 0 1px rgba(124,58,237,.06),0 0 40px rgba(124,58,237,.10),0 24px 56px rgba(0,0,0,.5);
+}
+input[type=email],input[type=password],input[type=text]{border-color:rgba(124,58,237,.22)}
+input:hover:not(:focus){border-color:rgba(167,139,250,.4)}
+input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(124,58,237,.18)}
+.btn{
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;
+  box-shadow:0 4px 20px rgba(124,58,237,.35);
+  transition:filter .15s,transform .1s,box-shadow .2s;
+}
+.btn:hover:not(:disabled){filter:brightness(1.12);box-shadow:0 6px 26px rgba(124,58,237,.5)}
+.spinner{border-color:rgba(255,255,255,.3);border-top-color:#fff}
+.err{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.25);color:#fda4af}
+.err a{color:#fda4af}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--bg-3) inset;-webkit-text-fill-color:var(--ink);caret-color:var(--ink);border-color:rgba(124,58,237,.22)}
+@media(prefers-reduced-motion:reduce){.panel-headline em{animation:none}}
 </style>
 </head>
 <body>
