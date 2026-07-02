@@ -1,25 +1,36 @@
 # Adapix — Next Steps
 
-> **Status (2026-07-01):** **Calling works end-to-end, live, for real** —
-> capstone test: `queue-call` → approve → AI called a real cell from Adapix's
-> own number, had a real conversation, and the transcript flowed back through a
-> Cloudflare tunnel to `/webhooks/vapi`, got classified, and created a real
-> `callback_request` escalation in the Inbox. Every link in the calling chain is
-> proven. **Texting/email are the opposite** — the pipeline is proven (ingest →
-> campaign → AI compose → approval queue) but Twilio + Resend are still
-> placeholder creds, so a live send returns `failed`. Fix those next, or move to
-> deploy/billing now that the flagship channel (calling) is solid.
+> **Status (2026-07-02): IT WORKS — every channel live-verified end to end.**
+> - **Calls (Vapi):** real AI calls from the org's own number, recordings playable
+>   in the dashboard, transcripts classified into Inbox escalations.
+> - **SMS (Twilio):** real text delivered to a real cell (SM41f6…). Fixed two
+>   .env bugs found during the test: RESEND_FROM_EMAIL pointed at adapix.com
+>   (verified domain is adapixai.com) and TWILIO_FROM_NUMBER had spaces.
+> - **Email, as-the-business (Gmail OAuth):** draft #68 approved through the
+>   real API → delivered with Gmail message id 19f234a41921dbc5 — the dispatch
+>   correctly preferred the org's connected Gmail over the shared sender.
+> - **Email, fallback (Resend):** draft #67 sent via the real Inbox Send button
+>   → delivered from hello@adapixai.com when no Gmail was connected. The
+>   fallback chain behaved exactly as designed.
+> - **Full product loop proven in the UI:** contact → draft → Send click in the
+>   Inbox → delivery.
+>
+> **Fix that unblocked reconnects:** the OAuth callback used to require the
+> session cookie, but it lands on PUBLIC_BASE_URL's origin (tunnel) while dev
+> logins live on localhost — cookies don't cross origins, so connects silently
+> died with "Not authenticated". Now /oauth/*/start embeds org_id in the
+> server-side one-time state record and the callback needs no session.
 >
 > **Dev-session-only setup, not persistent:** the local server + Cloudflare
 > quick tunnel die when the shell/session ends and get restarted with a NEW
-> `trycloudflare.com` URL each time (`PUBLIC_BASE_URL` in `.env` is updated to
-> match). **Every tunnel rotation silently breaks two externally-registered
-> URLs** until they're updated: (1) the Google OAuth redirect URI in Google
-> Cloud Console → add the new `<tunnel>/oauth/google/callback` before any NEW
-> Gmail connect (already-connected accounts keep sending fine), and (2) the
-> Twilio inbound-SMS webhook on the phone number's Messaging Configuration.
-> Railway deploy gives a permanent URL and kills this whole class of problem.
-
+> trycloudflare.com URL each time (PUBLIC_BASE_URL in .env is updated to
+> match). Every tunnel rotation breaks two externally-registered URLs until
+> updated: the Google OAuth redirect URI (Google Cloud Console → adapix
+> client) and the Twilio inbound-SMS webhook. ALSO: uvicorn --reload sometimes
+> misses file changes AND orphaned servers pile up on :8000 serving stale code
+> — if something "doesn't work" after an edit, check
+> `netstat -ano | findstr :8000` first. Railway deploy kills this whole class
+> of problem and is the clear next step.
 ---
 
 ## 🔴 Blockers — "does it actually work for a customer?" (do these FIRST)
