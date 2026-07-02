@@ -22,9 +22,18 @@ from .practice import load_profile
 # Repo location
 # ---------------------------------------------------------------------------
 def _agents_repo() -> Path:
+    """Where the agent definition .md files live.
+
+    Priority: explicit env override → the copy BUNDLED inside the app
+    (src/adapix/agents_library — this is what production uses; a Desktop
+    folder obviously doesn't exist in a deployed container) → the legacy
+    dev location on the Desktop."""
     env = os.environ.get("AGENCY_AGENTS_DIR")
     if env:
         return Path(env)
+    bundled = Path(__file__).parent / "agents_library"
+    if bundled.exists():
+        return bundled
     return Path.home() / "Desktop" / "agency-agents"
 
 
