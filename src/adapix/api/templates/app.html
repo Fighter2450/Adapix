@@ -987,6 +987,24 @@ body::after{
 .main::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#7c3aed,#22d3ee);border-radius:5px}
 .main::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#a78bfa,#22d3ee)}
 
+/* ── Home view ── */
+.home-greet{margin-bottom:22px}
+.home-greet h1{
+  font-size:clamp(24px,3vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1.1;
+  background:linear-gradient(90deg,#fff,#c4b5fd,#22d3ee);background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff;
+  animation:textShine 6s linear infinite;
+}
+.home-greet-sub{font-size:13.5px;color:var(--ink-2);margin-top:6px}
+.home-section-head{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px}
+.home-see-all{
+  background:none;border:none;cursor:pointer;font-family:inherit;
+  font-size:12.5px;font-weight:600;color:var(--cyan);padding:4px 2px;
+  transition:color var(--dur-fast);
+}
+.home-see-all:hover{color:#c4b5fd;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:900px){.home-stat-row[style*="repeat(4"]{grid-template-columns:repeat(2,1fr)!important}}
+
 /* ── Reduced motion ── */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
@@ -1006,6 +1024,7 @@ body::after{
       <span class="sidebar-wordmark">Adapix</span>
     </div>
     <div class="sidebar-section">
+      <button class="nav-item" data-view="home"><i data-lucide="layout-dashboard"></i><span>Home</span></button>
       <button class="nav-item" data-view="inbox">
         <i data-lucide="inbox"></i><span>Inbox</span>
         <span class="nav-badge" id="ct-inbox"></span>
@@ -1035,10 +1054,10 @@ body::after{
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav" id="bn">
+  <button data-view="home"><i data-lucide="layout-dashboard"></i><span>Home</span></button>
   <button data-view="inbox"><i data-lucide="inbox"></i><span>Inbox</span></button>
   <button data-view="contacts"><i data-lucide="users"></i><span>Contacts</span></button>
   <button data-view="calls"><i data-lucide="phone"></i><span>Calls</span></button>
-  <button data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
   <button data-view="settings"><i data-lucide="settings"></i><span>Settings</span></button>
 </nav>
 
@@ -1052,7 +1071,7 @@ body::after{
   const main = $('main');
 
   const state = {
-    view: 'inbox', feed: null, dashboard: null, patients: null, settingsPage: null, contactsPage: null, calls: null,
+    view: 'home', feed: null, dashboard: null, patients: null, settingsPage: null, contactsPage: null, calls: null,
   };
 
   // Plain-English labels for the internal contact statuses.
@@ -1124,7 +1143,8 @@ body::after{
     const callsBadge = $('ct-calls');
     if (callsBadge) { callsBadge.textContent = callsPending || ''; callsBadge.style.display = callsPending ? '' : 'none'; }
 
-    if (state.view === 'inbox')      renderInboxView();
+    if (state.view === 'home')       renderHomeView();
+    else if (state.view === 'inbox')     renderInboxView();
     else if (state.view === 'contacts')  renderPatientsView();
     else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'results')   renderResultsView();
@@ -1172,6 +1192,126 @@ body::after{
   }
 
   // -------- INBOX view (new nav entry = queue + hero alert) --------
+  // -------- HOME view — the morning glance: stats + what needs you --------
+  function renderHomeView(){
+    const feed  = state.feed || {};
+    const d     = feed.digest || {};
+    const escs  = feed.escalations || [];
+    const apprs = (feed.approvals || []).filter(m => m.channel !== 'call');
+    const callsPending = (state.calls && state.calls.pending) ? state.calls.pending.length : 0;
+    const needsYou = escs.length + apprs.length + callsPending;
+
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const dateLine = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+
+    // Top 3 things that need a human — escalations first, then drafts, then call plans
+    const previewItems = [
+      ...escs.map(e => ({kind:'esc', e})),
+      ...apprs.map(m => ({kind:'draft', m})),
+      ...((state.calls && state.calls.pending) || []).map(c => ({kind:'call', c})),
+    ].slice(0, 3);
+
+    const previewHtml = previewItems.length
+      ? '<div class="rows">' + previewItems.map(it => {
+          if (it.kind === 'esc') {
+            const fromCall = it.e.channel === 'call';
+            const detail = fromCall ? (it.e.call_summary || it.e.reasoning || '') : (it.e.reasoning || '');
+            return `
+            <div class="row-card hot" style="cursor:pointer" onclick="goView('inbox')">
+              <div class="text"><b>${escapeHTML(it.e.patient)}</b><span>${escapeHTML(escLabel(it.e.category) + (detail ? ' · ' + detail : ''))}</span></div>
+              <span class="pill hot">${escapeHTML(escLabel(it.e.category))}</span>
+              <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
+            </div>`;
+          }
+          if (it.kind === 'draft') {
+            return `
+            <div class="row-card" style="cursor:pointer" onclick="goView('inbox')">
+              <div class="text"><b>${escapeHTML(it.m.patient)}</b><span>${escapeHTML((it.m.body||'').slice(0,140))}</span></div>
+              <span class="pill">draft to review</span>
+              <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
+            </div>`;
+          }
+          return `
+          <div class="row-card" style="cursor:pointer" onclick="goView('calls')">
+            <div class="text"><b>${escapeHTML(it.c.patient)}</b><span>Goal: ${escapeHTML((it.c.goal||'').slice(0,140))}</span></div>
+            <span class="pill" style="display:inline-flex;align-items:center;gap:4px;color:var(--cyan)"><i data-lucide="phone" style="width:12px;height:12px"></i> call plan</span>
+            <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
+          </div>`;
+        }).join('') + '</div>'
+      : `
+        <div style="text-align:center;padding:28px 20px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px">
+          <div style="font-size:24px;margin-bottom:8px;color:var(--good)">✓</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Nothing needs you right now.</div>
+          <div style="font-size:12.5px;color:var(--ink-2)">Adapix is on it — you'll see anything important here first.</div>
+        </div>`;
+
+    main.innerHTML = `
+      <div class="home-greet">
+        <h1>${greet}.</h1>
+        <div class="home-greet-sub">${dateLine} — here's where things stand.</div>
+      </div>
+
+      <div class="home-stat-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="home-stat-card">
+          <div class="home-stat-label">Sent today</div>
+          <div class="home-stat-val cyan">${d.sent_today || 0}</div>
+          <div class="home-stat-sub">Follow-ups Adapix sent for you</div>
+        </div>
+        <div class="home-stat-card" style="cursor:pointer" onclick="goView('inbox')">
+          <div class="home-stat-label">Waiting on you</div>
+          <div class="home-stat-val" style="${needsYou ? 'background:linear-gradient(135deg,#fda4af,#f43f5e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent' : ''}">${needsYou}</div>
+          <div class="home-stat-sub">${needsYou ? 'Replies, drafts & call plans' : 'All caught up'}</div>
+        </div>
+        <div class="home-stat-card">
+          <div class="home-stat-label">Sales won</div>
+          <div class="home-stat-val green">${d.booked_recent || 0}</div>
+          <div class="home-stat-sub">Won back through follow-ups</div>
+        </div>
+        <div class="home-stat-card" style="cursor:pointer" onclick="goView('contacts')">
+          <div class="home-stat-label">Following up</div>
+          <div class="home-stat-val" id="home-watch">${(state.patients || []).length || 0}</div>
+          <div class="home-stat-sub">People Adapix is keeping warm</div>
+        </div>
+      </div>
+
+      <div class="home-section-head">
+        <span class="section-eyebrow" style="margin:0">Needs you first · ${needsYou}</span>
+        ${needsYou ? '<button class="home-see-all" onclick="goView(\'inbox\')">Open inbox ›</button>' : ''}
+      </div>
+      ${previewHtml}
+
+      <div class="home-section-head" style="margin-top:26px">
+        <span class="section-eyebrow" style="margin:0">Latest activity</span>
+        <button class="home-see-all" onclick="goView('results')">See all ›</button>
+      </div>
+      <div class="activity-feed" id="home-activity">
+        <div class="activity-empty">Loading what Adapix has been up to…</div>
+      </div>
+    `;
+    renderLucide(main);
+
+    // Fill in the contacts count if it wasn't loaded yet
+    if (!state.patients) {
+      api('/api/v1/patients').then(j => {
+        state.patients = j.patients || [];
+        const el = document.getElementById('home-watch');
+        if (el) el.textContent = state.patients.length;
+      }).catch(()=>{});
+    }
+
+    // One-shot mini activity feed (Results has the live-refreshing full one)
+    api('/api/v1/activity?limit=5').then(j => {
+      const el = document.getElementById('home-activity');
+      if (!el) return;
+      const evs = (j.events || []).slice(0, 5);
+      el.innerHTML = evs.length
+        ? evs.map(renderActivityRow).join('')
+        : '<div class="activity-empty">Adapix is up and running. Everything it does for you will show up here.</div>';
+      renderLucide(el);
+    }).catch(()=>{});
+  }
+
   function renderInboxView(){
     const feed = state.feed || {};
     const escs  = feed.escalations || [];
@@ -1267,7 +1407,7 @@ body::after{
     const d = feed.digest || {};
     const watched = (state.patients || []).length;
     const sentToday = d.sent_today || 0;
-    const booked = d.booked_recently || 0;
+    const booked = d.booked_recent || 0;
 
     main.innerHTML = `
       <div class="section-eyebrow" style="display:flex;align-items:center;justify-content:space-between">
@@ -3238,7 +3378,7 @@ body::after{
     const sent = d.sent_today || 0;
     const esc = (feed.escalations || []).length;
     const dr = (feed.approvals || []).length;
-    const booked = d.booked_recently || 0;
+    const booked = d.booked_recent || 0;
     const totalMsgs = sent + dr;
     const arc = Math.min(100, Math.round((sent / Math.max(1, totalMsgs)) * 100));
     const rp = document.getElementById('rightpane');
