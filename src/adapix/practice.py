@@ -110,6 +110,15 @@ class PracticeProfile:
     # Drives whether Adapix acts as a follow-up assistant or a co-founder.
     mode: str = "existing"
 
+    # Facts the owner has explicitly taught Adapix — direct Q&A pairs about
+    # THIS business (services, pricing, hours, policies, common questions).
+    # Managed from Settings, not the wizard. This is what lets Adapix answer
+    # a customer question itself instead of reflexively escalating it: the
+    # composing agent quotes these directly, and the inbound classifier is
+    # told to treat a question as handle-able ("other") when it's covered
+    # here, rather than escalating everything that sounds like a question.
+    knowledge_base: list[dict] = field(default_factory=list)
+
     configured_at: str = ""
 
     # ------------------------------------------------------------------
@@ -220,6 +229,45 @@ class PracticeProfile:
             f"  \"\"\"\n  {self.practice_problems.strip()}\n  \"\"\""
         )
 
+    def knowledge_fragment(self) -> str:
+        """Owner-taught facts about this specific business. Pasted into the
+        composing agent's system prompt so it can answer from these directly
+        instead of escalating a question it actually has the answer to."""
+        entries = [e for e in (self.knowledge_base or []) if (e.get("q") or "").strip() and (e.get("a") or "").strip()]
+        if not entries:
+            return ""
+        lines = [
+            "BUSINESS KNOWLEDGE (taught by the owner — use this to answer "
+            "customer questions directly whenever it applies; don't punt a "
+            "question to a human just because it sounds technical if the "
+            "answer is right here):"
+        ]
+        for e in entries:
+            lines.append(f"  Q: {e['q'].strip()}\n  A: {e['a'].strip()}")
+        return "\n".join(lines)
+
+    def classifier_context_fragment(self) -> str:
+        """Compact per-org context for the inbound-message classifier — just
+        enough for it to know what kind of business this is and what it
+        already has taught answers for, so it stops escalating questions
+        the business has explicitly said it can handle itself."""
+        bits = []
+        label = self.practice_type_label.strip() or self.practice_type.replace("_", " ").strip()
+        if label:
+            bits.append(f"This message is for {self.practice_name}, a {label} business.")
+        entries = [e for e in (self.knowledge_base or []) if (e.get("q") or "").strip() and (e.get("a") or "").strip()]
+        if entries:
+            sample = "; ".join(e["q"].strip() for e in entries[:25])
+            bits.append(
+                "The business has taught Adapix direct answers to questions "
+                f"like: {sample}. If the customer's message is asking about "
+                "one of these (or anything else clearly covered by the "
+                "business's own taught knowledge), classify it as \"other\" "
+                "so Adapix answers it directly — do not escalate purely "
+                "because a message is phrased as a question."
+            )
+        return " ".join(bits)
+
     def agent_system_prompt_fragment(self) -> str:
         """Combined fragment for the message-composing agent."""
         parts = [
@@ -236,6 +284,9 @@ class PracticeProfile:
         probs = self.problems_fragment()
         if probs:
             parts.append(probs)
+        knowledge = self.knowledge_fragment()
+        if knowledge:
+            parts.append(knowledge)
         # Fold in distilled long-term memory (facts extracted from the
         # /chat conversations and persisted to memory.json). Highest-signal
         # form of the practice's accumulated knowledge — read these as
@@ -292,6 +343,7 @@ def _raw_to_profile(raw: dict) -> PracticeProfile:
         practice_type_label=raw.get("practice_type_label") or "",
         practice_type_custom=raw.get("practice_type_custom") or "",
         mode=raw.get("mode") or "existing",
+        knowledge_base=raw.get("knowledge_base") or [],
         configured_at=raw.get("configured_at") or "",
     )
 

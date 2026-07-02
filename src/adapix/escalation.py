@@ -18,22 +18,29 @@ from .config import Settings
 
 
 CLASSIFICATION_SYSTEM = """\
-You classify a single inbound message from a patient or parent during an
-orthodontic follow-up campaign. Choose ONE category that best fits:
+You classify a single inbound message from a customer during a business's
+follow-up campaign. Choose ONE category that best fits:
 
-- clinical_question — anything that requires a doctor or clinician to answer:
-  treatment specifics, side effects, pain, broken appliance behavior, X-rays,
-  bite questions, "should I?" medical decisions.
+- clinical_question — a question that genuinely needs a specialist, the
+  business owner, or someone with expertise Adapix doesn't have: technical,
+  medical, or legal specifics, anything safety-related, or anything NOT
+  already covered by the business's own taught knowledge (see BUSINESS
+  CONTEXT below, if provided).
 - callback_request — they explicitly ask for a phone call, to talk to someone,
-  or to be contacted by the office.
-- decline — they indicate they will not proceed with treatment, are going
-  elsewhere, or want to be left alone (without using the STOP keyword).
-- emergency — they mention pain, swelling, bleeding, infection, severe
-  discomfort, or anything that sounds urgent.
+  or to be contacted by the business.
+- decline — they indicate they will not proceed, are going elsewhere, or want
+  to be left alone (without using the STOP keyword).
+- emergency — they mention danger, injury, or anything that sounds like it
+  needs someone's immediate attention.
 - stop — the message is a STOP / UNSUBSCRIBE / END keyword (TCPA opt-out).
-- other — a normal conversational reply the AI assistant can handle:
-  financing questions, scheduling-information questions, thank yous, general
-  questions about the practice, casual replies.
+- other — a normal conversational reply the AI assistant can handle on its
+  own: questions the business has already answered in its taught knowledge,
+  scheduling questions, thank yous, casual replies.
+
+IMPORTANT: If BUSINESS CONTEXT below shows the business has already taught
+Adapix the answer to this kind of question, classify it as "other" — being
+phrased as a question is not by itself a reason to escalate. Only escalate
+when the answer genuinely isn't known.
 
 Output ONLY a single JSON object on one line, no markdown, no preamble:
 {"category":"<one of the above>","confidence":"high|medium|low","reasoning":"<one short sentence>","suggested_action":"<one short sentence>"}
@@ -69,6 +76,7 @@ class Escalator:
         self,
         body: str,
         history: list[dict[str, Any]] | None = None,
+        business_context: str = "",
     ) -> Classification:
         # Quick rule-based pre-filter for STOP keywords (TCPA)
         normalized = body.strip().upper()
@@ -83,10 +91,14 @@ class Escalator:
         messages: list[dict[str, Any]] = list(history or [])
         messages.append({"role": "user", "content": body})
 
+        system = CLASSIFICATION_SYSTEM
+        if business_context.strip():
+            system = f"{system}\n\nBUSINESS CONTEXT:\n{business_context.strip()}"
+
         response = self._client.messages.create(
             model=self.model,
             max_tokens=256,
-            system=CLASSIFICATION_SYSTEM,
+            system=system,
             messages=messages,
         )
         raw = response.content[0].text.strip()

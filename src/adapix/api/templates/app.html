@@ -3091,6 +3091,51 @@ body::after{
     }
   }
 
+  // Settings → Teach Adapix about your business (Q&A knowledge base)
+  async function loadKnowledgeCard(){
+    const list = document.getElementById('knowledge-list');
+    if (!list) return;
+    list.innerHTML = '<div style="font-size:13px;color:var(--ink-3)">Loading…</div>';
+
+    async function refresh(){
+      let entries = [];
+      try { entries = (await api('/api/v1/knowledge')).entries || []; }
+      catch(_){ list.innerHTML = '<div style="font-size:13px;color:var(--ink-3)">Could not load.</div>'; return; }
+
+      list.innerHTML = entries.length ? entries.map(e => `
+        <div class="row-card" style="align-items:flex-start" data-id="${escapeAttr(e.id)}">
+          <div class="text" style="flex:1">
+            <b>${escapeHTML(e.q)}</b>
+            <span>${escapeHTML(e.a)}</span>
+          </div>
+          <button class="btn btn-ghost kb-del" data-id="${escapeAttr(e.id)}" style="flex:0 0 auto;padding:6px 10px;font-size:12px">Remove</button>
+        </div>`).join('') : `
+        <div style="font-size:13px;color:var(--ink-3);padding:10px 0">Nothing taught yet — Adapix will escalate anything it isn't sure about until you add some answers below.</div>`;
+
+      list.querySelectorAll('.kb-del').forEach(btn => btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Removing…';
+        try { await api('/api/v1/knowledge/' + encodeURIComponent(btn.dataset.id), { method: 'DELETE' }); toast('Removed'); refresh(); }
+        catch(_){ toast('Could not remove', true); btn.disabled = false; btn.textContent = 'Remove'; }
+      }));
+    }
+    await refresh();
+
+    const addBtn = document.getElementById('kb-add');
+    if (addBtn) addBtn.addEventListener('click', async () => {
+      const qEl = document.getElementById('kb-q'), aEl = document.getElementById('kb-a');
+      const q = (qEl.value || '').trim(), a = (aEl.value || '').trim();
+      if (!q || !a) { toast('Enter both a question and an answer', true); return; }
+      addBtn.disabled = true; addBtn.textContent = 'Adding…';
+      try {
+        await api('/api/v1/knowledge', { method: 'POST', body: JSON.stringify({ q, a }) });
+        qEl.value = ''; aEl.value = '';
+        toast('Added — Adapix knows this now');
+        await refresh();
+      } catch(_){ toast('Could not add', true); }
+      addBtn.disabled = false; addBtn.textContent = '+ Add answer';
+    });
+  }
+
   // Settings → Your calling number card
   async function loadPhoneCard(){
     const el = document.getElementById('phone-card-body');
@@ -3164,6 +3209,16 @@ body::after{
             <div class="sform-row"><label class="sform-label">Saturday</label><input class="sform-input" placeholder="Closed" /></div>
           </div>
           <div class="sform-row"><label class="sform-label">Sunday</label><input class="sform-input" placeholder="Closed" /></div>
+        </div>
+        <div class="scard" id="knowledge-card">
+          <div class="scard-title">Teach Adapix about your business</div>
+          <div class="sform-hint" style="margin-bottom:14px">Answer a question here once, and Adapix answers it for every customer from then on — instead of escalating it to you. Services, pricing, hours, policies, whatever your customers ask most.</div>
+          <div id="knowledge-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:520px">
+            <input class="sform-input" id="kb-q" placeholder="Question a customer might ask, e.g. &quot;Do you offer payment plans?&quot;" />
+            <textarea class="sform-input" id="kb-a" rows="2" style="resize:vertical" placeholder="How you'd want Adapix to answer it"></textarea>
+            <button class="sch-connect" id="kb-add" style="align-self:flex-start">+ Add answer</button>
+          </div>
         </div>
         <button class="sform-save" data-action="save">Save changes</button>`;
 
@@ -3294,6 +3349,7 @@ body::after{
     renderLucide(main);
 
     if (page === 'channels') { loadPhoneCard(); loadEmailCard(); }
+    if (page === 'profile') { loadKnowledgeCard(); }
 
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 

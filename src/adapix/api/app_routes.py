@@ -695,6 +695,77 @@ def api_setup_status(org_id: str = Depends(verify_admin)):
     return {"configured": False, "profile": None}
 
 
+# ---------------------------------------------------------------------------
+# Business Knowledge — Q&A facts the owner teaches Adapix about THEIR
+# business (services, pricing, hours, policies...). Stored inside the same
+# org_profiles.data JSON blob as the wizard's setup payload (key
+# "knowledge_base"), so no schema migration is needed. Read by
+# PracticeProfile.knowledge_fragment() (feeds message composition) and
+# .classifier_context_fragment() (tells the inbound classifier which
+# questions Adapix can now answer itself instead of escalating).
+# ---------------------------------------------------------------------------
+class KnowledgeEntryBody(BaseModel):
+    q: str
+    a: str
+
+
+def _load_org_profile_data(s, org_id: str) -> dict:
+    from ..models import OrgProfile
+    row = s.get(OrgProfile, org_id)
+    return dict(row.data) if row and row.data else {}
+
+
+def _save_org_profile_data(s, org_id: str, data: dict) -> None:
+    from ..models import OrgProfile
+    row = s.get(OrgProfile, org_id)
+    if row:
+        row.data = data
+    else:
+        s.add(OrgProfile(org_id=org_id, data=data))
+
+
+@router.get("/api/v1/knowledge")
+def api_knowledge_list(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+    return {"entries": data.get("knowledge_base") or []}
+
+
+@router.post("/api/v1/knowledge")
+def api_knowledge_add(body: KnowledgeEntryBody, org_id: str = Depends(verify_admin)):
+    import secrets
+    q = body.q.strip()
+    a = body.a.strip()
+    if not q or not a:
+        raise HTTPException(status_code=400, detail="Enter both a question and an answer")
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    entry = {"id": secrets.token_hex(4), "q": q, "a": a}
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        entries = list(data.get("knowledge_base") or [])
+        entries.append(entry)
+        data["knowledge_base"] = entries
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True, "entry": entry}
+
+
+@router.delete("/api/v1/knowledge/{entry_id}")
+def api_knowledge_delete(entry_id: str, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        entries = [e for e in (data.get("knowledge_base") or []) if e.get("id") != entry_id]
+        data["knowledge_base"] = entries
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
 @router.get("/app/manifest.json")
 def manifest():
     return JSONResponse(

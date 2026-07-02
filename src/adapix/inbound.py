@@ -102,7 +102,11 @@ class InboundProcessor:
             s.flush()  # so inbound.id is populated
 
             history = self._conversation_history(s, campaign.id, exclude_message_id=inbound.id)
-            classification = self.escalator.classify(body, history)
+            from .practice import load_profile
+            profile = load_profile(patient.practice_id)
+            classification = self.escalator.classify(
+                body, history, business_context=profile.classifier_context_fragment()
+            )
 
             # Log escalation event for any non-"other" category
             if classification.category != "other":
@@ -180,7 +184,12 @@ class InboundProcessor:
             s.flush()
 
             # Classify what happened on the call (same engine as inbound SMS).
-            classification = self.escalator.classify(text or "(no transcript)", [])
+            from .practice import load_profile
+            profile = load_profile(patient.practice_id)
+            classification = self.escalator.classify(
+                text or "(no transcript)", [],
+                business_context=profile.classifier_context_fragment(),
+            )
 
             if campaign and classification.category != "other":
                 s.add(
