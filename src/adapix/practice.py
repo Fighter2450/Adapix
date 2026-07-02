@@ -119,6 +119,19 @@ class PracticeProfile:
     # here, rather than escalating everything that sounds like a question.
     knowledge_base: list[dict] = field(default_factory=list)
 
+    # Plain-language description of what this business actually DOES, in the
+    # owner's own words — the thing a new employee would need to read on
+    # day one. Distinct from practice_problems (what's going wrong) and
+    # knowledge_base (specific Q&A) — this is the general "who we are and
+    # what we offer" context every message and answer should be shaped by.
+    description: str = ""
+
+    # Structured services/pricing catalog: [{"id","name","price","details"}].
+    # This is what actually lets Adapix answer "what do you offer" and "how
+    # much does X cost" with real numbers instead of punting every pricing
+    # question to a human.
+    services: list[dict] = field(default_factory=list)
+
     configured_at: str = ""
 
     # ------------------------------------------------------------------
@@ -229,6 +242,37 @@ class PracticeProfile:
             f"  \"\"\"\n  {self.practice_problems.strip()}\n  \"\"\""
         )
 
+    def description_fragment(self) -> str:
+        """What this business actually does, in the owner's own words —
+        general context that shapes every message and answer, distinct from
+        the specific Q&A in knowledge_base."""
+        if not (self.description and self.description.strip()):
+            return ""
+        return (
+            "WHAT THIS BUSINESS DOES (in the owner's own words):\n"
+            f"  \"\"\"\n  {self.description.strip()}\n  \"\"\""
+        )
+
+    def services_fragment(self) -> str:
+        """Structured services/pricing catalog. This is the difference
+        between Adapix vaguely deflecting a pricing question and actually
+        quoting a real number."""
+        entries = [e for e in (self.services or []) if (e.get("name") or "").strip()]
+        if not entries:
+            return ""
+        lines = ["SERVICES & PRICING (quote these directly when asked what you offer or charge):"]
+        for e in entries:
+            name = e["name"].strip()
+            price = (e.get("price") or "").strip()
+            details = (e.get("details") or "").strip()
+            line = f"  - {name}"
+            if price:
+                line += f": {price}"
+            lines.append(line)
+            if details:
+                lines.append(f"    {details}")
+        return "\n".join(lines)
+
     def knowledge_fragment(self) -> str:
         """Owner-taught facts about this specific business. Pasted into the
         composing agent's system prompt so it can answer from these directly
@@ -255,6 +299,21 @@ class PracticeProfile:
         label = self.practice_type_label.strip() or self.practice_type.replace("_", " ").strip()
         if label:
             bits.append(f"This message is for {self.practice_name}, a {label} business.")
+        if self.description and self.description.strip():
+            bits.append(f"What they do: {self.description.strip()}")
+        services = [e for e in (self.services or []) if (e.get("name") or "").strip()]
+        if services:
+            names = "; ".join(
+                f"{e['name'].strip()} ({e['price'].strip()})" if (e.get("price") or "").strip() else e["name"].strip()
+                for e in services[:25]
+            )
+            bits.append(
+                f"They offer these services with real pricing: {names}. A "
+                "question asking what they offer or what something costs "
+                "should classify as \"other\" (Adapix can quote this "
+                "directly) — do not escalate a pricing question just "
+                "because it mentions cost."
+            )
         entries = [e for e in (self.knowledge_base or []) if (e.get("q") or "").strip() and (e.get("a") or "").strip()]
         if entries:
             sample = "; ".join(e["q"].strip() for e in entries[:25])
@@ -281,6 +340,12 @@ class PracticeProfile:
             self.workflow_prompt_fragment(),
             self.escalation_prompt_fragment(),
         ]
+        desc = self.description_fragment()
+        if desc:
+            parts.append(desc)
+        services = self.services_fragment()
+        if services:
+            parts.append(services)
         probs = self.problems_fragment()
         if probs:
             parts.append(probs)
@@ -344,6 +409,8 @@ def _raw_to_profile(raw: dict) -> PracticeProfile:
         practice_type_custom=raw.get("practice_type_custom") or "",
         mode=raw.get("mode") or "existing",
         knowledge_base=raw.get("knowledge_base") or [],
+        description=raw.get("description") or "",
+        services=raw.get("services") or [],
         configured_at=raw.get("configured_at") or "",
     )
 

@@ -778,6 +778,7 @@ class DatabaseUpdateBody(BaseModel):
     phone: str | None = None
     hours: str | None = None
     tone: str | None = None
+    description: str | None = None
 
 
 @router.get("/api/v1/database")
@@ -817,6 +818,8 @@ def api_database(org_id: str = Depends(verify_admin)):
             "hours": practice.get("hours") or "",
             "business_type": data.get("practice_type_label") or data.get("practice_type", "").replace("_", " "),
             "tone": data.get("tone") or "warm_professional",
+            "description": data.get("description") or "",
+            "services": data.get("services") or [],
             "workflows": workflows,
             "escalations": escalations,
             "knowledge_base": data.get("knowledge_base") or [],
@@ -847,6 +850,51 @@ def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_a
         data["practice"] = practice
         if body.tone is not None and body.tone in ("warm_professional", "casual_friendly", "clinical_formal"):
             data["tone"] = body.tone
+        if body.description is not None:
+            data["description"] = body.description.strip()
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Services & pricing catalog — same storage pattern as knowledge_base (a
+# list living under org_profiles.data). This is what lets Adapix quote a
+# real price instead of deflecting every cost question to a human.
+# ---------------------------------------------------------------------------
+class ServiceEntryBody(BaseModel):
+    name: str
+    price: str = ""
+    details: str = ""
+
+
+@router.post("/api/v1/services")
+def api_services_add(body: ServiceEntryBody, org_id: str = Depends(verify_admin)):
+    import secrets
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Enter a service name")
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    entry = {"id": secrets.token_hex(4), "name": name, "price": body.price.strip(), "details": body.details.strip()}
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        entries = list(data.get("services") or [])
+        entries.append(entry)
+        data["services"] = entries
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True, "entry": entry}
+
+
+@router.delete("/api/v1/services/{entry_id}")
+def api_services_delete(entry_id: str, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        entries = [e for e in (data.get("services") or []) if e.get("id") != entry_id]
+        data["services"] = entries
         _save_org_profile_data(s, org_id, data)
         s.commit()
     return {"ok": True}

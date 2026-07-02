@@ -1372,6 +1372,27 @@ body::after{
         </div>
 
         <div class="scard">
+          <div class="scard-title">What you do</div>
+          <div class="sform-hint" style="margin-bottom:10px">The general context Adapix uses to understand your business — separate from specific Q&A below. Write it like you're briefing a new hire.</div>
+          <div class="sform-row">
+            <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run orthodontic practice specializing in Invisalign and traditional braces for kids and adults. Most patients come to us after a referral from their general dentist.">${escapeHTML(d.description)}</textarea>
+          </div>
+          <button class="sform-save" id="db-save-description">Save changes</button>
+        </div>
+
+        <div class="scard">
+          <div class="scard-title">Services &amp; pricing</div>
+          <div class="sform-hint" style="margin-bottom:14px">What you actually offer and charge — Adapix quotes these directly instead of dodging pricing questions.</div>
+          <div id="db-svc-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <div class="sform-2col">
+            <div class="sform-row"><label class="sform-label">Service</label><input class="sform-input" id="db-svc-name" placeholder="e.g. Invisalign treatment" /></div>
+            <div class="sform-row"><label class="sform-label">Price</label><input class="sform-input" id="db-svc-price" placeholder="e.g. $3,500&ndash;$8,000" /></div>
+          </div>
+          <div class="sform-row"><textarea class="sform-input" id="db-svc-details" rows="2" style="resize:vertical" placeholder="Optional details — what's included, financing options, etc."></textarea></div>
+          <button class="sch-connect" id="db-svc-add" style="align-self:flex-start">+ Add service</button>
+        </div>
+
+        <div class="scard">
           <div class="scard-title">Connected channels</div>
           <div class="sch-row">
             <div class="sch-icon"><i data-lucide="phone" style="width:16px;height:16px"></i></div>
@@ -1428,8 +1449,61 @@ body::after{
         btn.disabled = false; btn.textContent = 'Save changes';
       });
 
+      // "What you do" description save
+      document.getElementById('db-save-description').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true; btn.textContent = 'Saving…';
+        try {
+          await api('/api/v1/database', { method: 'POST', body: JSON.stringify({
+            description: document.getElementById('db-description').value,
+          })});
+          toast('Saved');
+        } catch(_){ toast('Could not save', true); }
+        btn.disabled = false; btn.textContent = 'Save changes';
+      });
+
       body.querySelector('[data-goto-team]')?.addEventListener('click', (e) => { e.preventDefault(); goView('team'); });
       body.querySelector('[data-goto-channels]')?.addEventListener('click', (e) => { e.preventDefault(); goSettingsView('channels'); goView('settings'); });
+
+      // Services & pricing catalog
+      const svcList = document.getElementById('db-svc-list');
+      function renderSvc(entries){
+        svcList.innerHTML = entries.length ? entries.map(e => `
+          <div class="row-card" style="align-items:flex-start" data-id="${escapeAttr(e.id)}">
+            <div class="text" style="flex:1">
+              <b>${escapeHTML(e.name)}${e.price ? ' — ' + escapeHTML(e.price) : ''}</b>
+              ${e.details ? `<span>${escapeHTML(e.details)}</span>` : ''}
+            </div>
+            <button class="btn btn-ghost db-svc-del" data-id="${escapeAttr(e.id)}" style="flex:0 0 auto;padding:6px 10px;font-size:12px">Remove</button>
+          </div>`).join('') : '<div style="font-size:13px;color:var(--ink-3);padding:10px 0">Nothing added yet — Adapix will deflect pricing questions to you until you add services here.</div>';
+        svcList.querySelectorAll('.db-svc-del').forEach(btn => btn.addEventListener('click', async () => {
+          btn.disabled = true; btn.textContent = 'Removing…';
+          try {
+            await api('/api/v1/services/' + encodeURIComponent(btn.dataset.id), { method: 'DELETE' });
+            toast('Removed');
+            renderSvc(entries.filter(x => x.id !== btn.dataset.id));
+          } catch(_){ toast('Could not remove', true); btn.disabled = false; btn.textContent = 'Remove'; }
+        }));
+      }
+      let svcEntries = d.services || [];
+      renderSvc(svcEntries);
+      document.getElementById('db-svc-add').addEventListener('click', async () => {
+        const nameEl = document.getElementById('db-svc-name'), priceEl = document.getElementById('db-svc-price'), detailsEl = document.getElementById('db-svc-details');
+        const name = (nameEl.value || '').trim();
+        if (!name) { toast('Enter a service name', true); return; }
+        const btn = document.getElementById('db-svc-add');
+        btn.disabled = true; btn.textContent = 'Adding…';
+        try {
+          const r = await api('/api/v1/services', { method: 'POST', body: JSON.stringify({
+            name, price: priceEl.value.trim(), details: detailsEl.value.trim(),
+          })});
+          svcEntries = [...svcEntries, r.entry];
+          nameEl.value = ''; priceEl.value = ''; detailsEl.value = '';
+          toast('Added');
+          renderSvc(svcEntries);
+        } catch(_){ toast('Could not add', true); }
+        btn.disabled = false; btn.textContent = '+ Add service';
+      });
 
       // Knowledge base list (same backing endpoints as Settings' copy of this card)
       const kbList = document.getElementById('db-kb-list');
