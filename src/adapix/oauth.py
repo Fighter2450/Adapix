@@ -114,10 +114,14 @@ def _save_states(states: dict[str, dict[str, Any]]) -> None:
         pass
 
 
-def new_state(provider: str) -> str:
+def new_state(provider: str, org_id: str | None = None) -> str:
+    """CSRF nonce for the OAuth round-trip. Carries org_id server-side so the
+    callback can identify the org WITHOUT a session cookie — the callback may
+    land on a different origin (public tunnel/domain) than the one the user is
+    logged in on, where the session cookie doesn't exist."""
     state = secrets.token_urlsafe(32)
     states = _load_states()
-    states[state] = {"provider": provider, "created_at": int(time.time())}
+    states[state] = {"provider": provider, "org_id": org_id, "created_at": int(time.time())}
     cutoff = int(time.time()) - 600
     for s, meta in list(states.items()):
         if meta.get("created_at", 0) < cutoff:
@@ -126,13 +130,15 @@ def new_state(provider: str) -> str:
     return state
 
 
-def consume_state(state: str, provider: str) -> bool:
+def consume_state(state: str, provider: str) -> dict[str, Any] | None:
+    """One-time use: returns the state's metadata ({provider, org_id, ...})
+    if valid for this provider, else None."""
     states = _load_states()
     meta = states.pop(state, None)
     if meta is None:
-        return False
+        return None
     _save_states(states)
-    return meta.get("provider") == provider
+    return meta if meta.get("provider") == provider else None
 
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"

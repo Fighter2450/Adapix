@@ -1263,12 +1263,14 @@ def _oauth_redirect_uri(request: Request, provider: str) -> str:
 
 @router.get("/oauth/google/start")
 def oauth_google_start(request: Request, org_id: str = Depends(verify_admin)):
-    """Kick off the Google consent flow for this org. state is a pure CSRF
-    nonce — the org is identified from the session cookie on callback."""
+    """Kick off the Google consent flow for this org. The org id rides in the
+    server-side state record, NOT the session — the callback may land on a
+    different origin (public tunnel/domain) where the session cookie doesn't
+    exist, so it must be able to identify the org without one."""
     from fastapi.responses import RedirectResponse
     from ..oauth import google_auth_url, new_state
     try:
-        state = new_state("google")
+        state = new_state("google", org_id)
         url = google_auth_url(_oauth_redirect_uri(request, "google"), state)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -1276,15 +1278,16 @@ def oauth_google_start(request: Request, org_id: str = Depends(verify_admin)):
 
 
 @router.get("/oauth/google/callback")
-def oauth_google_callback(request: Request, code: str = "", state: str = "", org_id: str = Depends(verify_admin)):
-    """Google sends the user back here after consent (browser redirect keeps
-    the session cookie, so org_id resolves the same as any other request)."""
+def oauth_google_callback(request: Request, code: str = "", state: str = ""):
+    """Google sends the user back here after consent. No session required —
+    the org comes from the one-time state record created at /start."""
     from fastapi.responses import RedirectResponse
     from ..oauth import consume_state, google_complete_connection
-    if not code or not consume_state(state, "google"):
+    meta = consume_state(state, "google") if code else None
+    if not meta or not meta.get("org_id"):
         raise HTTPException(status_code=400, detail="invalid or expired auth state")
     try:
-        google_complete_connection(org_id, code, _oauth_redirect_uri(request, "google"))
+        google_complete_connection(meta["org_id"], code, _oauth_redirect_uri(request, "google"))
     except Exception as e:
         return HTMLResponse(f"<h1>Connection failed</h1><pre>{e}</pre>")
     return RedirectResponse(url="/app?tab=settings", status_code=302)
@@ -1295,7 +1298,7 @@ def oauth_microsoft_start(request: Request, org_id: str = Depends(verify_admin))
     from fastapi.responses import RedirectResponse
     from ..oauth import microsoft_auth_url, new_state
     try:
-        state = new_state("microsoft")
+        state = new_state("microsoft", org_id)
         url = microsoft_auth_url(_oauth_redirect_uri(request, "microsoft"), state)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -1303,13 +1306,14 @@ def oauth_microsoft_start(request: Request, org_id: str = Depends(verify_admin))
 
 
 @router.get("/oauth/microsoft/callback")
-def oauth_microsoft_callback(request: Request, code: str = "", state: str = "", org_id: str = Depends(verify_admin)):
+def oauth_microsoft_callback(request: Request, code: str = "", state: str = ""):
     from fastapi.responses import RedirectResponse
     from ..oauth import consume_state, microsoft_complete_connection
-    if not code or not consume_state(state, "microsoft"):
+    meta = consume_state(state, "microsoft") if code else None
+    if not meta or not meta.get("org_id"):
         raise HTTPException(status_code=400, detail="invalid or expired auth state")
     try:
-        microsoft_complete_connection(org_id, code, _oauth_redirect_uri(request, "microsoft"))
+        microsoft_complete_connection(meta["org_id"], code, _oauth_redirect_uri(request, "microsoft"))
     except Exception as e:
         return HTMLResponse(f"<h1>Connection failed</h1><pre>{e}</pre>")
     return RedirectResponse(url="/app?tab=settings", status_code=302)
