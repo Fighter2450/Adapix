@@ -1205,6 +1205,11 @@ body::after{
     const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     const dateLine = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
 
+    // A successful call = it connected, the conversation happened, and the
+    // outcome came back — works whether the business sells, books, or resolves.
+    const successfulCalls = ((state.calls && state.calls.history) || [])
+      .filter(c => c.direction === 'inbound').length;
+
     // Top 3 things that need a human — escalations first, then drafts, then call plans
     const previewItems = [
       ...escs.map(e => ({kind:'esc', e})),
@@ -1263,10 +1268,10 @@ body::after{
           <div class="home-stat-val" style="${needsYou ? 'background:linear-gradient(135deg,#fda4af,#f43f5e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent' : ''}">${needsYou}</div>
           <div class="home-stat-sub">${needsYou ? 'Replies, drafts & call plans' : 'All caught up'}</div>
         </div>
-        <div class="home-stat-card">
-          <div class="home-stat-label">Sales won</div>
-          <div class="home-stat-val green">${d.booked_recent || 0}</div>
-          <div class="home-stat-sub">Won back through follow-ups</div>
+        <div class="home-stat-card" style="cursor:pointer" onclick="goView('calls')">
+          <div class="home-stat-label">Successful calls</div>
+          <div class="home-stat-val green" id="home-calls">${successfulCalls}</div>
+          <div class="home-stat-sub">Conversations completed</div>
         </div>
         <div class="home-stat-card" style="cursor:pointer" onclick="goView('contacts')">
           <div class="home-stat-label">Following up</div>
@@ -1297,6 +1302,15 @@ body::after{
         state.patients = j.patients || [];
         const el = document.getElementById('home-watch');
         if (el) el.textContent = state.patients.length;
+      }).catch(()=>{});
+    }
+
+    // Same for calls (lazy fallback if the boot fetch didn't land)
+    if (!state.calls) {
+      api('/api/v1/calls').then(j => {
+        state.calls = j;
+        const el = document.getElementById('home-calls');
+        if (el) el.textContent = (j.history || []).filter(c => c.direction === 'inbound').length;
       }).catch(()=>{});
     }
 
@@ -3420,8 +3434,12 @@ body::after{
   }
 
   async function loadFeed(){
-    try { state.feed = await fetch('/api/v1/feed', {credentials:'include'}).then(r=>r.json()); }
-    catch(_){ state.feed = {}; }
+    const [feed, calls] = await Promise.all([
+      fetch('/api/v1/feed', {credentials:'include'}).then(r=>r.json()).catch(()=>({})),
+      fetch('/api/v1/calls', {credentials:'include'}).then(r=>r.json()).catch(()=>null),
+    ]);
+    state.feed = feed;
+    if (calls) state.calls = calls;
   }
 
   function goView(name){
