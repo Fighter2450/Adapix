@@ -389,39 +389,8 @@ p.lede{
     <div class="boot-line" id="boot-text">Hi.</div>
   </div>
 
-  <!-- ===================== STEP 1: CREATE vs CONTINUE FORK ===================== -->
-  <!-- Picks the entire path Adapix takes from here. "existing" runs the
-       same 5-step config wizard we've always had. "new" tells the rest of
-       the system that the user is *starting* a business and Adapix should
-       act as a co-founder, not just a follow-up assistant. -->
+  <!-- ===================== STEP 1: NAME OF BUSINESS ===================== -->
   <div class="step" data-step="1">
-    <div class="scene">
-      <span class="eyebrow">Before we begin</span>
-      <h1>Are you <b>starting</b> or <b>running</b> a business?</h1>
-      <p class="lede">This changes everything about how I help you. Pick the one that fits — you can switch later in settings.</p>
-
-      <div class="choices">
-        <div class="choice sel" data-mode="existing" onclick="pickMode(this)">
-          <div class="indicator"></div>
-          <div><b>I'm running a business — help me run it</b>
-            <span>You already have customers, a team, the basics. I take follow-up, scheduling, and the messages nobody has time for off your plate.</span></div>
-        </div>
-        <div class="choice" data-mode="new" onclick="pickMode(this)">
-          <div class="indicator"></div>
-          <div><b>I'm starting a business — help me build it</b>
-            <span>You have an idea (or just a feeling). I help you name it, shape the offer, set pricing, find your first customers, and stand up the basics so you can actually open.</span></div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="btn btn-primary" onclick="goNext()">Continue →</button>
-      </div>
-      <div class="kbhint">Press <kbd>Enter</kbd> to continue</div>
-    </div>
-  </div>
-
-  <!-- ===================== STEP 2: NAME OF PRACTICE ===================== -->
-  <div class="step" data-step="2">
     <div class="scene">
       <span class="eyebrow" id="step2-eyebrow">First — your business</span>
       <h1 id="step2-h1">What should I <b>call your business</b>?</h1>
@@ -431,21 +400,20 @@ p.lede{
         <input id="f_name" type="text" autocomplete="off" />
       </div>
       <div class="actions">
-        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
         <button class="btn btn-primary" data-needs="f_name" onclick="goNext()">Continue →</button>
       </div>
       <div class="kbhint">Press <kbd>Enter</kbd> to continue</div>
     </div>
   </div>
 
-  <!-- ===================== STEP 3: OWNER NAME ===================== -->
-  <div class="step" data-step="3">
+  <!-- ===================== STEP 2: YOUR NAME ===================== -->
+  <div class="step" data-step="2">
     <div class="scene">
       <span class="eyebrow">Got it</span>
-      <h1>And who's the <b>business owner</b>?</h1>
-      <p class="lede">I'll always refer to them by name with customers. "Sarah from the team," "Sarah held a spot for you," that kind of thing.</p>
+      <h1>And what should I <b>call you</b>?</h1>
+      <p class="lede">This is how I'll mention you to customers. "Sarah from the team," "Sarah held a spot for you," that kind of thing.</p>
       <div class="field">
-        <label>Owner's full name</label>
+        <label>Your name</label>
         <input id="f_doctor" type="text" autocomplete="off" />
       </div>
       <div class="actions">
@@ -455,8 +423,8 @@ p.lede{
     </div>
   </div>
 
-  <!-- ===================== STEP 4: VOICE & TONE ===================== -->
-  <div class="step" data-step="4">
+  <!-- ===================== STEP 3: VOICE & TONE ===================== -->
+  <div class="step" data-step="3">
     <div class="scene">
       <span class="eyebrow">Now — how I sound</span>
       <h1>Pick the voice that <b>fits your business</b>.</h1>
@@ -492,41 +460,47 @@ p.lede{
     </div>
   </div>
 
-  <!-- ===================== STEP 5: REAL PROBLEMS ===================== -->
-  <div class="step" data-step="5">
+  <!-- ===================== STEP 4: WHAT ADAPIX DOES (explainer) ===================== -->
+  <div class="step" data-step="4">
     <div class="scene">
-      <span class="eyebrow">Step 4 of 5 — your real problems</span>
-      <h1>What can I <b>take off your plate</b>?</h1>
-      <p class="lede">Now the real conversation. <b style="color:#e9d5ff">Describe the problems your business is dealing with — in your own words.</b> The customer outreach nobody has time for. The follow-ups that always slip through. The recurring headache you wish would just go away. The more specific you are, the better I get at solving them.</p>
+      <span class="eyebrow">So — what do I actually do?</span>
+      <h1>I chase the customers <b>you don't have time to</b>.</h1>
+      <p class="lede">Every business loses money to the same quiet leak: people who showed interest and never heard back. That's my whole job — here's how it works.</p>
 
-      <div class="field">
-        <label>What's frustrating you right now?</label>
-        <textarea id="f_problems" rows="6"
-          style="width:100%;padding:18px 18px 14px;font-size:16px;font-weight:400;font-family:inherit;color:#fff;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;outline:none;resize:vertical;line-height:1.55;min-height:140px;transition:border-color .2s, background .2s, box-shadow .2s;"></textarea>
-      </div>
-      <div style="color:var(--ink-dim);font-size:12.5px;margin:-18px auto 24px;max-width:480px;text-align:left;line-height:1.55">
-        <b style="color:var(--ink-soft);font-weight:600">Examples to spark ideas:</b><br/>
-        "Leads ghost after the first reply and we never circle back."<br/>
-        "Half our quotes go cold because we forget to follow up in week two."<br/>
-        "Same five questions hit our inbox every day and nobody has time to answer them."<br/>
-        "Customers churn quietly — we only notice once they're already gone."
+      <div class="choices" style="cursor:default">
+        <div class="choice" style="cursor:default;transform:none">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan-2);font-weight:600;margin-top:2px;flex:0 0 auto">01</span>
+          <div><b>I reach out for you</b>
+            <span>When a customer goes quiet — a quote that stalled, a no-show, someone who never booked — I write them a text or email, or plan a phone call. In your voice, from your business.</span></div>
+        </div>
+        <div class="choice" style="cursor:default;transform:none">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan-2);font-weight:600;margin-top:2px;flex:0 0 auto">02</span>
+          <div><b>You approve everything</b>
+            <span>Nothing I write ever sends on its own. Every message waits in your Inbox until you read it and tap Send — or fix it, or toss it. You're always in charge.</span></div>
+        </div>
+        <div class="choice" style="cursor:default;transform:none">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan-2);font-weight:600;margin-top:2px;flex:0 0 auto">03</span>
+          <div><b>I know when to hand it to you</b>
+            <span>If someone replies upset, asks about pricing, or just needs a human — I don't wing it. I flag it at the top of your Inbox with the full story so you can step in.</span></div>
+        </div>
       </div>
 
       <div class="actions">
         <button class="btn btn-ghost" onclick="goBack()">← Back</button>
-        <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+        <button class="btn btn-primary" onclick="goNext()">Makes sense →</button>
       </div>
+      <div class="kbhint">Press <kbd>Enter</kbd> to continue</div>
     </div>
   </div>
 
-  <!-- ===================== STEP 6 — Business type (searchable) ===================== -->
+  <!-- ===================== STEP 5 — Business type (searchable) ===================== -->
   <!-- The dropdown is populated from the BUSINESS_TYPES list defined in the
        wizard's JS. The user MUST click a result to enable Continue — free-
        typed text is not accepted unless they explicitly click "Not listed"
        at the bottom of the dropdown. -->
-  <div class="step" data-step="6">
+  <div class="step" data-step="5">
     <div class="scene">
-      <span class="eyebrow">Step 5 of 5 — your business type</span>
+      <span class="eyebrow">Last step — your business type</span>
       <h1>What <b>exactly</b> is your business?</h1>
       <p class="lede">Start typing — coffee shop, oral surgeon, plumber, law firm. Pick the closest match from the list. This is how I learn what words to use, what your customers expect, and what kind of help you actually need.</p>
 
@@ -574,7 +548,7 @@ p.lede{
   </div>
 
   <!-- ===================== DONE ===================== -->
-  <div class="step" data-step="7" id="done-screen">
+  <div class="step" data-step="6" id="done-screen">
     <div class="scene">
       <div class="checkmark-wrap">
         <div class="checkmark">
@@ -631,7 +605,7 @@ p.lede{
   // business, "new" = start a new one. Default lines up with the pre-selected
   // card on render.
   data.mode = 'existing';
-  const TOTAL_STEPS = 8;
+  const TOTAL_STEPS = 7;
   let step = 0;
 
   // Boot sequence
@@ -669,14 +643,12 @@ p.lede{
     refreshButtons();
   }
   window.goNext = ()=>{
-    // Step 1 is the create-vs-continue fork. data.mode is already set by
-    // pickMode() — no extra validation needed.
-    if (step === 2) {
+    if (step === 1) {
       const v = document.getElementById('f_name').value.trim();
       if (!v) return;
       data.practice.name = v;
     }
-    if (step === 3) {
+    if (step === 2) {
       const v = document.getElementById('f_doctor').value.trim();
       if (!v) return;
       data.practice.doctor = v;
@@ -684,28 +656,6 @@ p.lede{
     show(step + 1);
   };
   window.goBack = ()=> show(Math.max(1, step - 1));
-
-  // Step 1 fork picker. Also rewrites the step-2 prompt so users in
-  // "new business" mode see "what do you WANT to call it?" instead of
-  // "what should I call your business?" — small but meaningful tone shift.
-  window.pickMode = (el)=>{
-    document.querySelectorAll('[data-mode]').forEach(c=>c.classList.remove('sel'));
-    el.classList.add('sel');
-    data.mode = el.dataset.mode;
-    const eyebrow = document.getElementById('step2-eyebrow');
-    const h1 = document.getElementById('step2-h1');
-    const lede = document.getElementById('step2-lede');
-    if (!eyebrow || !h1 || !lede) return;
-    if (data.mode === 'new') {
-      eyebrow.textContent = "Let's give it a name";
-      h1.innerHTML = "What do you want to <b>call it</b>?";
-      lede.textContent = "Working name is fine — we can change it later. Even \"the bakery thing\" works. I just need something to call your business while we build it together.";
-    } else {
-      eyebrow.textContent = "First — your business";
-      h1.innerHTML = "What should I <b>call your business</b>?";
-      lede.textContent = "Every customer I reach out to, I'll introduce myself the same way your team would. Let's start there.";
-    }
-  };
 
   document.querySelectorAll('input').forEach(i=>{
     if (i.classList.contains('other-input')) return;
@@ -1203,9 +1153,9 @@ p.lede{
     setTimeout(()=> window.location = '/app', 500);
   };
 
-  // Auto-fill tone preview when the voice step opens (now data-step="4")
+  // Auto-fill tone preview when the voice step opens (data-step="3")
   const obs = new MutationObserver(()=>{
-    const onVoiceStep = document.querySelector('.step[data-step="4"].on');
+    const onVoiceStep = document.querySelector('.step[data-step="3"].on');
     if (onVoiceStep && !document.getElementById('tone-preview').textContent) {
       pickTone(document.querySelector('[data-tone="warm_professional"]'));
     }
