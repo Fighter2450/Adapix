@@ -1,35 +1,13 @@
+# Lean production image: the core product (dashboard, calls, SMS, email) needs
+# only Python. The Playwright/Chromium browser-automation feature (Workshop
+# scheduled automations) is NOT installed here — it needs a headful browser
+# stack that roughly triples the image; re-add chromium + the X11 libs when
+# that feature matters in production.
 [phases.setup]
-nixPkgs = [
-  "python312",
-  "chromium",
-  "nss",
-  "nspr",
-  "atk",
-  "cups",
-  "libdrm",
-  "dbus",
-  "libxkbcommon",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXrandr",
-  "mesa",
-  "expat",
-  "xorg.libxcb",
-  "libxshmfence",
-  "pango",
-  "cairo",
-  "alsa-lib",
-  "postgresql_16",
-]
+nixPkgs = ["python312"]
 
 [phases.install]
-cmds = [
-  "pip install -r requirements.txt",
-  "playwright install chromium --with-deps || true",
-]
+cmds = ["pip install -r requirements.txt"]
 
 [start]
 cmd = "python -m uvicorn src.adapix.api.main:app --host 0.0.0.0 --port $PORT"
