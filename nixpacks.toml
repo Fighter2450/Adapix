@@ -1,13 +1,9 @@
-# Lean production image: the core product (dashboard, calls, SMS, email) needs
-# only Python. The Playwright/Chromium browser-automation feature (Workshop
-# scheduled automations) is NOT installed here — it needs a headful browser
-# stack that roughly triples the image; re-add chromium + the X11 libs when
-# that feature matters in production.
-[phases.setup]
-nixPkgs = ["python312"]
-
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
+# Use nixpacks' built-in Python provider: it detects requirements.txt and
+# handles pip/venv correctly (a hand-rolled nixPkgs python312 has no pip).
+# Python version is pinned in .python-version. The Playwright/Chromium stack
+# for Workshop automations is intentionally NOT installed in production —
+# re-add a browser image layer when that feature matters in prod.
+providers = ["python"]
 
 [start]
 cmd = "python -m uvicorn src.adapix.api.main:app --host 0.0.0.0 --port $PORT"
