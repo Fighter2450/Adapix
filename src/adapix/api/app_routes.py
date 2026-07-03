@@ -828,6 +828,7 @@ def api_database(org_id: str = Depends(verify_admin)):
             "calling_status": org.phone_status if org else "none",
             "imessage_number": org.imessage_number if org else None,
             "imessage_connected": bool(org and org.blooio_channel_id),
+            "paused": bool(data.get("paused")),
             "email_connected": connected_email_provider is not None,
             "email_provider": connected_email_provider,
             "email_address": email.get(connected_email_provider, {}).get("email") if connected_email_provider else None,
@@ -1038,6 +1039,38 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
 
     status = ApprovalManager().approve_and_send(message_id)
     return {"ok": status in ("sent",), "status": status, "message_id": message_id}
+
+
+class PauseBody(BaseModel):
+    paused: bool
+
+
+@router.post("/api/v1/org/pause")
+def api_org_pause(body: PauseBody, org_id: str = Depends(verify_admin)):
+    """Master switch: pause/resume ALL automated follow-up composition for
+    this org. Paused orgs are skipped by the campaign scheduler entirely —
+    nothing new gets drafted until resumed. Already-pending drafts stay in
+    the Inbox (you can still send or reject them by hand)."""
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        data["paused"] = bool(body.paused)
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True, "paused": bool(body.paused)}
+
+
+@router.post("/api/v1/campaigns/{campaign_id}/stop")
+def api_campaign_stop(campaign_id: int, org_id: str = Depends(verify_admin)):
+    """Stop one contact's follow-up campaign — no further steps will be
+    composed for them. Org-scoped: you can only stop your own campaigns."""
+    with get_session() as s:
+        c = s.get(Campaign, campaign_id)
+        if c is None or c.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="campaign not found")
+        c.status = "stopped"
+    return {"ok": True, "id": campaign_id}
 
 
 @router.get("/api/v1/station/queue")
@@ -1846,14 +1879,16 @@ def run_all_campaigns() -> dict[str, Any]:
     errors: list[str] = []
 
     # --- DB-backed orgs (new multi-tenant path) ---
+    # Orgs with the master pause switch on are skipped entirely: no new
+    # campaigns started, no new steps composed, until they resume.
     try:
         with Session(get_engine()) as s:
-            db_orgs = (
-                s.query(Organization)
+            rows = (
+                s.query(Organization, OrgProfile)
                 .join(OrgProfile, Organization.id == OrgProfile.org_id)
                 .all()
             )
-            org_ids = [o.id for o in db_orgs]
+            org_ids = [o.id for o, prof in rows if not (prof.data or {}).get("paused")]
     except Exception as exc:
         errors.append(f"db org query: {exc}")
         org_ids = []

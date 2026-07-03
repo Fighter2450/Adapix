@@ -411,6 +411,14 @@ textarea.sform-input{resize:vertical}
 .st-status.cancelled{color:var(--ink-3);background:rgba(255,255,255,.03);border:1px solid var(--border-2)}
 .st-status.scheduled{color:#a78bfa;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.22)}
 .station-empty{padding:28px 18px;text-align:center;font-size:13px;color:var(--ink-3)}
+.st-status-wrap{display:inline-flex;align-items:center;gap:6px;justify-self:end}
+.st-cancel{
+  width:22px;height:22px;border-radius:6px;border:1px solid var(--border-2);
+  background:rgba(255,255,255,.03);color:var(--ink-3);cursor:pointer;
+  font-size:11px;line-height:1;padding:0;flex-shrink:0;
+  transition:all .12s;
+}
+.st-cancel:hover{border-color:rgba(244,63,94,.4);background:rgba(244,63,94,.1);color:#fda4af}
 @media(max-width:900px){
   .station-row{grid-template-columns:70px 1fr 110px;gap:10px}
   .st-time{display:none}
@@ -1323,9 +1331,17 @@ body::after{
         </div>`;
 
     main.innerHTML = `
-      <div class="home-greet">
-        <h1>${greet}.</h1>
-        <div class="home-greet-sub">${dateLine} — here's where things stand.</div>
+      <div class="home-greet" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1>${greet}.</h1>
+          <div class="home-greet-sub">${dateLine} — here's where things stand.</div>
+        </div>
+        <button id="home-pause-btn" class="btn btn-ghost" hidden style="flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:12.5px;font-weight:600"></button>
+      </div>
+
+      <div id="home-paused-banner" style="display:none;align-items:center;gap:10px;padding:12px 16px;margin-bottom:18px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:12px;font-size:13px;color:#fde68a">
+        <i data-lucide="pause-circle" style="width:16px;height:16px;flex-shrink:0"></i>
+        Adapix is paused — no new follow-ups will be drafted until you resume. Anything already waiting in your Inbox can still be sent or rejected by hand.
       </div>
 
       <div id="home-setup-gaps"></div>
@@ -1375,6 +1391,34 @@ body::after{
     // time Home loads, so a bubble simply stops appearing once its field is
     // filled in — no separate dismiss/tracking state needed.
     api('/api/v1/database').then(d => {
+      // Master pause switch — real control over the automation engine.
+      const pauseBtn = document.getElementById('home-pause-btn');
+      const pausedBanner = document.getElementById('home-paused-banner');
+      function renderPause(paused){
+        if (!pauseBtn) return;
+        pauseBtn.hidden = false;
+        pauseBtn.innerHTML = paused
+          ? '<i data-lucide="play" style="width:14px;height:14px"></i> Resume Adapix'
+          : '<i data-lucide="pause" style="width:14px;height:14px"></i> Pause Adapix';
+        pauseBtn.style.borderColor = paused ? 'rgba(251,191,36,.4)' : '';
+        pauseBtn.style.color = paused ? '#fde68a' : '';
+        if (pausedBanner) pausedBanner.style.display = paused ? 'flex' : 'none';
+        renderLucide(pauseBtn.parentElement);
+        if (pausedBanner && paused) renderLucide(pausedBanner);
+      }
+      renderPause(!!d.paused);
+      let paused = !!d.paused;
+      if (pauseBtn) pauseBtn.addEventListener('click', async () => {
+        pauseBtn.disabled = true;
+        try {
+          const r = await api('/api/v1/org/pause', { method:'POST', body: JSON.stringify({paused: !paused}) });
+          paused = r.paused;
+          renderPause(paused);
+          toast(paused ? 'Adapix paused — nothing new will be drafted' : 'Adapix resumed');
+        } catch(_){ toast('Could not update', true); }
+        pauseBtn.disabled = false;
+      });
+
       const gapsEl = document.getElementById('home-setup-gaps');
       if (!gapsEl) return;
       const gaps = [];
@@ -1911,13 +1955,16 @@ body::after{
       const when = m.created_at ? new Date(m.created_at).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '—';
       const dest = m.channel === 'email' ? (m.contact_email || '') : (m.contact_phone || '');
       const snippet = (m.subject ? m.subject + ' — ' : '') + (m.body || '').slice(0, 90);
+      const cancelBtn = (!isArrival && m.status === 'pending_approval')
+        ? `<button class="st-cancel" data-cancel-msg="${m.id}" title="Cancel this message — it will never send">✕</button>`
+        : '';
       return `
         <div class="station-row">
           <span class="st-time">${when}</span>
           <span class="st-ch"><i data-lucide="${CHANNEL_ICON[m.channel] || 'send'}" style="width:14px;height:14px"></i>${(m.channel || '').toUpperCase()}</span>
           <span class="st-who"><b>${escapeHTML(m.contact_name)}</b><span class="st-dest">${escapeHTML(dest)}</span></span>
           <span class="st-snippet">${escapeHTML(snippet)}</span>
-          <span class="st-status ${st.cls}" title="${escapeHTML(st.hint)}"><span class="st-dot"></span>${st.label}</span>
+          <span class="st-status-wrap"><span class="st-status ${st.cls}" title="${escapeHTML(st.hint)}"><span class="st-dot"></span>${st.label}</span>${cancelBtn}</span>
         </div>`;
     }
 
@@ -1934,7 +1981,7 @@ body::after{
           <span class="st-ch"><i data-lucide="${CHANNEL_ICON[q.channel] || 'send'}" style="width:14px;height:14px"></i>${(q.channel || '').toUpperCase()}</span>
           <span class="st-who"><b>${escapeHTML(q.contact_name)}</b><span class="st-dest">${escapeHTML(dest)}</span></span>
           <span class="st-snippet">${escapeHTML(what)}</span>
-          <span class="st-status ${q.due_now ? 'departing' : 'scheduled'}" title="${escapeHTML(dueTxt)}"><span class="st-dot"></span>${q.due_now ? 'COMPOSING' : 'QUEUED'}</span>
+          <span class="st-status-wrap"><span class="st-status ${q.due_now ? 'departing' : 'scheduled'}" title="${escapeHTML(dueTxt)}"><span class="st-dot"></span>${q.due_now ? 'COMPOSING' : 'QUEUED'}</span><button class="st-cancel" data-stop-campaign="${q.campaign_id}" title="Stop this contact's follow-up campaign">✕</button></span>
         </div>`;
     }
 
@@ -1978,6 +2025,25 @@ body::after{
             ${arrivals.length ? arrivals.map(m => boardRow(m, true)).join('') : '<div class="station-empty">Nothing has come back in yet.</div>'}
           </div>`;
         renderLucide(el);
+
+        // Cancel a boarding message (rejects it — it will never send)
+        el.querySelectorAll('[data-cancel-msg]').forEach(btn => btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await api(`/api/v1/approvals/${btn.dataset.cancelMsg}/reject`, { method:'POST', body: JSON.stringify({reason: 'cancelled from Station'}) });
+            toast('Cancelled — it will never send');
+            refreshBoard();
+          } catch(_){ toast('Could not cancel', true); btn.disabled = false; }
+        }));
+        // Stop a queued campaign (no further follow-ups for that contact)
+        el.querySelectorAll('[data-stop-campaign]').forEach(btn => btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await api(`/api/v1/campaigns/${btn.dataset.stopCampaign}/stop`, { method:'POST', body: JSON.stringify({}) });
+            toast('Campaign stopped — no more follow-ups for this contact');
+            refreshBoard();
+          } catch(_){ toast('Could not stop', true); btn.disabled = false; }
+        }));
       } catch(_){
         el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-3)">Could not load the board — try again in a moment.</div>';
       }
@@ -2036,15 +2102,23 @@ body::after{
       if (apprs.length){
         html += '<div class="section-eyebrow" style="margin-top:24px;margin-bottom:12px">Ready to send — just say OK · ' + apprs.length + '</div>';
         html += '<div class="rows">' + apprs.map(m => `
-          <div class="row-card" data-draft-id="${m.id}" style="cursor:default;align-items:flex-start">
-            <div class="text">
+          <div class="row-card" data-draft-id="${m.id}" style="cursor:default;align-items:flex-start;flex-wrap:wrap">
+            <div class="text" style="flex:1;min-width:200px">
               <b>${escapeHTML(m.patient)}</b>
               ${m.subject ? `<span style="color:var(--ink);font-weight:600">${escapeHTML(m.subject)}</span>` : ''}
-              <span>${escapeHTML((m.body||'').slice(0,220))}</span>
+              <span data-draft-preview>${escapeHTML((m.body||'').slice(0,220))}</span>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
               <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="draft-approve" data-id="${m.id}">Send</button>
+              <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="draft-edit" data-id="${m.id}">Edit</button>
               <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="draft-reject" data-id="${m.id}">Reject</button>
+            </div>
+            <div data-draft-editor hidden style="flex-basis:100%;margin-top:10px">
+              <textarea class="sform-input" rows="5" style="resize:vertical;font-size:13px">${escapeHTML(m.body || '')}</textarea>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="draft-save-send" data-id="${m.id}">Save &amp; Send</button>
+                <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="draft-edit-cancel">Cancel</button>
+              </div>
             </div>
           </div>`).join('') + '</div>';
       }
@@ -2052,18 +2126,39 @@ body::after{
     main.innerHTML = html;
     renderLucide(main);
 
+    async function approveDraft(id, btn, editedBody){
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Sending…';
+      try {
+        await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify(editedBody != null ? {edited_body: editedBody} : {}) });
+        toast('Sent');
+        load();
+      } catch(e){
+        toast('Could not send', true);
+        btn.disabled = false; btn.textContent = orig;
+      }
+    }
     main.querySelectorAll('[data-action="draft-approve"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        btn.disabled = true; btn.textContent = 'Sending…';
-        try {
-          await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify({}) });
-          toast('Sent');
-          load();
-        } catch(e){
-          toast('Could not send', true);
-          btn.disabled = false; btn.textContent = 'Send';
-        }
+      btn.addEventListener('click', () => approveDraft(btn.dataset.id, btn, null));
+    });
+    // Edit before sending — the approve endpoint has always accepted an
+    // edited_body; this finally puts that control in the owner's hands.
+    main.querySelectorAll('[data-action="draft-edit"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('[data-draft-id]');
+        const editor = card.querySelector('[data-draft-editor]');
+        editor.hidden = !editor.hidden;
+        if (!editor.hidden) editor.querySelector('textarea').focus();
+      });
+    });
+    main.querySelectorAll('[data-action="draft-edit-cancel"]').forEach(btn => {
+      btn.addEventListener('click', () => { btn.closest('[data-draft-editor]').hidden = true; });
+    });
+    main.querySelectorAll('[data-action="draft-save-send"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const editor = btn.closest('[data-draft-editor]');
+        const text = editor.querySelector('textarea').value.trim();
+        if (!text) { toast('Message is empty', true); return; }
+        approveDraft(btn.dataset.id, btn, text);
       });
     });
     main.querySelectorAll('[data-action="draft-reject"]').forEach(btn => {
