@@ -377,6 +377,45 @@ textarea.sform-input{resize:vertical}
 .mtabs{display:flex;gap:8px;margin-bottom:16px}
 .mtab{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--ink-2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .12s}
 .mtab.active{border-color:#7c3aed;background:rgba(124,58,237,.14);color:#c4b5fd}
+
+/* ── Station: departures/arrivals board ── */
+.station-board{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.station-board-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(124,58,237,.06)}
+.station-board-title{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#c4b5fd}
+.station-board-sub{font-size:12px;color:var(--ink-3)}
+.station-row{
+  display:grid;grid-template-columns:92px 72px minmax(140px,1fr) minmax(0,1.6fr) 130px;
+  gap:14px;align-items:center;padding:11px 18px;
+  border-bottom:1px solid var(--border-2);
+  font-size:12.5px;
+}
+.station-row:last-child{border-bottom:none}
+.st-time{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.st-ch{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.st-who{min-width:0}
+.st-who b{display:block;color:var(--ink);font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-dest{display:block;color:var(--ink-3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-snippet{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.st-status{
+  display:inline-flex;align-items:center;gap:7px;justify-self:end;
+  font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;
+}
+.st-status .st-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.st-status.boarding{color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25)}
+.st-status.boarding .st-dot{animation:blink 1.2s ease-in-out infinite}
+.st-status.departing{color:#22d3ee;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.22)}
+.st-status.departing .st-dot{animation:blink 1.2s ease-in-out infinite}
+.st-status.departed{color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2)}
+.st-status.delayed{color:#fda4af;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25)}
+.st-status.cancelled{color:var(--ink-3);background:rgba(255,255,255,.03);border:1px solid var(--border-2)}
+.st-status.scheduled{color:#a78bfa;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.22)}
+.station-empty{padding:28px 18px;text-align:center;font-size:13px;color:var(--ink-3)}
+@media(max-width:900px){
+  .station-row{grid-template-columns:70px 1fr 110px;gap:10px}
+  .st-time{display:none}
+  .st-snippet{display:none}
+}
 .smember-row{display:flex;align-items:center;gap:12px;padding:8px 0}
 .smember-av{width:32px;height:32px;border-radius:8px;background:rgba(124,106,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#a78bfa;flex-shrink:0}
 .smember-name{font-size:13px;font-weight:600;color:var(--ink)}
@@ -1056,6 +1095,7 @@ body::after{
         <span class="nav-badge" id="ct-calls"></span>
       </button>
       <button class="nav-item" data-view="messages"><i data-lucide="send"></i><span>SMS &amp; Email</span></button>
+      <button class="nav-item" data-view="station"><i data-lucide="train-front"></i><span>Station</span></button>
       <button class="nav-item" data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
       <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
       <button class="nav-item" data-view="database"><i data-lucide="database"></i><span>Database</span></button>
@@ -1176,6 +1216,7 @@ body::after{
     else if (state.view === 'contacts')  renderPatientsView();
     else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'messages')  renderMessagesView();
+    else if (state.view === 'station')   renderStationView();
     else if (state.view === 'results')   renderResultsView();
     else if (state.view === 'team')      renderTeam();
     else if (state.view === 'database')  renderDatabaseView();
@@ -1810,6 +1851,90 @@ body::after{
     }
     document.getElementById('msg-queue').addEventListener('click', () => compose(true));
     document.getElementById('msg-send').addEventListener('click', () => compose(false));
+  }
+
+  // -------- STATION view — the departures board for everything in the pipeline --------
+  // Every call, SMS, and email moving through Adapix, shown like a train
+  // station board: BOARDING (waiting for your approval), DEPARTING (approved,
+  // about to send), DEPARTED (sent), DELAYED (failed), CANCELLED (rejected) —
+  // plus an Arrivals board for everything coming back in (replies, call
+  // outcomes). Auto-refreshes every 15s while you're watching.
+  let stationTimer = null;
+  function renderStationView(){
+    if (stationTimer) { clearInterval(stationTimer); stationTimer = null; }
+    main.innerHTML = `
+      <div class="section-eyebrow">Station</div>
+      <h1 class="page-title" style="margin-bottom:6px">Everything moving through Adapix</h1>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:22px;max-width:640px">Every call, text, and email in the pipeline — boarding while it waits for your OK, departing when it sends, arriving when customers reply. Updates live.</p>
+      <div id="station-boards"><div style="padding:40px;text-align:center;color:var(--ink-3)">Loading the board…</div></div>
+    `;
+    renderLucide(main);
+
+    const STATUS_MAP = {
+      pending_approval: {label: 'BOARDING',  cls: 'boarding',  hint: 'waiting for your OK'},
+      composed:         {label: 'SCHEDULED', cls: 'scheduled', hint: 'drafted, not queued yet'},
+      approved:         {label: 'DEPARTING', cls: 'departing', hint: 'approved — sending'},
+      sent:             {label: 'DEPARTED',  cls: 'departed',  hint: 'delivered'},
+      failed:           {label: 'DELAYED',   cls: 'delayed',   hint: 'send failed'},
+      rejected:         {label: 'CANCELLED', cls: 'cancelled', hint: 'you rejected it'},
+    };
+    const ORDER = {pending_approval: 0, approved: 1, composed: 2, sent: 3, failed: 4, rejected: 5};
+    const CHANNEL_ICON = {call: 'phone', sms: 'message-square', email: 'mail'};
+
+    function boardRow(m, isArrival){
+      const st = isArrival
+        ? {label: 'ARRIVED', cls: 'departed', hint: m.channel === 'call' ? 'call finished — outcome logged' : 'reply received'}
+        : (STATUS_MAP[m.status] || {label: (m.status || '').toUpperCase(), cls: 'scheduled', hint: ''});
+      const when = m.created_at ? new Date(m.created_at).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '—';
+      const dest = m.channel === 'email' ? (m.contact_email || '') : (m.contact_phone || '');
+      const snippet = (m.subject ? m.subject + ' — ' : '') + (m.body || '').slice(0, 90);
+      return `
+        <div class="station-row">
+          <span class="st-time">${when}</span>
+          <span class="st-ch"><i data-lucide="${CHANNEL_ICON[m.channel] || 'send'}" style="width:14px;height:14px"></i>${(m.channel || '').toUpperCase()}</span>
+          <span class="st-who"><b>${escapeHTML(m.contact_name)}</b><span class="st-dest">${escapeHTML(dest)}</span></span>
+          <span class="st-snippet">${escapeHTML(snippet)}</span>
+          <span class="st-status ${st.cls}" title="${escapeHTML(st.hint)}"><span class="st-dot"></span>${st.label}</span>
+        </div>`;
+    }
+
+    async function refreshBoard(){
+      const el = document.getElementById('station-boards');
+      if (!el) return;
+      try {
+        const j = await api('/api/v1/messages?channel=sms,email,call&limit=80');
+        const msgs = j.messages || [];
+        const departures = msgs.filter(m => m.direction === 'outbound')
+          .sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) || (b.created_at || '').localeCompare(a.created_at || ''))
+          .slice(0, 25);
+        const arrivals = msgs.filter(m => m.direction === 'inbound').slice(0, 10);
+        const boarding = departures.filter(m => m.status === 'pending_approval').length;
+
+        el.innerHTML = `
+          <div class="station-board">
+            <div class="station-board-head">
+              <span class="station-board-title">▲ Departures</span>
+              <span class="station-board-sub">${boarding ? boarding + ' boarding — waiting for your OK in the Inbox' : 'nothing waiting on you'}</span>
+            </div>
+            ${departures.length ? departures.map(m => boardRow(m, false)).join('') : '<div class="station-empty">No outbound calls, texts, or emails in the pipeline yet.</div>'}
+          </div>
+          <div class="station-board" style="margin-top:22px">
+            <div class="station-board-head">
+              <span class="station-board-title">▼ Arrivals</span>
+              <span class="station-board-sub">replies and call outcomes coming back in</span>
+            </div>
+            ${arrivals.length ? arrivals.map(m => boardRow(m, true)).join('') : '<div class="station-empty">Nothing has come back in yet.</div>'}
+          </div>`;
+        renderLucide(el);
+      } catch(_){
+        el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-3)">Could not load the board — try again in a moment.</div>';
+      }
+    }
+    refreshBoard();
+    stationTimer = setInterval(() => {
+      if (state.view !== 'station') { clearInterval(stationTimer); stationTimer = null; return; }
+      refreshBoard();
+    }, 15000);
   }
 
   function renderInboxView(){
