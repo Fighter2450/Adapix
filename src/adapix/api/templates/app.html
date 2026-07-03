@@ -1898,17 +1898,39 @@ body::after{
         </div>`;
     }
 
+    function queueRow(q){
+      const due = new Date(q.due_at + 'Z');
+      const dueTxt = q.due_now
+        ? 'due — composing on the next pass'
+        : 'due ' + due.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+      const dest = q.channel === 'email' ? (q.contact_email || '') : (q.contact_phone || '');
+      const what = 'Day ' + q.day + (q.intent ? ' — ' + q.intent.replace(/_/g, ' ') : '') + ' · ' + q.workflow.replace(/_/g, ' ');
+      return `
+        <div class="station-row">
+          <span class="st-time">${due.toLocaleString('en-US', {month:'short', day:'numeric'})}</span>
+          <span class="st-ch"><i data-lucide="${CHANNEL_ICON[q.channel] || 'send'}" style="width:14px;height:14px"></i>${(q.channel || '').toUpperCase()}</span>
+          <span class="st-who"><b>${escapeHTML(q.contact_name)}</b><span class="st-dest">${escapeHTML(dest)}</span></span>
+          <span class="st-snippet">${escapeHTML(what)}</span>
+          <span class="st-status ${q.due_now ? 'departing' : 'scheduled'}" title="${escapeHTML(dueTxt)}"><span class="st-dot"></span>${q.due_now ? 'COMPOSING' : 'QUEUED'}</span>
+        </div>`;
+    }
+
     async function refreshBoard(){
       const el = document.getElementById('station-boards');
       if (!el) return;
       try {
-        const j = await api('/api/v1/messages?channel=sms,email,call&limit=80');
+        const [j, qj] = await Promise.all([
+          api('/api/v1/messages?channel=sms,email,call&limit=80'),
+          api('/api/v1/station/queue').catch(() => ({queue: []})),
+        ]);
         const msgs = j.messages || [];
+        const queue = qj.queue || [];
         const departures = msgs.filter(m => m.direction === 'outbound')
           .sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) || (b.created_at || '').localeCompare(a.created_at || ''))
           .slice(0, 25);
         const arrivals = msgs.filter(m => m.direction === 'inbound').slice(0, 10);
         const boarding = departures.filter(m => m.status === 'pending_approval').length;
+        const dueNow = queue.filter(q => q.due_now).length;
 
         el.innerHTML = `
           <div class="station-board">
@@ -1917,6 +1939,13 @@ body::after{
               <span class="station-board-sub">${boarding ? boarding + ' boarding — waiting for your OK in the Inbox' : 'nothing waiting on you'}</span>
             </div>
             ${departures.length ? departures.map(m => boardRow(m, false)).join('') : '<div class="station-empty">No outbound calls, texts, or emails in the pipeline yet.</div>'}
+          </div>
+          <div class="station-board" style="margin-top:22px">
+            <div class="station-board-head">
+              <span class="station-board-title">◷ In queue</span>
+              <span class="station-board-sub">${queue.length ? queue.length + ' follow-up' + (queue.length === 1 ? '' : 's') + ' scheduled' + (dueNow ? ' — ' + dueNow + ' composing on the next pass' : '') : 'what the AI will write next, before it writes it'}</span>
+            </div>
+            ${queue.length ? queue.slice(0, 15).map(queueRow).join('') : '<div class="station-empty">Nothing scheduled — start a campaign from Contacts and upcoming follow-ups will line up here.</div>'}
           </div>
           <div class="station-board" style="margin-top:22px">
             <div class="station-board-head">

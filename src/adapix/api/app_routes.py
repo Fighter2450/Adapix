@@ -1038,6 +1038,59 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
     return {"ok": status in ("sent",), "status": status, "message_id": message_id}
 
 
+@router.get("/api/v1/station/queue")
+def api_station_queue(org_id: str = Depends(verify_admin)):
+    """What the campaign engine is ABOUT to do — the Station's 'in queue'
+    board. For every active campaign, the next cadence step that hasn't been
+    composed yet: who it's for, which channel, and when it comes due. Steps
+    already due compose on the scheduler's next pass (runs every 5 minutes)."""
+    from ..config import load_workflow
+
+    out = []
+    workflows: dict[str, Any] = {}
+    with get_session() as s:
+        campaigns = (
+            s.query(Campaign)
+            .filter(Campaign.practice_id == org_id, Campaign.status == "active")
+            .all()
+        )
+        now = datetime.utcnow()
+        for c in campaigns:
+            wf = workflows.get(c.workflow_id)
+            if wf is None:
+                try:
+                    wf = load_workflow(c.workflow_id)
+                except Exception:
+                    wf = False  # manual / unknown workflow — nothing scheduled
+                workflows[c.workflow_id] = wf
+            if not wf:
+                continue
+            next_step = next(
+                (st for st in sorted(wf.cadence, key=lambda x: x.day) if st.day > c.last_step_completed),
+                None,
+            )
+            if next_step is None:
+                continue
+            patient = s.get(Patient, c.patient_id)
+            if patient is None:
+                continue
+            due_at = c.started_at + timedelta(days=next_step.day)
+            out.append({
+                "campaign_id": c.id,
+                "contact_name": f"{patient.first_name} {patient.last_name}".strip(),
+                "contact_phone": patient.phone,
+                "contact_email": patient.email,
+                "workflow": c.workflow_id,
+                "channel": next_step.channel,
+                "intent": getattr(next_step, "intent", "") or "",
+                "day": next_step.day,
+                "due_at": due_at.isoformat(),
+                "due_now": now >= due_at,
+            })
+    out.sort(key=lambda e: e["due_at"])
+    return {"queue": out}
+
+
 @router.get("/app/manifest.json")
 def manifest():
     return JSONResponse(
