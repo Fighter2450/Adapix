@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = ""
 
+    # Blooio (iMessage — blue-bubble texts on Apple devices, with Blooio's
+    # own RCS/SMS fallback for Android). When configured, texts try Blooio
+    # FIRST and fall back to Twilio SMS on failure — same preference pattern
+    # as the org's connected Gmail over the shared Resend sender.
+    blooio_api_key: str = ""
+    blooio_channel_id: str = ""
+
     # Vapi (AI voice calling). Vapi handles telephony + speech + turn-taking;
     # we bring the model (Claude) and the prompt. Get these from the Vapi
     # dashboard after buying a phone number.

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .channels import EmailChannel, EmailResult, SmsChannel, VoiceChannel
+from .channels import EmailChannel, EmailResult, IMessageChannel, SmsChannel, VoiceChannel
 from .config import Settings
 from .db import get_session
 from .models import Campaign, Message, Organization, Patient
@@ -225,7 +225,24 @@ class ApprovalManager:
         org_id: str | None = None,
     ) -> None:
         if message.channel == "sms":
-            result = sms.send(patient.phone or "", message.body)
+            # If Blooio is configured, try iMessage first (blue bubble on
+            # Apple devices; Blooio does its own RCS/SMS fallback for
+            # Android). Any Blooio failure falls back to Twilio SMS so the
+            # message still goes out — same preference-then-fallback shape
+            # as connected-Gmail over the shared Resend sender for email.
+            result = None
+            imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
+            if imsg.is_configured():
+                r = imsg.send(patient.phone or "", message.body)
+                md = dict(message.metadata_json or {})
+                if r.status != "failed":
+                    result = r
+                    md["transport"] = "imessage"
+                else:
+                    md["imessage_error"] = r.error
+                message.metadata_json = md
+            if result is None:
+                result = sms.send(patient.phone or "", message.body)
         elif message.channel == "email":
             subject = message.subject or "A note from your practice"
             # If the org connected their own Gmail/Outlook, send AS them.
