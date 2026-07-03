@@ -35,24 +35,32 @@ class IMessageResult:
 
 
 class IMessageChannel:
+    """One platform Blooio account (BLOOIO_API_KEY), per-org sender lines.
+
+    Each org texts from its OWN dedicated Blooio line — the channel_id lives
+    on the Organization row (mirroring vapi_phone_number_id for calls), never
+    a shared line across businesses. settings.blooio_channel_id remains only
+    as a dev/test fallback when no per-org channel is passed."""
+
     def __init__(self, settings: Settings, *, dry_run: bool = False):
         self.settings = settings
         self.dry_run = dry_run
 
-    def is_configured(self) -> bool:
-        return bool(self.settings.blooio_api_key and self.settings.blooio_channel_id)
+    def is_configured(self, channel_id: str | None = None) -> bool:
+        return bool(self.settings.blooio_api_key and (channel_id or self.settings.blooio_channel_id))
 
-    def send(self, to: str, body: str) -> IMessageResult:
+    def send(self, to: str, body: str, channel_id: str | None = None) -> IMessageResult:
+        channel = channel_id or self.settings.blooio_channel_id
         if not to:
             return IMessageResult(provider_id=None, status="failed", error="missing recipient phone")
-        if not self.is_configured():
-            return IMessageResult(provider_id=None, status="failed", error="Blooio not configured")
+        if not (self.settings.blooio_api_key and channel):
+            return IMessageResult(provider_id=None, status="failed", error="Blooio not configured for this business")
         if self.dry_run:
-            print(f"\n[DRY RUN — iMESSAGE to {to}]\n{body}\n")
+            print(f"\n[DRY RUN — iMESSAGE to {to} via {channel}]\n{body}\n")
             return IMessageResult(provider_id=None, status="skipped (dry run)")
 
         payload = {
-            "channel_id": self.settings.blooio_channel_id,
+            "channel_id": channel,
             "to": {"identifier": to},
             "content": {"type": "text", "text": body},
         }

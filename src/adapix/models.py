@@ -36,6 +36,13 @@ class Organization(Base):
     phone_number: Mapped[str | None] = mapped_column(String(32), nullable=True)  # +1… for display
     phone_status: Mapped[str] = mapped_column(String(32), default="none")  # none | provisioned | registered
 
+    # iMessage: same principle — each org texts from its OWN dedicated Blooio
+    # line (blue bubble on Apple devices), provisioned per business under
+    # Adapix's one platform Blooio account. Null = no line yet; texts fall
+    # back to Twilio SMS (green).
+    blooio_channel_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    imessage_number: Mapped[str | None] = mapped_column(String(32), nullable=True)  # the line's +1… for display
+
     users: Mapped[list["User"]] = relationship(back_populates="org", cascade="all, delete-orphan")
     profile: Mapped["OrgProfile | None"] = relationship(back_populates="org", uselist=False, cascade="all, delete-orphan")
 

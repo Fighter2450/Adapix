@@ -59,6 +59,8 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("vapi_phone_number_id", "VARCHAR(128)"),
         ("phone_number", "VARCHAR(32)"),
         ("phone_status", "VARCHAR(32) DEFAULT 'none'"),
+        ("blooio_channel_id", "VARCHAR(128)"),
+        ("imessage_number", "VARCHAR(32)"),
     ],
     "email_connections": [
         ("smtp_host", "VARCHAR(255)"),

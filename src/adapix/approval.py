@@ -167,6 +167,7 @@ class ApprovalManager:
                     org.vapi_phone_number_id if org else None,
                     org.name if org else None,
                     campaign.practice_id,
+                    org.blooio_channel_id if org else None,
                 )
                 attempted += 1
         return attempted
@@ -194,6 +195,7 @@ class ApprovalManager:
                 org.vapi_phone_number_id if org else None,
                 org.name if org else None,
                 campaign.practice_id if campaign else None,
+                org.blooio_channel_id if org else None,
             )
             return m.status
 
@@ -223,17 +225,19 @@ class ApprovalManager:
         org_phone_number_id: str | None = None,
         org_business_name: str | None = None,
         org_id: str | None = None,
+        org_blooio_channel_id: str | None = None,
     ) -> None:
         if message.channel == "sms":
-            # If Blooio is configured, try iMessage first (blue bubble on
-            # Apple devices; Blooio does its own RCS/SMS fallback for
-            # Android). Any Blooio failure falls back to Twilio SMS so the
-            # message still goes out — same preference-then-fallback shape
-            # as connected-Gmail over the shared Resend sender for email.
+            # If THIS org has its own Blooio line, try iMessage first (blue
+            # bubble on Apple devices; Blooio does its own RCS/SMS fallback
+            # for Android). Any Blooio failure falls back to Twilio SMS so
+            # the message still goes out — same preference-then-fallback
+            # shape as connected-Gmail over the shared Resend sender. Each
+            # business texts from its OWN line, never a shared one.
             result = None
             imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
-            if imsg.is_configured():
-                r = imsg.send(patient.phone or "", message.body)
+            if imsg.is_configured(org_blooio_channel_id):
+                r = imsg.send(patient.phone or "", message.body, channel_id=org_blooio_channel_id)
                 md = dict(message.metadata_json or {})
                 if r.status != "failed":
                     result = r

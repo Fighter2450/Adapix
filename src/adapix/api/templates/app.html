@@ -1719,14 +1719,14 @@ body::after{
         <div id="email-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
       </div>
       <div class="scard">
-        <div class="scard-title">Your texting number</div>
-        <div class="sch-row">
+        <div class="scard-title">Your texting line</div>
+        <div class="sch-row" id="msg-imessage-row">
           <div class="sch-icon"><i data-lucide="message-square" style="width:16px;height:16px"></i></div>
-          <div class="sch-body"><div class="sch-name">SMS</div><div class="sch-val">Sends from Adapix's shared number for now</div></div>
-          <span class="sch-badge off">Shared</span>
-          <button class="sch-connect" id="msg-sms-connect">Connect</button>
+          <div class="sch-body"><div class="sch-name">iMessage line</div><div class="sch-val" id="msg-imessage-val">Checking…</div></div>
+          <span class="sch-badge off" id="msg-imessage-badge">…</span>
+          <button class="sch-connect" id="msg-sms-connect">Set up my line</button>
         </div>
-        <div class="sform-hint" style="margin-top:10px">A dedicated texting number tied to your own business is on the roadmap — for now every business's texts send from one shared Adapix number, same as email did before you connected Gmail.</div>
+        <div class="sform-hint" style="margin-top:10px">Every business texts from its OWN dedicated line — blue-bubble iMessage on Apple devices, never a shared number. Until your line is set up, texts fall back to standard SMS.</div>
       </div>
 
       <div class="scard">
@@ -1767,8 +1767,31 @@ body::after{
     renderLucide(main);
     loadEmailCard();
 
+    // Per-business iMessage line status (each org has its OWN Blooio line,
+    // stored on the Organization row — never a shared sender).
+    api('/api/v1/database').then(d => {
+      const val = document.getElementById('msg-imessage-val');
+      const badge = document.getElementById('msg-imessage-badge');
+      const btn = document.getElementById('msg-sms-connect');
+      if (!val || !badge) return;
+      if (d.imessage_connected) {
+        val.textContent = (d.imessage_number || 'Your dedicated line') + ' — texts go blue on Apple devices';
+        badge.textContent = 'Connected';
+        badge.classList.remove('off');
+        if (btn) btn.style.display = 'none';
+      } else {
+        val.textContent = 'No dedicated line yet — texts send as standard SMS';
+        badge.textContent = 'Not set up';
+      }
+    }).catch(()=>{
+      const val = document.getElementById('msg-imessage-val');
+      if (val) val.textContent = 'No dedicated line yet — texts send as standard SMS';
+      const badge = document.getElementById('msg-imessage-badge');
+      if (badge) badge.textContent = 'Not set up';
+    });
+
     const smsConnect = document.getElementById('msg-sms-connect');
-    if (smsConnect) smsConnect.addEventListener('click', () => toast('SMS setup coming soon'));
+    if (smsConnect) smsConnect.addEventListener('click', () => toast('Ask Adapix to provision your dedicated texting line — self-serve setup coming soon'));
 
     // Channel tabs swap the "To" field's meaning and toggle the subject line.
     const toEl = document.getElementById('msg-to');

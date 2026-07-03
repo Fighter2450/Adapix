@@ -826,6 +826,8 @@ def api_database(org_id: str = Depends(verify_admin)):
             "configured_at": data.get("configured_at") or "",
             "calling_number": org.phone_number if org else None,
             "calling_status": org.phone_status if org else "none",
+            "imessage_number": org.imessage_number if org else None,
+            "imessage_connected": bool(org and org.blooio_channel_id),
             "email_connected": connected_email_provider is not None,
             "email_provider": connected_email_provider,
             "email_address": email.get(connected_email_provider, {}).get("email") if connected_email_provider else None,
