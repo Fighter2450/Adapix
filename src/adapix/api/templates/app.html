@@ -1348,7 +1348,7 @@ body::after{
       gapsEl.querySelectorAll('.setup-bubble').forEach(btn => {
         btn.addEventListener('click', () => {
           const g = gaps[Number(btn.dataset.gapIdx)];
-          if (g.channels) { goSettingsView('channels'); goView('settings'); }
+          if (g.channels) { goView('settings'); goSettingsView('channels'); }
           else { state.focusDbField = g.focus; goView('database'); }
         });
       });
@@ -1554,7 +1554,7 @@ body::after{
       });
 
       body.querySelector('[data-goto-team]')?.addEventListener('click', (e) => { e.preventDefault(); goView('team'); });
-      body.querySelector('[data-goto-channels]')?.addEventListener('click', (e) => { e.preventDefault(); goSettingsView('channels'); goView('settings'); });
+      body.querySelector('[data-goto-channels]')?.addEventListener('click', (e) => { e.preventDefault(); goView('settings'); goSettingsView('channels'); });
 
       // Services & pricing catalog
       const svcList = document.getElementById('db-svc-list');
