@@ -1104,7 +1104,6 @@ body::after{
       </button>
       <button class="nav-item" data-view="messages"><i data-lucide="send"></i><span>SMS &amp; Email</span></button>
       <button class="nav-item" data-view="station"><i data-lucide="train-front"></i><span>Station</span></button>
-      <button class="nav-item" data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
       <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
       <button class="nav-item" data-view="database"><i data-lucide="database"></i><span>Database</span></button>
       <button class="nav-item" data-view="workshop"><i data-lucide="zap"></i><span>Workshop</span></button>
@@ -1225,7 +1224,6 @@ body::after{
     else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'messages')  renderMessagesView();
     else if (state.view === 'station')   renderStationView();
-    else if (state.view === 'results')   renderResultsView();
     else if (state.view === 'team')      renderTeam();
     else if (state.view === 'database')  renderDatabaseView();
     else if (state.view === 'workshop')  renderWorkshop();
@@ -1377,7 +1375,7 @@ body::after{
 
       <div class="home-section-head" style="margin-top:26px">
         <span class="section-eyebrow" style="margin:0">Latest activity</span>
-        <button class="home-see-all" onclick="goView('results')">See all ›</button>
+        <button class="home-see-all" onclick="goView('station')">Open the Station ›</button>
       </div>
       <div class="activity-feed" id="home-activity">
         <div class="activity-empty">Loading what Adapix has been up to…</div>
@@ -2174,46 +2172,6 @@ body::after{
   }
 
   // -------- RESULTS view (stats dashboard + activity) --------
-  function renderResultsView(){
-    const feed = state.feed || {};
-    const d = feed.digest || {};
-    const watched = (state.patients || []).length;
-    const sentToday = d.sent_today || 0;
-    const booked = d.booked_recent || 0;
-
-    main.innerHTML = `
-      <div class="section-eyebrow" style="display:flex;align-items:center;justify-content:space-between">
-        <span>Results · ${new Date().toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'})}</span>
-        <span class="activity-meta" id="activityMeta">&nbsp;</span>
-      </div>
-
-      <div class="home-stat-row">
-        <div class="home-stat-card">
-          <div class="home-stat-label">Sent today</div>
-          <div class="home-stat-val cyan">${sentToday}</div>
-          <div class="home-stat-sub">Follow-ups Adapix sent for you</div>
-        </div>
-        <div class="home-stat-card">
-          <div class="home-stat-label">People you're following up</div>
-          <div class="home-stat-val">${watched}</div>
-          <div class="home-stat-sub">Adapix is keeping an eye on these</div>
-        </div>
-        <div class="home-stat-card">
-          <div class="home-stat-label">Sales won</div>
-          <div class="home-stat-val green">${booked}</div>
-          <div class="home-stat-sub">Customers won back through follow-ups</div>
-        </div>
-      </div>
-
-      <div class="section-eyebrow" style="margin-top:4px">Recent activity</div>
-      <div class="activity-feed" id="activityFeed">
-        <div class="activity-empty">Adapix is up and running. Everything it does for you will show up here.</div>
-      </div>
-    `;
-    renderLucide(main);
-    refreshActivity();
-  }
-
   // -------- CALLS view --------
   async function renderCallsView(){
     main.innerHTML = '<div class="loader">loading…</div>';
