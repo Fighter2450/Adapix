@@ -918,6 +918,126 @@ def api_services_delete(entry_id: str, org_id: str = Depends(verify_admin)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# SMS & Email tab — one place to see every SMS/email (sent or received) and
+# to compose a new one, either sending immediately or queuing it into the
+# SAME pending-approval flow the Inbox already uses. Deliberately does not
+# reinvent sending: it reuses ApprovalManager.approve_and_send, so a compose
+# here goes through the exact tested path (org's connected Gmail/Outlook/SMTP
+# preferred over the shared Resend sender, real Twilio SMS).
+# ---------------------------------------------------------------------------
+@router.get("/api/v1/messages")
+def api_messages_list(channel: str = "sms,email", limit: int = 50, org_id: str = Depends(verify_admin)):
+    from sqlalchemy import desc
+    from sqlalchemy.orm import Session
+    from ..db import get_engine
+
+    wanted = {c.strip() for c in channel.split(",") if c.strip()}
+    with Session(get_engine()) as s:
+        campaign_ids = [c.id for c in s.query(Campaign.id).filter(Campaign.practice_id == org_id).all()]
+        if not campaign_ids:
+            return {"messages": []}
+        q = (
+            s.query(Message)
+            .filter(Message.campaign_id.in_(campaign_ids))
+            .filter(Message.channel.in_(wanted))
+            .order_by(desc(Message.created_at))
+            .limit(max(1, min(limit, 200)))
+        )
+        out = []
+        for m in q.all():
+            campaign = s.get(Campaign, m.campaign_id)
+            patient = s.get(Patient, campaign.patient_id) if campaign else None
+            out.append({
+                "id": m.id,
+                "channel": m.channel,
+                "direction": m.direction,
+                "status": m.status,
+                "subject": m.subject,
+                "body": m.body,
+                "contact_name": f"{patient.first_name} {patient.last_name}".strip() if patient else "Unknown",
+                "contact_phone": patient.phone if patient else None,
+                "contact_email": patient.email if patient else None,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            })
+        return {"messages": out}
+
+
+class ComposeMessageBody(BaseModel):
+    channel: str  # "sms" | "email"
+    to: str        # phone number (sms) or email address (email)
+    contact_name: str = ""
+    subject: str = ""
+    body: str
+    queue: bool = False  # True = drop into the pending-approval queue; False = send now
+
+
+@router.post("/api/v1/messages/compose")
+def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_admin)):
+    channel = body.channel.strip().lower()
+    if channel not in ("sms", "email"):
+        raise HTTPException(status_code=400, detail="channel must be 'sms' or 'email'")
+    to = body.to.strip()
+    if not to:
+        raise HTTPException(status_code=400, detail="Enter a recipient")
+    if not body.body.strip():
+        raise HTTPException(status_code=400, detail="Enter a message")
+
+    from sqlalchemy.orm import Session
+    from ..db import get_engine
+
+    with Session(get_engine()) as s:
+        patient = None
+        if channel == "sms":
+            patient = (
+                s.query(Patient)
+                .filter(Patient.practice_id == org_id, Patient.phone == to)
+                .first()
+            )
+        else:
+            patient = (
+                s.query(Patient)
+                .filter(Patient.practice_id == org_id, Patient.email == to)
+                .first()
+            )
+        if patient is None:
+            name = body.contact_name.strip() or to
+            first, _, last = name.partition(" ")
+            patient = Patient(
+                practice_id=org_id,
+                first_name=first or name,
+                last_name=last,
+                phone=to if channel == "sms" else None,
+                email=to if channel == "email" else None,
+                preferred_channel=channel,
+            )
+            s.add(patient)
+            s.flush()
+
+        campaign = Campaign(practice_id=org_id, workflow_id="manual", patient_id=patient.id)
+        s.add(campaign)
+        s.flush()
+
+        message = Message(
+            campaign_id=campaign.id,
+            direction="outbound",
+            channel=channel,
+            subject=(body.subject.strip() or None) if channel == "email" else None,
+            body=body.body.strip(),
+            status="pending_approval",
+        )
+        s.add(message)
+        s.flush()
+        message_id = message.id
+        s.commit()
+
+    if body.queue:
+        return {"ok": True, "status": "pending_approval", "message_id": message_id}
+
+    status = ApprovalManager().approve_and_send(message_id)
+    return {"ok": status in ("sent",), "status": status, "message_id": message_id}
+
+
 @router.get("/app/manifest.json")
 def manifest():
     return JSONResponse(

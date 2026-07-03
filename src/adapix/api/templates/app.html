@@ -374,6 +374,9 @@ textarea.sform-input{resize:vertical}
 .stone-opt{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--ink-2);font-size:13px;font-family:inherit;cursor:pointer;transition:all .12s}
 .stone-opt.active{border-color:#7c6aff;background:rgba(124,106,255,.12);color:#a78bfa}
 .splan-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(74,222,128,.1);color:#4ade80;margin-left:8px}
+.mtabs{display:flex;gap:8px;margin-bottom:16px}
+.mtab{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--ink-2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .12s}
+.mtab.active{border-color:#7c3aed;background:rgba(124,58,237,.14);color:#c4b5fd}
 .smember-row{display:flex;align-items:center;gap:12px;padding:8px 0}
 .smember-av{width:32px;height:32px;border-radius:8px;background:rgba(124,106,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#a78bfa;flex-shrink:0}
 .smember-name{font-size:13px;font-weight:600;color:var(--ink)}
@@ -1052,6 +1055,7 @@ body::after{
         <i data-lucide="phone"></i><span>Calls</span>
         <span class="nav-badge" id="ct-calls"></span>
       </button>
+      <button class="nav-item" data-view="messages"><i data-lucide="send"></i><span>SMS &amp; Email</span></button>
       <button class="nav-item" data-view="results"><i data-lucide="bar-chart-2"></i><span>Results</span></button>
       <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
       <button class="nav-item" data-view="database"><i data-lucide="database"></i><span>Database</span></button>
@@ -1171,6 +1175,7 @@ body::after{
     else if (state.view === 'inbox')     renderInboxView();
     else if (state.view === 'contacts')  renderPatientsView();
     else if (state.view === 'calls')     renderCallsView();
+    else if (state.view === 'messages')  renderMessagesView();
     else if (state.view === 'results')   renderResultsView();
     else if (state.view === 'team')      renderTeam();
     else if (state.view === 'database')  renderDatabaseView();
@@ -1659,6 +1664,152 @@ body::after{
     }).catch(() => {
       document.getElementById('db-body').innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-3)">Could not load — try refreshing.</div>';
     });
+  }
+
+  // -------- SMS & EMAIL view — set up, compose, and see every message --------
+  function renderMessagesView(){
+    main.innerHTML = `
+      <div class="section-eyebrow">SMS &amp; Email</div>
+      <h1 class="page-title" style="margin-bottom:6px">Send, queue, and see every text and email</h1>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:22px;max-width:640px">Set up how Adapix sends on your behalf, write a one-off message, and see every SMS and email that's gone out or come in.</p>
+
+      <div class="scard" id="msg-email-card">
+        <div class="scard-title">Your email connection</div>
+        <div id="email-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
+      </div>
+      <div class="scard">
+        <div class="scard-title">Your texting number</div>
+        <div class="sch-row">
+          <div class="sch-icon"><i data-lucide="message-square" style="width:16px;height:16px"></i></div>
+          <div class="sch-body"><div class="sch-name">SMS</div><div class="sch-val">Sends from Adapix's shared number for now</div></div>
+          <span class="sch-badge off">Shared</span>
+          <button class="sch-connect" id="msg-sms-connect">Connect</button>
+        </div>
+        <div class="sform-hint" style="margin-top:10px">A dedicated texting number tied to your own business is on the roadmap — for now every business's texts send from one shared Adapix number, same as email did before you connected Gmail.</div>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Write a message</div>
+        <div class="mtabs">
+          <button class="mtab active" data-channel="sms">Text (SMS)</button>
+          <button class="mtab" data-channel="email">Email</button>
+        </div>
+        <div class="sform-row">
+          <label class="sform-label" id="msg-to-label">Phone number</label>
+          <input class="sform-input" id="msg-to" placeholder="(555) 000-0000" />
+        </div>
+        <div class="sform-row" id="msg-name-row">
+          <label class="sform-label">Contact name (if new)</label>
+          <input class="sform-input" id="msg-contact-name" placeholder="Only needed if this isn't an existing contact" />
+        </div>
+        <div class="sform-row" id="msg-subject-row" hidden>
+          <label class="sform-label">Subject</label>
+          <input class="sform-input" id="msg-subject" placeholder="Subject line" />
+        </div>
+        <div class="sform-row">
+          <label class="sform-label">Message</label>
+          <textarea class="sform-input" id="msg-body" rows="5" style="resize:vertical" placeholder="Write your message…"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="sch-connect" id="msg-queue">Queue for approval</button>
+          <button class="sform-save" id="msg-send">Send now</button>
+        </div>
+        <div class="sform-hint" style="margin-top:10px">Queue it and it waits in your Inbox until you approve it, like everything else Adapix drafts. Send now delivers immediately through the same connections above.</div>
+      </div>
+
+      <div class="home-section-head" style="margin-top:26px">
+        <span class="section-eyebrow" style="margin:0">All messages</span>
+        <button class="home-see-all" id="msg-refresh">Refresh ›</button>
+      </div>
+      <div id="msg-list"><div style="padding:30px;text-align:center;color:var(--ink-3)">Loading…</div></div>
+    `;
+    renderLucide(main);
+    loadEmailCard();
+
+    const smsConnect = document.getElementById('msg-sms-connect');
+    if (smsConnect) smsConnect.addEventListener('click', () => toast('SMS setup coming soon'));
+
+    // Channel tabs swap the "To" field's meaning and toggle the subject line.
+    const toEl = document.getElementById('msg-to');
+    const toLabel = document.getElementById('msg-to-label');
+    const subjectRow = document.getElementById('msg-subject-row');
+    let channel = 'sms';
+    main.querySelectorAll('.mtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        main.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        channel = btn.dataset.channel;
+        const isEmail = channel === 'email';
+        subjectRow.hidden = !isEmail;
+        toLabel.textContent = isEmail ? 'Email address' : 'Phone number';
+        toEl.placeholder = isEmail ? 'you@customer.com' : '(555) 000-0000';
+        toEl.value = ''; // switching channels means switching what "To" even means
+      });
+    });
+
+    async function loadMessages(){
+      const listEl = document.getElementById('msg-list');
+      listEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink-3)">Loading…</div>';
+      try {
+        const j = await api('/api/v1/messages?channel=sms,email&limit=50');
+        const msgs = j.messages || [];
+        listEl.innerHTML = msgs.length ? '<div class="rows">' + msgs.map(m => {
+          const inbound = m.direction === 'inbound';
+          const icon = m.channel === 'email' ? 'mail' : 'message-square';
+          const when = m.created_at ? new Date(m.created_at).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+          const snippet = (m.subject ? m.subject + ' — ' : '') + (m.body || '').slice(0, 140);
+          return `
+          <div class="row-card">
+            <div style="flex:0 0 auto;color:var(--ink-3)"><i data-lucide="${icon}" style="width:16px;height:16px"></i></div>
+            <div class="text" style="flex:1"><b>${escapeHTML(m.contact_name)} ${inbound ? '→ you' : '← Adapix'}</b><span>${escapeHTML(snippet)}</span></div>
+            <span class="pill ${m.status === 'pending_approval' ? 'hot' : ''}">${escapeHTML((m.status || '').replace('_', ' '))}</span>
+            <span style="color:var(--ink-3);font-size:11.5px;flex:0 0 auto;white-space:nowrap">${when}</span>
+          </div>`;
+        }).join('') + '</div>' : `
+          <div style="text-align:center;padding:40px 20px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px">
+            <div style="font-size:13.5px;color:var(--ink-2)">No SMS or emails yet — write one above to get started.</div>
+          </div>`;
+        renderLucide(listEl);
+      } catch(_){
+        listEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink-3)">Could not load — try refreshing.</div>';
+      }
+    }
+    loadMessages();
+    document.getElementById('msg-refresh').addEventListener('click', (e) => { e.preventDefault(); loadMessages(); });
+
+    async function compose(queue){
+      const to = toEl.value.trim();
+      const bodyText = document.getElementById('msg-body').value.trim();
+      if (!to) { toast(channel === 'email' ? 'Enter an email address' : 'Enter a phone number', true); return; }
+      if (!bodyText) { toast('Write a message first', true); return; }
+      const btn = queue ? document.getElementById('msg-queue') : document.getElementById('msg-send');
+      const original = btn.textContent;
+      btn.disabled = true; btn.textContent = queue ? 'Queuing…' : 'Sending…';
+      try {
+        const r = await api('/api/v1/messages/compose', { method: 'POST', body: JSON.stringify({
+          channel, to,
+          contact_name: document.getElementById('msg-contact-name').value.trim(),
+          subject: document.getElementById('msg-subject').value.trim(),
+          body: bodyText,
+          queue,
+        })});
+        if (queue) {
+          toast('Queued — approve it from your Inbox');
+        } else if (r.ok) {
+          toast('Sent');
+        } else {
+          toast('Could not send — check your connection above', true);
+        }
+        document.getElementById('msg-body').value = '';
+        document.getElementById('msg-contact-name').value = '';
+        loadMessages();
+      } catch(e){
+        toast(e.message || 'Something went wrong', true);
+      }
+      btn.disabled = false; btn.textContent = original;
+    }
+    document.getElementById('msg-queue').addEventListener('click', () => compose(true));
+    document.getElementById('msg-send').addEventListener('click', () => compose(false));
   }
 
   function renderInboxView(){
