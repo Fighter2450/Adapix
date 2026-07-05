@@ -4281,6 +4281,7 @@ body::after{
 
   function goView(name){
     state.view = name;
+    state._userNavigated = true;
     state.settingsPage = null;
     state.contactsPage = null;
     document.querySelectorAll('#leftnav button, #bn button').forEach(b => {
@@ -4296,9 +4297,11 @@ body::after{
   }
 
   function bindNav(){
-    document.querySelectorAll('#leftnav button, #bn button').forEach(b => {
-      if (!b.dataset.view) return;
-      b.addEventListener('click', () => goView(b.dataset.view));
+    // Delegated so navigation works no matter when (or how often) the nav
+    // buttons are painted — a click can never land on an unbound button.
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('#leftnav button[data-view], #bn button[data-view]');
+      if (b) goView(b.dataset.view);
     });
 
     const runBtn = document.getElementById('run-campaigns');
@@ -4336,7 +4339,8 @@ body::after{
     await loadFeed();
     document.getElementById('loader')?.remove();
     const params = new URLSearchParams(window.location.search);
-    if (params.get('tab') === 'settings') {
+    // Don't stomp a tab the user already clicked while the feed was loading.
+    if (params.get('tab') === 'settings' && !state._userNavigated) {
       state.view = 'settings';
       state.settingsPage = 'channels';
     }
