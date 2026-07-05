@@ -3,1079 +3,749 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Adapix — AI follow-up for any business</title>
-<meta name="description" content="Adapix is the AI follow-up assistant for any business. It runs follow-ups overnight, drafts every message for your one-tap approval, and turns cold leads into booked appointments. Start a free 14-day trial — no credit card." />
-<meta property="og:title" content="Adapix — Your AI follow-up team" />
-<meta property="og:description" content="AI that follows up for you — drafts every message, you approve, leads stop going cold. 14-day free trial, no credit card required." />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMiAzMic+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSdnJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJyBzdG9wLWNvbG9yPScjYTc4YmZhJy8+PHN0b3Agb2Zmc2V0PScuNTUnIHN0b3AtY29sb3I9JyM3YzNhZWQnLz48c3RvcCBvZmZzZXQ9JzEnIHN0b3AtY29sb3I9JyMyMmQzZWUnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0nMzInIGhlaWdodD0nMzInIHJ4PSc5JyBmaWxsPSd1cmwoI2cpJy8+PHBhdGggZD0nTTE2IDcuNSBMOSAyNC41IE0xNiA3LjUgTDIzIDI0LjUgTTEyLjEgMTguMiBIMTkuOScgc3Ryb2tlPScjZmZmJyBzdHJva2Utd2lkdGg9JzIuNicgZmlsbD0nbm9uZScgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8+PC9zdmc+" />
+<title>Adapix — The AI teammate that follows up so you don't have to</title>
+<meta name="description" content="Adapix chases the quotes that went quiet, the no-shows, and the leads that never booked — by call, text, and email from your own number and inbox. Nothing sends until you approve it. 14-day free trial, no credit card." />
+<meta property="og:title" content="Adapix — AI follow-up for your business, with you in control" />
+<meta property="og:description" content="It writes the follow-up calls, texts, and emails as your business. Every draft waits for your OK. Free 14-day trial, no credit card." />
+<link rel="icon" type="image/svg+xml" href="adapix_mark.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"SoftwareApplication",
-  "name":"Adapix",
-  "applicationCategory":"BusinessApplication",
-  "operatingSystem":"Web",
-  "description":"AI follow-up assistant for any business. Drafts follow-up messages for human approval, recovers cold leads, and books appointments — all from a web dashboard.",
-  "brand":{"@type":"Brand","name":"Adapix"},
-  "offers":{
-    "@type":"Offer",
-    "price":"29",
-    "priceCurrency":"USD",
-    "description":"14-day free trial, then plans from $29/month",
-    "url":"https://adapixai.com/signup"
-  }
-}
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-/* =========================================================
-   APPLE-FEEL DESIGN SYSTEM
-   Canonical colors: #F5F5F7 (off-white) / #FFFFFF / #1D1D1F
-   Inter, tight letter-spacing, 24px rounded corners.
-   ========================================================= */
+/* ============================================================
+   ADAPIX — DARK NEON VIBRANT
+   deep indigo base, neon purple / rose / cyan accents
+   ============================================================ */
 :root{
-  /* ===== DARK NEON VIBRANT — neon purple + rose + cyan on deep indigo ===== */
-  --bg:#0b0b1c; --bg-card:#16132f; --bg-dark:#0c0a1d; --bg-dark-2:#161330;
-  --ink:#ece9ff; --ink-2:#b8b2e0; --ink-3:#8079a8;
-  --line:rgba(124,58,237,0.18); --line-dark:rgba(255,255,255,0.10);
-  --accent:#7c3aed; --accent-2:#a78bfa;
-  --adapix:#22d3ee; --adapix-2:#67e8f9;
-  --good:#34d399; --warn:#fbbf24; --hot:#f43f5e;
-  --r-card:22px; --r-tile:28px; --r-pill:980px;
-  --shadow-1:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
-  --shadow-2:0 4px 12px rgba(0,0,0,0.4), 0 24px 60px rgba(124,58,237,0.18);
-  --easing:cubic-bezier(.22,1,.36,1);
-  /* Vibrant accent spectrum */
-  --v-purple:#7c3aed; --v-violet:#a78bfa; --v-rose:#f43f5e; --v-pink:#f472b6;
-  --v-cyan:#22d3ee; --v-lime:#a3e635; --v-amber:#fbbf24;
+  --bg:#0b0b1c;
+  --card:#17142e;
+  --card-2:#211c3d;
+  --ink:#ece9ff;
+  --ink-2:#b8b2e0;
+  --ink-3:#827aa8;
+  --border:rgba(124,58,237,.18);
+  --purple:#7c3aed;
+  --violet:#a78bfa;
+  --rose:#f43f5e;
+  --pink:#f472b6;
+  --cyan:#22d3ee;
+  --grad:linear-gradient(135deg,#7c3aed,#a78bfa,#22d3ee);
+  --radius:16px;
+  --radius-sm:14px;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
 body{
-  font-family:'Inter','SF Pro Display','Helvetica Neue',Arial,sans-serif;
-  background:var(--bg);color:var(--ink);
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-  line-height:1.47;font-feature-settings:"ss01","cv11";
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
 }
-a{color:inherit;text-decoration:none}
-button{font:inherit;cursor:pointer;background:transparent;color:inherit;border:0}
-img,svg{display:block;max-width:100%}
-.eyebrow{font-size:14px;font-weight:600;letter-spacing:-.005em;color:var(--accent);margin-bottom:14px}
-.h-display{font-size:clamp(56px, 9vw, 128px);font-weight:700;letter-spacing:-.035em;line-height:.95;color:var(--ink)}
-.h1{font-size:clamp(44px, 6.5vw, 88px);font-weight:700;letter-spacing:-.03em;line-height:1.02;color:var(--ink)}
-.h2{font-size:clamp(32px, 4.2vw, 56px);font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--ink)}
-.lite{font-weight:300;color:var(--ink-2)}
-.kicker{font-size:clamp(17px,1.4vw,21px);font-weight:400;color:var(--ink-2);letter-spacing:-.005em;line-height:1.45;max-width:36ch}
-.center{text-align:center}
-.center .kicker{margin-left:auto;margin-right:auto}
+::selection{background:rgba(124,58,237,.45);color:#fff}
 
-.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:var(--r-pill);font-size:15px;font-weight:500;letter-spacing:-.005em;transition:transform .25s var(--easing),background .15s,box-shadow .25s;white-space:nowrap}
-.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px -3px rgba(0,113,227,.35)}
-.btn-primary:hover{background:var(--accent-2);transform:translateY(-2px);box-shadow:0 10px 28px -6px rgba(0,113,227,.5)}
-.btn-ghost{background:transparent;color:var(--accent)}
-.btn-ghost:hover{color:var(--accent-2)}
-.btn-ghost::after{content:'›';font-size:18px;line-height:1;margin-left:-2px;transition:transform .2s var(--easing)}
-.btn-ghost:hover::after{transform:translateX(3px)}
-.btn-outline{background:transparent;color:var(--ink);border:1.5px solid rgba(0,0,0,.15)}
-.btn-outline:hover{border-color:rgba(0,0,0,.3);transform:translateY(-1px)}
-.btn-lg{height:52px;padding:0 28px;font-size:17px}
+/* ---------- ambient orbs ---------- */
+.orbs{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.orbs::before,.orbs::after,.orb-rose{content:"";position:absolute;border-radius:50%;filter:blur(90px)}
+.orbs::before{width:640px;height:640px;top:-220px;left:-200px;background:radial-gradient(circle,rgba(124,58,237,.22),transparent 70%)}
+.orbs::after{width:560px;height:560px;bottom:-200px;right:-160px;background:radial-gradient(circle,rgba(34,211,238,.13),transparent 70%)}
+.orb-rose{width:440px;height:440px;top:-120px;right:6%;background:radial-gradient(circle,rgba(244,63,94,.12),transparent 70%)}
 
-/* NAV */
-.nav{position:sticky;top:0;z-index:50;height:48px;background:rgba(245,245,247,.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
-.nav-inner{max-width:980px;margin:0 auto;padding:0 22px;height:100%;display:flex;align-items:center;gap:18px}
-.nav-brand{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
-.nav-brand .mark{width:26px;height:26px;display:flex;align-items:center;justify-content:center}
-.nav-brand .mark img{width:100%;height:100%;display:block;object-fit:contain}
-.nav-links{display:flex;gap:0;margin-left:auto;align-items:center}
-.nav-link{padding:0 12px;font-size:13px;font-weight:500;color:var(--ink);opacity:.75;letter-spacing:-.01em;transition:opacity .15s}
-.nav-link:hover{opacity:1}
-.nav-cta{margin-left:8px;height:32px;padding:0 16px;border-radius:var(--r-pill);background:var(--ink);color:#fff;font-size:13px;font-weight:600;letter-spacing:-.01em;display:inline-flex;align-items:center;transition:background .15s,box-shadow .2s,transform .2s var(--easing);box-shadow:0 2px 8px -2px rgba(0,0,0,.3)}
-.nav-cta:hover{background:#000;transform:translateY(-1px);box-shadow:0 4px 12px -3px rgba(0,0,0,.4)}
-@media (max-width:740px){.nav-links .nav-link{display:none}}
-
-/* SECTIONS */
-section{padding:88px 22px;position:relative;overflow:hidden}
-@media (max-width:740px){section{padding:64px 18px}}
-.wrap{max-width:980px;margin:0 auto;width:100%}
-
-.reveal{opacity:0;transform:translateY(36px);transition:opacity .85s var(--easing),transform .85s var(--easing)}
-.reveal.in{opacity:1;transform:translateY(0)}
-.reveal-d1{transition-delay:.08s}
-.reveal-d2{transition-delay:.16s}
-.reveal-d3{transition-delay:.24s}
-.reveal-d4{transition-delay:.32s}
-
-/* HERO */
-.hero{padding:80px 22px 0;text-align:center}
-.hero .eyebrow{margin-bottom:10px}
-.hero h1.h-display{margin:0 auto 14px;max-width:14ch}
-.hero p.kicker{margin:0 auto 22px;max-width:34ch;font-size:clamp(19px,1.6vw,24px)}
-.hero-actions{display:flex;gap:14px;justify-content:center;margin-bottom:48px;flex-wrap:wrap}
-.hero-actions a{font-size:17px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
-.hero-actions a.demo-link{color:var(--ink);font-size:15px;font-weight:500;text-decoration:underline;text-underline-offset:3px;align-self:center}
-.hero-actions a.demo-link:hover{color:var(--ink)}
-
-/* DEVICE — more realistic Pi hardware render */
-.hero-visual{position:relative;width:min(560px, 90vw);height:min(420px, 68vw);margin:0 auto}
-.hero-visual::before{content:'';position:absolute;inset:-20% -10%;background:radial-gradient(ellipse 70% 50% at 50% 60%, rgba(0,184,230,.13) 0%, rgba(0,113,227,.07) 40%, transparent 70%);pointer-events:none;z-index:0}
-.device-3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;perspective:1600px}
-.device-shell{
-  width:58%;aspect-ratio:1/1;
-  border-radius:14%;
-  background:linear-gradient(145deg, #e8e8ec 0%, #d4d4da 35%, #bebebc 65%, #a8a8ae 100%);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.55) inset,
-    0 0 0 1px rgba(0,0,0,.08),
-    0 0 60px -10px rgba(0,184,230,.18),
-    0 60px 120px -30px rgba(0,40,80,.55),
-    0 30px 70px -20px rgba(0,30,60,.35);
-  position:relative;
-  transform:rotateX(12deg) rotateY(-16deg);
-  animation:devFloat 8s ease-in-out infinite;
+/* ---------- shared ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+section{padding:96px 0}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:16px;display:block;
 }
-/* top-face mark */
-.device-shell-inner{position:absolute;inset:12%;border-radius:10%;background:linear-gradient(145deg,#f0f0f3,#e2e2e6);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.08) inset}
-.device-mark-img{width:42%;height:auto;filter:drop-shadow(0 0 14px rgba(0,212,255,.5))}
-/* port strip on right edge */
-.device-ports{position:absolute;right:-6px;top:28%;bottom:28%;width:8px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#b0b0b6,#989898);display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;gap:3px;padding:4px 0}
-.device-port{width:5px;height:5px;border-radius:1px;background:#666}
-.device-port.usbc{background:#888;height:8px;border-radius:2px}
-/* LED underglow strip */
-.device-led{position:absolute;left:4%;right:4%;bottom:-22px;height:10px;border-radius:5px;background:linear-gradient(90deg, transparent 0%, rgba(0,212,255,.85) 15%, rgba(0,212,255,1) 50%, rgba(0,212,255,.85) 85%, transparent 100%);filter:blur(10px);animation:devGlow 4s ease-in-out infinite}
-.device-led-hard{position:absolute;left:14%;right:14%;bottom:-14px;height:2px;border-radius:1px;background:rgba(0,212,255,.6);animation:devGlow 4s ease-in-out infinite}
-.device-shadow{position:absolute;left:2%;right:2%;bottom:-32px;height:52px;background:radial-gradient(ellipse, rgba(0,20,50,.55) 0%, rgba(0,113,227,.12) 45%, transparent 72%);filter:blur(18px);animation:devGlow 4s ease-in-out infinite}
-@keyframes devFloat{0%,100%{transform:rotateX(12deg) rotateY(-16deg) translateY(0)}50%{transform:rotateX(12deg) rotateY(-16deg) translateY(-14px)}}
-@keyframes devGlow{0%,100%{opacity:.5;transform:scaleX(.88)}50%{opacity:1;transform:scaleX(1.06)}}
+h1,h2,h3{letter-spacing:-.02em;line-height:1.15}
+h2{font-size:clamp(28px,4.4vw,44px);font-weight:800;margin-bottom:18px}
+h3{font-size:20px;font-weight:700}
+.lede{color:var(--ink-2);max-width:680px;font-size:clamp(16px,2vw,19px)}
+p{color:var(--ink-2)}
+a{color:var(--violet)}
 
-/* STATEMENT */
-.statement{background:linear-gradient(180deg, var(--bg) 0%, #EEEEF0 100%);padding:120px 22px;text-align:center}
-.statement .h1{margin:0 auto;max-width:18ch}
-
-/* BENTO */
-.bento-wrap{padding:24px 22px 88px}
-.bento{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(6, 1fr);grid-auto-rows:minmax(180px, auto);gap:14px}
-.cell{position:relative;background:var(--bg-card);border-radius:var(--r-tile);padding:32px;overflow:hidden;transition:transform .35s var(--easing),box-shadow .35s var(--easing);box-shadow:var(--shadow-1)}
-.cell:hover{transform:translateY(-3px);box-shadow:var(--shadow-2)}
-.cell.dark{background:var(--bg-dark);color:#fff}
-.cell.dark .cell-eyebrow{color:var(--adapix-2)}
-.cell.dark .cell-sub{color:rgba(255,255,255,.65)}
-.cell.accent{background:linear-gradient(140deg, #003E66 0%, #001A2E 100%);color:#fff}
-.cell.accent .cell-eyebrow{color:var(--adapix-2)}
-.cell.accent .cell-sub{color:rgba(255,255,255,.7)}
-.cell-eyebrow{font-size:13px;font-weight:600;letter-spacing:-.005em;color:var(--accent);margin-bottom:10px}
-.cell-title{font-size:clamp(20px, 2.2vw, 28px);font-weight:600;letter-spacing:-.018em;line-height:1.18;margin-bottom:8px}
-.cell-sub{font-size:15px;color:var(--ink-2);line-height:1.45;max-width:28ch}
-.span-2{grid-column:span 2}
-.span-3{grid-column:span 3}
-.span-4{grid-column:span 4}
-.span-6{grid-column:span 6}
-.row-2{grid-row:span 2}
-@media (max-width:900px){.bento{grid-template-columns:repeat(2, 1fr)}.span-2,.span-3,.span-4,.span-6{grid-column:span 2}.row-2{grid-row:span 1}}
-@media (max-width:540px){.bento{grid-template-columns:1fr}.span-2,.span-3,.span-4,.span-6{grid-column:span 1}}
-.cell-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(140deg, var(--accent), var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;margin-bottom:18px}
-.cell.dark .cell-icon{background:linear-gradient(140deg, var(--adapix), var(--adapix-2));color:#003248}
-.cell-stat{font-size:clamp(48px, 5.6vw, 80px);font-weight:700;letter-spacing:-.04em;line-height:.95;background:linear-gradient(140deg, var(--accent), var(--adapix));-webkit-background-clip:text;background-clip:text;color:transparent}
-.live-feed{display:flex;flex-direction:column;gap:10px;margin-top:18px}
-.live-row{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.85)}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good);flex:0 0 7px;animation:pulse 2s ease-in-out infinite}
-.live-row .time{font-variant-numeric:tabular-nums;color:rgba(255,255,255,.5);font-size:12px;min-width:42px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-
-/* PILOT PROGRAM */
-.pilot{padding:96px 22px;background:var(--bg-card);text-align:center}
-.pilot .wrap{max-width:760px}
-.pilot-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#003E66,#001A2E);color:#00D4FF;border-radius:var(--r-pill);padding:6px 18px;font-size:13px;font-weight:600;letter-spacing:-.005em;margin-bottom:24px}
-.pilot-badge .dot{width:7px;height:7px;border-radius:50%;background:#00D4FF;animation:pulse 2s infinite}
-.pilot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px;text-align:left}
-@media(max-width:640px){.pilot-grid{grid-template-columns:1fr}}
-.pilot-card{background:var(--bg);border-radius:var(--r-card);padding:28px;border:1px solid var(--line)}
-.pilot-card .n{font-size:36px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:4px}
-.pilot-card .l{font-size:14px;color:var(--ink-2)}
-.pilot-includes{margin-top:32px;background:linear-gradient(140deg,#003E66,#001A2E);border-radius:var(--r-card);padding:32px 36px;text-align:left;color:#fff}
-.pilot-includes h3{font-size:20px;font-weight:600;letter-spacing:-.015em;margin-bottom:18px;color:#fff}
-.pilot-includes ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
-@media(max-width:540px){.pilot-includes ul{grid-template-columns:1fr}}
-.pilot-includes li{font-size:15px;color:rgba(255,255,255,.8);display:flex;align-items:flex-start;gap:10px}
-.pilot-includes li::before{content:"✓";color:#00D4FF;font-weight:700;flex-shrink:0;margin-top:1px}
-
-/* FEATURE rows */
-.feature{padding:120px 22px;background:var(--bg)}
-.feature.alt{background:var(--bg-card)}
-.feature .wrap{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;max-width:1100px}
-.feature.flip .wrap{direction:rtl}
-.feature.flip .wrap > *{direction:ltr}
-@media (max-width:820px){.feature .wrap{grid-template-columns:1fr;gap:36px}.feature.flip .wrap{direction:ltr}}
-.feature-art{aspect-ratio:1/1;border-radius:var(--r-tile);background:linear-gradient(140deg, #EBEBED, #F5F5F7);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-1);overflow:hidden;position:relative}
-.feature-art.dark{background:linear-gradient(140deg, #1D1D1F, #000)}
-.phone{width:62%;aspect-ratio:9/19;border-radius:30px;background:#000;border:8px solid #1D1D1F;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
-.phone-screen{flex:1;background:linear-gradient(180deg, #0a1834 0%, #061634 100%);padding:14px 12px;display:flex;flex-direction:column;gap:10px}
-.phone-msg{background:rgba(0,184,230,.10);border:1px solid rgba(0,184,230,.25);padding:8px 10px;border-radius:12px;font-size:9.5px;color:#aef0ff;line-height:1.35}
-.phone-msg b{color:#fff;display:block;margin-bottom:2px;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
-.phone-actions{display:flex;gap:6px;margin-top:auto}
-.phone-btn{flex:1;height:24px;border-radius:6px;font-size:9px;font-weight:600;background:linear-gradient(180deg, #00d4ff, #00b8e6);color:#003248;display:flex;align-items:center;justify-content:center}
-.phone-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.18);color:#fff}
-.mini-dash{width:88%;aspect-ratio:16/10;border-radius:14px;background:linear-gradient(180deg, #0a1834 0%, #061634 100%);padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 20px 50px -16px rgba(0,0,0,.4)}
-.mini-dash-bar{display:flex;gap:6px;margin-bottom:6px}
-.mini-dash-bar span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
-.mini-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1}
-.mini-stat{background:rgba(255,255,255,.04);border:1px solid rgba(0,184,230,.18);border-radius:8px;padding:8px;display:flex;flex-direction:column;justify-content:space-between}
-.mini-stat .n{font-size:18px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
-.mini-stat .l{font-size:7.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
-.mini-stat.green{border-color:rgba(121,224,142,.3)}.mini-stat.green .n{color:#79e08e}
-.mini-stat.cyan{border-color:rgba(0,212,255,.3)}.mini-stat.cyan .n{color:#00d4ff}
-
-/* SECURITY STRIP */
-.security{padding:80px 22px;background:linear-gradient(160deg,#001A2E 0%,#00111F 100%);color:#fff;position:relative}
-.security::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg, transparent 0%, rgba(0,184,230,.35) 30%, rgba(0,184,230,.6) 50%, rgba(0,184,230,.35) 70%, transparent 100%)}
-.security .wrap{max-width:980px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-@media(max-width:700px){.security .wrap{grid-template-columns:1fr;gap:36px}}
-.security .h2{color:#fff;max-width:16ch}
-.security .kicker{color:rgba(255,255,255,.65);max-width:38ch}
-.security-pillars{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.sec-pill{background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:14px;padding:18px 20px}
-.sec-pill .icon{width:28px;height:28px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
-.sec-pill .title{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
-.sec-pill .desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.4}
-
-/* SPECS */
-.specs{padding:96px 22px;background:var(--bg-card)}
-.specs .wrap{max-width:980px}
-.specs-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:0;border-top:1px solid var(--line);margin-top:48px}
-@media (max-width:740px){.specs-grid{grid-template-columns:1fr}}
-.spec{padding:32px 24px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
-.spec:nth-child(3n){border-right:0}
-@media (max-width:740px){.spec{border-right:0}}
-.spec-lbl{font-size:13px;color:var(--ink-2);font-weight:500;margin-bottom:6px;letter-spacing:-.005em}
-.spec-val{font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.012em;line-height:1.25}
-.spec-note{font-size:12px;color:var(--ink-3);margin-top:3px;font-weight:400}
-
-/* PRICING */
-.pricing{padding:120px 22px;background:var(--bg);text-align:center}
-.pricing .h2{margin:0 auto 18px;max-width:18ch}
-.pricing .kicker{margin:0 auto 56px}
-.price-card{max-width:560px;margin:0 auto;background:var(--bg-card);border-radius:var(--r-tile);padding:48px 40px;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.06), 0 24px 64px -12px rgba(0,40,80,.14), 0 0 0 1px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.04)}
-.price-card .product{font-size:13px;font-weight:600;color:var(--accent);letter-spacing:-.005em;margin-bottom:8px}
-.price-card .product-name{font-size:32px;font-weight:600;letter-spacing:-.022em;color:var(--ink);margin-bottom:6px}
-.price-card .product-tag{font-size:15px;color:var(--ink-2);margin-bottom:28px;line-height:1.45}
-.price-row{display:flex;align-items:baseline;justify-content:space-between;padding:18px 0;border-top:1px solid var(--line);font-size:15px;color:var(--ink-2)}
-.price-row b{color:var(--ink);font-weight:600;font-size:17px;letter-spacing:-.012em}
-.price-row.big b{font-size:32px;letter-spacing:-.025em;font-weight:700}
-.price-row .note{font-size:12px;color:var(--ink-3);font-weight:400;display:block;margin-top:2px}
-.price-total{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:36px}
-.price-guarantee{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
-.price-guarantee::before{content:"↩";font-size:14px;color:var(--good)}
-
-/* PRICING EXAMPLES */
-.price-examples{max-width:760px;margin:56px auto 0;text-align:left}
-.price-ex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-@media(max-width:680px){.price-ex-grid{grid-template-columns:1fr}}
-.price-ex{background:var(--bg-card);border-radius:var(--r-card);padding:24px;border:1px solid var(--line)}
-.price-ex-biz{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
-.price-ex-detail{font-size:13px;color:var(--ink-3);margin-bottom:12px;line-height:1.4}
-.price-ex-calc{font-size:12px;color:var(--ink-3);padding:8px 10px;background:var(--bg);border-radius:8px;font-family:monospace;margin-bottom:12px}
-.price-ex-total{font-size:26px;font-weight:700;letter-spacing:-.025em;color:var(--accent)}
-.price-ex-note{font-size:14px;color:var(--ink-3);line-height:1.6;text-align:center;max-width:52ch;margin:0 auto}
-
-/* COMPARE */
-.compare{padding:0 22px 96px;background:var(--bg)}
-.compare .wrap{max-width:820px}
-.compare-table{width:100%;border-collapse:collapse;margin-top:36px;font-size:15px}
-.compare-table th{padding:14px 18px;text-align:left;font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--line)}
-.compare-table th:nth-child(2){color:var(--accent);background:rgba(0,113,227,.05);border-bottom:2px solid var(--accent);border-radius:8px 8px 0 0}
-.compare-table td:nth-child(2){background:rgba(0,113,227,.03);font-weight:600;color:var(--ink)}
-.compare-table tr:last-child td:nth-child(2){border-radius:0 0 8px 8px}
-.compare-table td{padding:14px 18px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:middle}
-.compare-table td:first-child{font-weight:500;color:var(--ink)}
-.compare-table tr:last-child td{border-bottom:0}
-.compare-table .hl{background:rgba(0,113,227,.04)}
-.compare-table .hl td:first-child{color:var(--accent);font-weight:600}
-.check{color:var(--good);font-size:16px;font-weight:700}
-.compare-table td:nth-child(2) .check{font-size:18px;filter:drop-shadow(0 0 4px rgba(52,199,89,.4))}
-.cross{color:var(--ink-3);font-size:16px}
-.compare-table th:not(:first-child){text-align:center}
-.compare-table td:not(:first-child){text-align:center}
-
-/* FAQ */
-.faq{padding:96px 22px;background:var(--bg-card)}
-.faq .wrap{max-width:720px}
-.faq-list{margin-top:48px;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
-.faq-item{border-bottom:1px solid var(--line)}
-.faq-q{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font-size:17px;font-weight:500;color:var(--ink);cursor:pointer;letter-spacing:-.01em;gap:20px;user-select:none}
-.faq-q .icon{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink-2);transition:transform .3s var(--easing),background .2s;flex-shrink:0;line-height:1}
-.faq-item.open .faq-q .icon{transform:rotate(45deg);background:var(--accent);color:#fff}
-.faq-item.open .faq-q{color:var(--accent)}
-.faq-item.open{border-bottom-color:rgba(0,113,227,.2)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .45s var(--easing)}
-.faq-item.open .faq-a{max-height:500px}
-.faq-a-inner{padding:0 0 22px 16px;font-size:15px;color:var(--ink-2);line-height:1.6;max-width:56ch;border-left:2px solid rgba(0,113,227,.2)}
-.faq-a-inner a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
-
-/* RESERVE */
-.reserve{padding:120px 22px;background:var(--bg);text-align:center}
-.reserve .wrap{max-width:640px}
-.reserve .h2{margin:0 auto 48px;max-width:16ch}
-.reserve-steps{display:flex;align-items:flex-start;gap:0;margin-bottom:52px;text-align:left}
-@media(max-width:680px){.reserve-steps{flex-direction:column;gap:24px}.step-arrow{display:none}}
-.reserve-step{flex:1;display:flex;gap:16px;align-items:flex-start}
-.step-num{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.01em}
-.step-body{padding-top:4px}
-.step-title{font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
-.step-desc{font-size:14px;color:var(--ink-2);line-height:1.5;max-width:18ch}
-.step-arrow{font-size:20px;color:var(--ink-3);padding:8px 10px;flex-shrink:0;align-self:flex-start;margin-top:6px}
-.reserve-form{display:flex;flex-direction:column;gap:12px}
-.reserve-form input{height:52px;padding:0 18px;border-radius:14px;background:var(--bg-card);border:1px solid var(--line);font-family:inherit;font-size:16px;color:var(--ink);letter-spacing:-.005em;transition:border-color .15s,box-shadow .15s}
-.reserve-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,113,227,.12)}
-.reserve-form .btn{align-self:stretch;margin-top:8px;justify-content:center;font-size:17px;font-weight:600}
-.reserve-fine{margin-top:20px;font-size:13px;color:var(--ink-3);line-height:1.6}
-.reserve-fine a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
-.reserve-success{background:var(--bg-card);border-radius:18px;padding:36px 24px;font-size:17px;color:var(--ink);border:1px solid var(--line);margin-top:24px}
-.reserve-success b{color:var(--good)}
-
-/* FOOTER */
-.footer{background:var(--bg);padding:56px 22px 36px;font-size:13px;color:var(--ink-3);border-top:1px solid var(--line)}
-.footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px}
-.footer-links{display:flex;gap:22px;flex-wrap:wrap}
-.footer-links a{color:var(--ink-3);transition:color .15s}
-.footer-links a:hover{color:var(--ink)}
-.footer .copy{font-size:12px;letter-spacing:-.005em}
-
-/* =========================================================
-   DARK NEON VIBRANT OVERRIDE — animated, glassmorphic
-   ========================================================= */
-@keyframes orbFloat{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(0,-18px,0) scale(1.06)}}
-@keyframes orbFloat2{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(16px,14px,0)}}
-@keyframes textShine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
-@keyframes gradientPan{0%{background-position:0% 50%}100%{background-position:200% 50%}}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 18px rgba(124,58,237,.3)}50%{box-shadow:0 0 36px rgba(124,58,237,.6)}}
-@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-
-/* ── Deep canvas + animated gradient orbs ── */
-body{background:#0b0b1c}
-body::before{
-  content:'';position:fixed;inset:-12%;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(640px 640px at 12% 14%, rgba(124,58,237,.24), transparent 60%),
-    radial-gradient(540px 540px at 90% 8%, rgba(244,63,94,.15), transparent 60%),
-    radial-gradient(760px 760px at 80% 92%, rgba(34,211,238,.14), transparent 60%),
-    radial-gradient(560px 560px at 16% 96%, rgba(163,230,53,.08), transparent 60%);
-  animation:orbFloat 17s ease-in-out infinite alternate;
+.grad-text{
+  background:var(--grad);background-size:220% 220%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 7s ease-in-out infinite;
 }
-body::after{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(460px 460px at 50% 42%, rgba(167,139,250,.10), transparent 70%);
-  animation:orbFloat2 24s ease-in-out infinite alternate;
-}
-.nav,section,footer,.bento-wrap,body>div{position:relative;z-index:1}
+@keyframes shine{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
-/* ── Transparent sections so orbs glow through ── */
-section,.statement,.feature,.feature.alt,.specs,.faq,.pilot,.pricing,.reserve,.compare,.bento-wrap,.footer{background:transparent}
-body>div[style]{background:transparent !important}
-
-/* ── Nav: dark glass ── */
-.nav{
-  background:rgba(12,10,29,.72);
-  backdrop-filter:saturate(160%) blur(20px);-webkit-backdrop-filter:saturate(160%) blur(20px);
-  border-bottom:1px solid rgba(124,58,237,.2);
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:15px 28px;border-radius:14px;
+  font-weight:700;font-size:16px;text-decoration:none;letter-spacing:-.01em;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+  white-space:nowrap;
 }
-.nav-brand{color:var(--ink)}
-.nav-link{color:var(--ink)}
-.nav-cta{
-  background:linear-gradient(120deg,#7c3aed,#a78bfa);color:#fff;
-  box-shadow:0 4px 14px -2px rgba(124,58,237,.5);
-}
-.nav-cta:hover{background:linear-gradient(120deg,#8b4bff,#b9a3ff);box-shadow:0 8px 22px -4px rgba(124,58,237,.7)}
-
-/* ── Gradient headlines ── */
-.hero h1.h-display{
-  background:linear-gradient(90deg,#ffffff,#c4b5fd,#67e8f9,#ffffff);
-  background-size:200% auto;-webkit-background-clip:text;background-clip:text;
-  -webkit-text-fill-color:transparent;color:#fff;
-  animation:textShine 6s linear infinite;
-}
-.h1,.h2{
-  background:linear-gradient(180deg,#ffffff 0%,#d8d0ff 55%,#a78bfa 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff;
-}
-.lite{-webkit-text-fill-color:#9489c8;color:#9489c8}
-.eyebrow{color:var(--v-violet)}
-
-/* ── Buttons: gradient + glow ── */
 .btn-primary{
-  background:linear-gradient(120deg,#7c3aed,#a78bfa,#7c3aed);background-size:200% 100%;
-  box-shadow:0 4px 16px -2px rgba(124,58,237,.5);
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;
+  box-shadow:0 8px 32px rgba(124,58,237,.42),0 2px 8px rgba(124,58,237,.3);
 }
-.btn-primary:hover{background-position:100% 50%;transform:translateY(-2px);box-shadow:0 10px 30px -4px rgba(124,58,237,.7)}
-.btn-outline{border:1.5px solid rgba(167,139,250,.35);color:var(--ink)}
-.btn-outline:hover{border-color:rgba(167,139,250,.6);background:rgba(124,58,237,.1)}
-.hero-actions a.demo-link{color:var(--ink-2)}
-.hero-actions a.demo-link:hover{color:var(--ink)}
-
-/* ── Bento cells: glass + gradient accent ── */
-.cell{
-  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(26,22,52,.46));
-  backdrop-filter:blur(13px) saturate(1.2);-webkit-backdrop-filter:blur(13px) saturate(1.2);
-  border:1px solid rgba(124,58,237,.18);box-shadow:0 4px 18px rgba(0,0,0,.28);
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(124,58,237,.55)}
+.btn-ghost{
+  color:var(--ink);border:1px solid rgba(124,58,237,.45);
+  background:rgba(124,58,237,.07);
 }
-.cell::before{
-  content:'';position:absolute;left:0;right:0;top:0;height:2px;
-  background:linear-gradient(90deg,#7c3aed,#a78bfa,#22d3ee,#f43f5e);background-size:200% 100%;
-  animation:gradientPan 5s linear infinite;opacity:.8;
+.btn-ghost:hover{background:rgba(124,58,237,.16);transform:translateY(-2px)}
+.btn-sm{padding:10px 20px;font-size:14.5px;border-radius:12px}
+.cta-note{display:block;margin-top:14px;font-size:14px;color:var(--ink-3)}
+
+/* ---------- nav ---------- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(11,11,28,.72);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
 }
-.cell:hover{transform:translateY(-4px);box-shadow:0 14px 36px rgba(0,0,0,.4),0 0 30px rgba(124,58,237,.22);border-color:rgba(167,139,250,.4)}
-.cell.dark{background:linear-gradient(180deg,#141033,#0c0a20);color:#fff}
-.cell.accent{background:linear-gradient(140deg,#3b1d8a 0%,#1a0f47 100%);color:#fff}
-.cell.accent .cell-eyebrow,.cell.dark .cell-eyebrow{color:var(--v-cyan)}
-.cell-eyebrow{color:var(--v-violet)}
-.cell-sub{color:var(--ink-2)}
-.cell-icon{background:linear-gradient(140deg,#7c3aed,#a78bfa);box-shadow:0 4px 16px rgba(124,58,237,.4)}
-.cell.dark .cell-icon{background:linear-gradient(140deg,#22d3ee,#67e8f9);color:#06283a}
-.cell-stat{background:linear-gradient(140deg,#a78bfa,#7c3aed,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
-
-/* ── Pilot / dark-blue panels recolored to purple ── */
-.cell.accent,.pilot-badge,.pilot-includes{background:linear-gradient(140deg,#3b1d8a,#1a0f47)}
-.pilot-badge{color:#c4b5fd}.pilot-badge .dot{background:#a78bfa}
-.pilot-card{
-  background:linear-gradient(180deg,rgba(40,34,72,.5),rgba(24,20,48,.42));
-  border:1px solid rgba(124,58,237,.18);
+.nav-inner{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:28px}
+.nav-logo{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink);font-weight:800;font-size:19px;letter-spacing:-.02em}
+.nav-logo img{width:32px;height:32px;display:block}
+.nav-links{display:flex;gap:26px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--ink-2);text-decoration:none;font-size:15px;font-weight:500;transition:color .15s}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{margin-left:6px}
+.nav-toggle{display:none;margin-left:auto;background:none;border:1px solid var(--border);border-radius:10px;padding:8px 11px;cursor:pointer;color:var(--ink);font-size:18px;line-height:1}
+@media (max-width:820px){
+  .nav-links{
+    display:none;position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;gap:4px;padding:14px 24px 20px;
+    background:rgba(11,11,28,.96);backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--border);align-items:stretch;
+  }
+  .nav-links.open{display:flex}
+  .nav-links a{padding:10px 4px;font-size:16px}
+  .nav-cta{margin:8px 0 0;justify-content:center}
+  .nav-toggle{display:block}
 }
-.pilot-card .n{color:#fff}
-.pilot-includes li::before{color:var(--v-cyan)}
 
-/* ── Feature art panels ── */
-.feature-art{
-  background:linear-gradient(140deg,rgba(40,34,72,.55),rgba(20,17,42,.5));
-  border:1px solid rgba(124,58,237,.16);box-shadow:0 10px 34px rgba(0,0,0,.34);
-}
-.feature-art.dark{background:linear-gradient(140deg,#141033,#0a0818)}
-.phone-screen,.mini-dash{background:linear-gradient(180deg,#160f3a 0%,#0c0a24 100%)}
-.phone-btn{background:linear-gradient(180deg,#a78bfa,#7c3aed);color:#fff}
-.mini-stat.cyan .n{color:#67e8f9}.mini-stat.cyan{border-color:rgba(103,232,249,.35)}
-.mini-stat{border-color:rgba(124,58,237,.25)}
-
-/* ── Security strip: deep purple ── */
-.security{background:linear-gradient(160deg,#1a0f47 0%,#0c0a20 100%)}
-.security::before{background:linear-gradient(90deg,transparent,rgba(124,58,237,.45) 30%,rgba(34,211,238,.6) 50%,rgba(124,58,237,.45) 70%,transparent)}
-.security .h2{-webkit-text-fill-color:#fff;color:#fff}
-.sec-pill{background:rgba(124,58,237,.1);border:1px solid rgba(167,139,250,.22);transition:transform .3s var(--easing),box-shadow .3s,border-color .3s}
-.sec-pill:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.45);box-shadow:0 10px 28px rgba(0,0,0,.34),0 0 24px rgba(124,58,237,.2)}
-
-/* ── Specs ── */
-.spec{border-color:var(--line)}
-.spec-val{color:var(--ink)}
-
-/* ── Pricing cards: glass ── */
-.price-card,.price-ex{
-  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(22,18,45,.48));
-  backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);
-  border:1px solid rgba(124,58,237,.2);box-shadow:0 10px 36px rgba(0,0,0,.34);
-}
-.price-ex{transition:transform .3s var(--easing),box-shadow .3s,border-color .3s}
-.price-ex:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.4);box-shadow:0 12px 30px rgba(0,0,0,.36),0 0 24px rgba(124,58,237,.2)}
-.price-ex-total{color:var(--v-violet)}
-.price-ex-calc{background:rgba(124,58,237,.1);color:var(--ink-2)}
-.price-card .product{color:var(--v-violet)}
-.price-card .product-name{color:var(--ink)}
-.price-row b{color:var(--ink)}
-
-/* ── Compare table ── */
-.compare-table th:nth-child(2){color:var(--v-violet);background:rgba(124,58,237,.1);border-bottom-color:var(--v-purple)}
-.compare-table td:nth-child(2){background:rgba(124,58,237,.07);color:var(--ink)}
-.compare-table td:first-child{color:var(--ink)}
-.compare-table .hl{background:rgba(124,58,237,.06)}
-.compare-table .hl td:first-child{color:var(--v-violet)}
-.check{color:var(--good)}
-.compare-table td:nth-child(2) .check{filter:drop-shadow(0 0 5px rgba(52,211,153,.5))}
-
-/* ── FAQ ── */
-.faq-q{color:var(--ink)}
-.faq-q .icon{background:rgba(124,58,237,.12);color:var(--ink-2)}
-.faq-item.open .faq-q .icon{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff}
-.faq-item.open .faq-q{color:var(--v-violet)}
-.faq-a-inner{color:var(--ink-2);border-left-color:rgba(167,139,250,.4)}
-.faq-a-inner a{color:var(--v-violet)}
-
-/* ── Reserve ── */
-.step-num{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.4)}
-.reserve-form input{
-  background:rgba(40,34,72,.5);border:1px solid rgba(124,58,237,.22);color:var(--ink);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-}
-.reserve-form input::placeholder{color:var(--ink-3)}
-.reserve-form input:focus{border-color:var(--v-purple);box-shadow:0 0 0 4px rgba(124,58,237,.2)}
-.reserve-success{background:rgba(40,34,72,.5);border:1px solid rgba(124,58,237,.22);color:var(--ink)}
-.reserve-fine a{color:var(--v-violet)}
-
-/* ── Device mockup glow on dark ── */
-.device-led,.device-led-hard{background:linear-gradient(90deg,transparent,rgba(167,139,250,.9) 15%,rgba(124,58,237,1) 50%,rgba(34,211,238,.9) 85%,transparent)}
-.device-mark-img{filter:drop-shadow(0 0 16px rgba(167,139,250,.7))}
-.device-shadow{background:radial-gradient(ellipse,rgba(124,58,237,.5) 0%,rgba(34,211,238,.14) 45%,transparent 72%)}
-
-/* ── Richer reveal motion ── */
-.reveal{transform:translateY(40px) scale(.985)}
-.reveal.in{transform:translateY(0) scale(1)}
-
-/* ── Footer ── */
-.footer{border-top:1px solid rgba(124,58,237,.18)}
-.footer-links a:hover{color:var(--v-violet)}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:9px}
-::-webkit-scrollbar-track{background:#0b0b1c}
-::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#7c3aed,#22d3ee);border-radius:9px;border:2px solid #0b0b1c}
-
-/* ── Hero trust line + chip ── */
-.hero-trust{margin:-32px auto 40px;font-size:13px;color:var(--ink-3);letter-spacing:-.005em}
-.trust-chip{
+/* ---------- hero ---------- */
+.hero{padding:172px 0 110px;text-align:center;position:relative}
+.hero h1{font-size:clamp(36px,6vw,66px);font-weight:900;letter-spacing:-.03em;max-width:940px;margin:0 auto 24px}
+.hero .lede{margin:0 auto 38px}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.hero-badge{
   display:inline-flex;align-items:center;gap:8px;
-  background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(34,211,238,.1));
-  border:1px solid rgba(167,139,250,.3);color:#c4b5fd;
-  border-radius:var(--r-pill);padding:7px 18px;font-size:13px;font-weight:600;letter-spacing:-.005em;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--violet);border:1px solid rgba(124,58,237,.35);border-radius:999px;
+  padding:7px 16px;margin-bottom:26px;background:rgba(124,58,237,.08);
 }
-.trust-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:pulse 2s infinite}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* ── Hero app-window mockup ── */
-.app-window{
-  width:min(720px,94vw);margin:0 auto;text-align:left;
-  border-radius:16px;overflow:hidden;position:relative;z-index:1;
-  background:linear-gradient(180deg,rgba(34,28,66,.92),rgba(18,15,40,.92));
-  border:1px solid rgba(167,139,250,.28);
-  box-shadow:0 30px 90px -20px rgba(0,0,0,.7),0 0 60px -10px rgba(124,58,237,.4);
-  animation:floatY 7s ease-in-out infinite;
+/* ---------- cards / grids ---------- */
+.grid{display:grid;gap:20px}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+@media (max-width:900px){.grid-3{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}}
+.card{
+  background:linear-gradient(180deg,var(--card),rgba(23,20,46,.6));
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:30px 28px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:transform .2s ease,border-color .2s ease;
 }
-.app-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(167,139,250,.16);background:rgba(12,10,29,.6)}
-.app-bar .dot{width:11px;height:11px;border-radius:50%}
-.app-bar .dot.r{background:#ff5f57}.app-bar .dot.y{background:#febc2e}.app-bar .dot.g{background:#28c840}
-.app-url{margin-left:12px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.app-body{display:grid;grid-template-columns:150px 1fr;min-height:300px}
-@media(max-width:560px){.app-body{grid-template-columns:1fr}.app-side{display:none}}
-.app-side{border-right:1px solid rgba(167,139,250,.14);padding:14px 10px;display:flex;flex-direction:column;gap:4px;background:rgba(12,10,29,.4)}
-.app-nav{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--ink-3);font-weight:500}
-.app-nav span{width:14px;height:14px;border-radius:4px;background:rgba(167,139,250,.3)}
-.app-nav.on{background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(34,211,238,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(167,139,250,.3)}
-.app-nav.on span{background:linear-gradient(135deg,#a78bfa,#22d3ee)}
-.app-main{padding:18px 18px 16px;display:flex;flex-direction:column;gap:9px}
-.app-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-bottom:2px}
-.app-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,rgba(48,40,86,.6),rgba(30,25,58,.5));border:1px solid rgba(167,139,250,.16)}
-.app-row::before{content:'';width:3px;align-self:stretch;border-radius:3px;background:linear-gradient(180deg,#a78bfa,#22d3ee)}
-.app-row-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.app-row-txt b{font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.app-row-txt span{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.app-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(167,139,250,.1));color:#c4b5fd;flex-shrink:0}
-.app-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:5px}
-.app-stat{background:rgba(124,58,237,.1);border:1px solid rgba(167,139,250,.18);border-radius:10px;padding:11px 12px}
-.app-stat-n{font-size:22px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-variant-numeric:tabular-nums}
-.app-stat-l{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:2px}
+.card:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.4)}
+.card h3{margin-bottom:10px}
+.card p{font-size:15.5px}
+.card-icon{
+  width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:18px;font-size:21px;
+  background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.3);
+}
+.card-icon.cyan{background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.3)}
+.card-icon.rose{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3)}
 
-/* ── Pricing plan grid ── */
-.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:980px;margin:56px auto 0;text-align:left}
-@media(max-width:820px){.plan-grid{grid-template-columns:1fr;max-width:440px}}
-.plan{
-  position:relative;border-radius:var(--r-tile);padding:32px 28px;display:flex;flex-direction:column;
-  background:linear-gradient(180deg,rgba(40,34,72,.55),rgba(22,18,45,.48));
-  backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);
-  border:1px solid rgba(124,58,237,.2);box-shadow:0 10px 34px rgba(0,0,0,.32);
-  transition:transform .35s var(--easing),box-shadow .35s,border-color .35s;
+/* ---------- timeline (how it works) ---------- */
+.timeline{position:relative;max-width:760px;margin:56px auto 0}
+.timeline::before{
+  content:"";position:absolute;left:19px;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(180deg,var(--purple),var(--cyan));opacity:.4;
 }
-.plan:hover{transform:translateY(-5px);border-color:rgba(167,139,250,.4);box-shadow:0 18px 44px rgba(0,0,0,.4),0 0 34px rgba(124,58,237,.24)}
-.plan.featured{border-color:rgba(167,139,250,.5);box-shadow:0 14px 44px rgba(124,58,237,.3),0 0 0 1px rgba(167,139,250,.3)}
-.plan.featured::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(135deg,#7c3aed,#22d3ee,#f43f5e);background-size:200% 100%;animation:gradientPan 5s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
-.plan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 14px;border-radius:var(--r-pill);box-shadow:0 4px 14px rgba(124,58,237,.5)}
-.plan-name{font-size:15px;font-weight:600;color:var(--v-violet);letter-spacing:-.01em;margin-bottom:10px}
-.plan-price{font-size:44px;font-weight:800;letter-spacing:-.03em;color:var(--ink);line-height:1;margin-bottom:10px}
-.plan-price span{font-size:16px;font-weight:500;color:var(--ink-3);letter-spacing:0}
-.plan-tag{font-size:14px;color:var(--ink-2);line-height:1.45;margin-bottom:20px;min-height:40px}
-.plan-feats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:26px;flex:1}
-.plan-feats li{font-size:14px;color:var(--ink-2);line-height:1.4;display:flex;align-items:flex-start;gap:10px}
-.plan-feats li::before{content:'✓';color:var(--v-cyan);font-weight:700;flex-shrink:0}
+.t-item{position:relative;padding:0 0 44px 62px}
+.t-item:last-child{padding-bottom:0}
+.t-dot{
+  position:absolute;left:8px;top:4px;width:24px;height:24px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--purple);
+  box-shadow:0 0 14px rgba(124,58,237,.55);
+}
+.t-item:nth-child(3) .t-dot{border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,.5)}
+.t-item:nth-child(4) .t-dot{border-color:var(--pink);box-shadow:0 0 14px rgba(244,114,182,.5)}
+.t-item:nth-child(5) .t-dot{border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,.5)}
+.t-time{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:.12em;color:var(--violet);text-transform:uppercase;display:block;margin-bottom:6px}
+.t-item h3{margin-bottom:8px}
+.t-item p{font-size:16px}
 
-/* ── Reduced motion ── */
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+/* ---------- control section: approval card + station ---------- */
+.control-visuals{display:grid;grid-template-columns:1fr 1.25fr;gap:24px;margin-top:52px;align-items:start}
+@media (max-width:940px){.control-visuals{grid-template-columns:1fr}}
+
+.approval-card{
+  background:var(--card-2);border:1px solid rgba(124,58,237,.3);border-radius:var(--radius);
+  padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 40px rgba(124,58,237,.12);
 }
+.ac-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ac-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.ac-pill{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.08em;
+  color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);
+  border-radius:999px;padding:4px 11px;
+}
+.ac-to{font-size:13.5px;color:var(--ink-3);margin-bottom:10px}
+.ac-to strong{color:var(--ink-2);font-weight:600}
+.ac-msg{
+  background:rgba(11,11,28,.6);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;font-size:15px;color:var(--ink);line-height:1.6;margin-bottom:16px;
+}
+.ac-actions{display:flex;gap:10px;flex-wrap:wrap}
+.ac-btn{
+  flex:1;min-width:86px;text-align:center;padding:11px 8px;border-radius:11px;
+  font-weight:700;font-size:14px;cursor:default;border:1px solid transparent;
+}
+.ac-send{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;box-shadow:0 6px 20px rgba(124,58,237,.4)}
+.ac-edit{color:var(--ink-2);border-color:rgba(124,58,237,.35);background:rgba(124,58,237,.07)}
+.ac-reject{color:var(--rose);border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.06)}
+.pause-strip{
+  margin-top:18px;display:flex;align-items:center;gap:12px;
+  border:1px solid rgba(244,63,94,.3);border-radius:12px;padding:13px 16px;
+  background:rgba(244,63,94,.05);
+}
+.pause-dot{width:34px;height:34px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(244,63,94,.14);border:1px solid rgba(244,63,94,.4);color:var(--rose);font-size:13px}
+.pause-strip p{font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.pause-strip strong{color:var(--ink)}
+
+.station{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.station-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  background:rgba(33,28,61,.6);
+}
+.station-title{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-2)}
+.station-live{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--cyan)}
+.station-live .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 2s ease-in-out infinite}
+.station-rows{padding:6px 0}
+.s-row{
+  display:grid;grid-template-columns:34px 1fr auto auto;gap:12px;align-items:center;
+  padding:13px 20px;border-bottom:1px solid rgba(124,58,237,.09);font-size:14px;
+}
+.s-row:last-child{border-bottom:none}
+.s-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25)}
+.s-who{color:var(--ink);font-weight:600;letter-spacing:-.01em}
+.s-what{display:block;color:var(--ink-3);font-size:12.5px;font-weight:400}
+.s-status{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;white-space:nowrap;
+}
+.st-queued{color:var(--ink-2);background:rgba(130,122,168,.12);border:1px solid rgba(130,122,168,.3)}
+.st-waiting{color:#fbbf24;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.28)}
+.st-sent{color:var(--cyan);background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.28)}
+.st-replied{color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.28)}
+.s-cancel{color:var(--ink-3);font-size:16px;line-height:1;padding:2px 6px;border-radius:7px;cursor:default}
+.s-cancel:hover{color:var(--rose)}
+@media (max-width:520px){
+  .s-row{grid-template-columns:34px 1fr auto;gap:10px;padding:12px 14px}
+  .s-cancel{display:none}
+  .station-head{padding:14px 16px}
+}
+
+/* ---------- channels ---------- */
+.chan-tag{
+  display:inline-block;margin-top:14px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--cyan);
+  background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.25);
+  border-radius:8px;padding:5px 10px;
+}
+
+/* ---------- teach section ---------- */
+.teach-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;margin-top:24px}
+@media (max-width:900px){.teach-grid{grid-template-columns:1fr;gap:36px}}
+.qa-stack{display:flex;flex-direction:column;gap:14px}
+.qa{
+  border-radius:14px;padding:15px 18px;font-size:15px;line-height:1.55;max-width:92%;
+}
+.qa-q{background:var(--card-2);border:1px solid var(--border);color:var(--ink-2);align-self:flex-start}
+.qa-a{
+  background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(34,211,238,.12));
+  border:1px solid rgba(124,58,237,.35);color:var(--ink);align-self:flex-end;
+}
+.qa-flag{
+  background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.3);color:var(--ink-2);
+  align-self:flex-end;font-size:14px;
+}
+.qa-flag strong{color:var(--rose)}
+.check-list{list-style:none;margin-top:20px}
+.check-list li{display:flex;gap:12px;margin-bottom:14px;color:var(--ink-2);font-size:16px}
+.check-list li::before{content:"✓";flex:none;width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--cyan);background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3)}
+
+/* ---------- trial ---------- */
+.trial-box{
+  background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(34,211,238,.07));
+  border:1px solid rgba(124,58,237,.35);border-radius:22px;
+  padding:64px 40px;text-align:center;position:relative;overflow:hidden;
+}
+.trial-box::before{
+  content:"";position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:520px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(167,139,250,.22),transparent 70%);filter:blur(50px);
+  pointer-events:none;
+}
+.trial-points{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin:26px 0 34px}
+.trial-points span{display:flex;align-items:center;gap:8px;color:var(--ink-2);font-size:15.5px}
+.trial-points span::before{content:"✓";color:var(--cyan);font-weight:800}
+
+/* ---------- FAQ ---------- */
+.faq-list{max-width:780px;margin:48px auto 0}
+.faq-item{border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;background:var(--card);overflow:hidden;transition:border-color .2s}
+.faq-item.open{border-color:rgba(124,58,237,.45)}
+.faq-q{
+  width:100%;text-align:left;background:none;border:none;cursor:pointer;
+  padding:20px 22px;color:var(--ink);font-family:inherit;font-size:16.5px;font-weight:600;letter-spacing:-.01em;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;line-height:1.4;
+}
+.faq-q .chev{flex:none;font-size:18px;color:var(--violet);transition:transform .25s ease}
+.faq-item.open .chev{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.faq-a p{padding:0 22px 22px;font-size:15.5px}
+
+/* ---------- final CTA ---------- */
+.final{padding:120px 0;text-align:center}
+.final h2{font-size:clamp(30px,5vw,52px);max-width:820px;margin:0 auto 20px}
+.final .lede{margin:0 auto 36px}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,28,.6)}
+.foot-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.foot-brand{display:flex;align-items:center;gap:10px;color:var(--ink-2);font-weight:700}
+.foot-brand img{width:26px;height:26px}
+.foot-note{font-size:14px;color:var(--ink-3)}
+.foot-links{display:flex;gap:22px}
+.foot-links a{color:var(--ink-3);text-decoration:none;font-size:14px}
+.foot-links a:hover{color:var(--ink-2)}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
+<div class="orbs"><div class="orb-rose"></div></div>
 
-<nav class="nav">
+<!-- ================= NAV ================= -->
+<nav>
   <div class="nav-inner">
-    <a class="nav-brand" href="#"><span class="mark"><svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="Adapix" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="adx-mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset=".55" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#adx-mark)"/><path d="M16 7.5 L9 24.5 M16 7.5 L23 24.5 M12.1 18.2 H19.9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Adapix</a>
-    <div class="nav-links">
-      <a class="nav-link" href="#story">How It Works</a>
-      <a class="nav-link" href="#features">Features</a>
-      <a class="nav-link" href="#security">Security</a>
-      <a class="nav-link" href="#pricing">Pricing</a>
-      <a class="nav-link" href="#faq">FAQ</a>
+    <a class="nav-logo" href="#"><img src="adapix_mark.svg" alt="Adapix logo">Adapix</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#how">How it works</a>
+      <a href="#channels">As your business</a>
+      <a href="#control">You're in control</a>
+      <a href="#teach">Teach it</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-primary btn-sm nav-cta" href="https://adapix-web-production.up.railway.app/signup">Start free trial</a>
     </div>
-    <a class="nav-cta" href="/signup">Start free trial</a>
   </div>
 </nav>
 
-<section class="hero">
-  <div class="eyebrow reveal">The AI follow-up assistant for any business</div>
-  <h1 class="h-display reveal reveal-d1">Your best employee.<br><span class="lite">Never sleeps.</span></h1>
-  <p class="kicker reveal reveal-d2">Adapix runs your follow-ups around the clock — drafting every message, recovering cold leads, and booking appointments. You approve with one tap. No new hire, no hardware, no setup fees.</p>
-  <div class="hero-actions reveal reveal-d3">
-    <a href="/signup" class="btn btn-primary btn-lg">Start free trial</a>
-    <a href="mailto:hello@adapixai.com?subject=Demo+Request" class="demo-link">Book a 15-min demo instead</a>
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-badge"><span class="dot"></span>Live today &middot; 5-minute setup</span>
+    <h1>Your quotes are dying in someone's inbox. <span class="grad-text">Adapix follows up</span> so you don't have to.</h1>
+    <p class="lede">It chases the quote that went quiet, the no-show, the lead that never booked — by call, text, and email from <strong style="color:var(--ink)">your own number and your own inbox</strong>. And nothing sends until you tap OK.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="https://adapix-web-production.up.railway.app/signup">Start my free 14-day trial</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+    </div>
+    <span class="cta-note">No credit card. If it doesn't earn its keep in two weeks, walk away.</span>
   </div>
-  <div class="hero-trust reveal reveal-d3">14-day free trial · No credit card · Cancel anytime</div>
-  <div class="hero-visual reveal">
-    <div class="app-window">
-      <div class="app-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="app-url">adapixai.com/app</span></div>
-      <div class="app-body">
-        <div class="app-side">
-          <div class="app-nav on"><span></span>Inbox</div>
-          <div class="app-nav"><span></span>Contacts</div>
-          <div class="app-nav"><span></span>Results</div>
-          <div class="app-nav"><span></span>AI Team</div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow">the leak</span>
+      <h2>The money you already earned is <span class="grad-text">walking away</span></h2>
+      <p class="lede">That $4,000 quote you sent Tuesday? While you were on a job, they got two other bids and picked whoever answered first. It's not that your price was wrong. It's that nobody followed up.</p>
+    </div>
+    <div class="grid grid-3" style="margin-top:44px">
+      <div class="card reveal">
+        <div class="card-icon">📄</div>
+        <h3>Quotes that went quiet</h3>
+        <p>"Looks great, let me think about it." Then nothing. Two weeks later, reaching out feels awkward — so the quote just sits there.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon rose">📅</div>
+        <h3>No-shows nobody rebooks</h3>
+        <p>Someone misses Tuesday's appointment. You mean to call and reschedule. Then a customer calls, a job runs long, payroll is due.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon cyan">📞</div>
+        <h3>Leads that never booked</h3>
+        <p>They filled out your form or called once and never heard back. By 7pm, the last thing you want is to write five polite chase-up emails.</p>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top:36px;max-width:680px;font-size:17px">Adapix does that part. It keeps a list of everyone who's gone quiet and writes the follow-up for each of them — a call, a text, or an email, whichever fits. You just approve it.</p>
+  </div>
+</section>
+
+<!-- ================= HOW IT WORKS (story) ================= -->
+<section id="how" style="background:rgba(23,20,46,.35);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center">
+      <span class="eyebrow">one day, one job saved</span>
+      <h2>How a quiet quote becomes a <span class="grad-text">booked job</span></h2>
+      <p class="lede" style="margin:0 auto">Here's what actually happens, hour by hour.</p>
+    </div>
+    <div class="timeline">
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">Tuesday · 9:14 AM</span>
+        <h3>The quote that went quiet</h3>
+        <p>Two weeks ago, Maria asked you for a fence quote. You sent it. She said "looks great, let me think about it." Then — nothing. You meant to follow up. You really did.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">9:15 AM</span>
+        <h3>Adapix drafts the message. You read it first.</h3>
+        <p>Adapix writes the follow-up and puts it in your Inbox. It waits there — it does not send. You're in line for coffee, you open your phone, the draft sounds like you. Tap Send. Done in ten seconds. Sounds off? Edit it right there, or reject it.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">9:16 AM</span>
+        <h3>It goes out as you — not some robot</h3>
+        <p>Maria's phone shows your business name. The email comes from you@yourbusiness.com. No shared sender, no stranger's number. As far as she can tell, you just got really good at following up.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">11:40 AM</span>
+        <h3>Maria asks a question — Adapix already knows the answer</h3>
+        <p>"Do you do gate installs too, and what would that run me?" You taught Adapix your services and real prices during setup, so it answers her directly — your actual price, not a dodge. Anything it wasn't taught, it flags to you immediately instead of guessing.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">6:03 PM</span>
+        <h3>Maria books</h3>
+        <p>One draft you approved from a coffee line, one question answered with a real price, one job that would have quietly disappeared — booked. You didn't hire anyone. You didn't learn new software. You read a draft and tapped Send.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHANNELS ================= -->
+<section id="channels">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow">your name on everything</span>
+      <h2>It reaches people as <span class="grad-text">your business</span> — never a robot company</h2>
+      <p class="lede">This matters more than anything else on this page. When Adapix contacts your customers, it looks and sounds like your business — because it is your business.</p>
+    </div>
+    <div class="grid grid-3" style="margin-top:44px">
+      <div class="card reveal">
+        <div class="card-icon">📞</div>
+        <h3>Calls from your own number</h3>
+        <p>Adapix calls from a dedicated number that belongs only to your business — caller ID shows your company. After every call, you get the full recording and a written transcript, so you always know exactly what was said.</p>
+        <span class="chan-tag">recording + transcript, every call</span>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon cyan">✉️</div>
+        <h3>Emails from your own inbox</h3>
+        <p>Gmail and Outlook connect in one click. iCloud, Yahoo, or any other inbox works with an app password. Customers see you@yourbusiness.com — never a shared sender they've never heard of.</p>
+        <span class="chan-tag">you@yourbusiness.com</span>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon rose">💬</div>
+        <h3>Texts from your business</h3>
+        <p>SMS works today. iMessage is rolling out now — your business gets its own line, so your texts land blue on iPhones instead of looking like spam from an unknown number.</p>
+        <span class="chan-tag">iMessage lines rolling out</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTROL ================= -->
+<section id="control" style="background:rgba(23,20,46,.35);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow">the part that matters</span>
+      <h2>Nothing goes out <span class="grad-text">without your OK</span></h2>
+      <p class="lede">Here's the fear with AI tools, and it's a fair one: what if it says something dumb to a customer? With Adapix, it can't — because it never sends anything on its own. Every draft waits in your Inbox. You're the last set of eyes on everything, every time.</p>
+    </div>
+
+    <div class="control-visuals">
+      <!-- mock approval card -->
+      <div class="reveal">
+        <div class="approval-card" aria-label="Example of a draft waiting for approval">
+          <div class="ac-head">
+            <span class="ac-label">Draft · Text message</span>
+            <span class="ac-pill">Waiting for you</span>
+          </div>
+          <p class="ac-to">To: <strong>Maria G.</strong> · fence quote, sent 14 days ago</p>
+          <div class="ac-msg">Hi Maria, just checking in on the fence quote we sent over — happy to answer anything before you decide.</div>
+          <div class="ac-actions">
+            <span class="ac-btn ac-send">Send</span>
+            <span class="ac-btn ac-edit">Edit</span>
+            <span class="ac-btn ac-reject">Reject</span>
+          </div>
         </div>
-        <div class="app-main">
-          <div class="app-eyebrow">Drafts awaiting approval · 3</div>
-          <div class="app-row"><div class="app-row-txt"><b>Lina K. — appointment reminder</b><span>Hi Lina! Just a reminder you're booked for Friday at 2pm…</span></div><span class="app-pill">draft</span></div>
-          <div class="app-row"><div class="app-row-txt"><b>Jorge R. — financing follow-up</b><span>Hi Jorge, following up on the quote — happy to walk through options…</span></div><span class="app-pill">draft</span></div>
-          <div class="app-row"><div class="app-row-txt"><b>Maria L. — went quiet (day 7)</b><span>Hey Maria, checking in — still want to move forward? …</span></div><span class="app-pill">draft</span></div>
-          <div class="app-stat-row">
-            <div class="app-stat"><div class="app-stat-n">47</div><div class="app-stat-l">Sent today</div></div>
-            <div class="app-stat"><div class="app-stat-n">12</div><div class="app-stat-l">Booked</div></div>
-            <div class="app-stat"><div class="app-stat-n">98%</div><div class="app-stat-l">Approved</div></div>
+        <div class="pause-strip">
+          <span class="pause-dot">⏸</span>
+          <p><strong>Master Pause.</strong> One press freezes every queued call, text, and email instantly — until you say go.</p>
+        </div>
+      </div>
+
+      <!-- mock station board -->
+      <div class="reveal">
+        <div class="station" aria-label="The Station: live board of every follow-up">
+          <div class="station-head">
+            <span class="station-title">The Station</span>
+            <span class="station-live"><span class="dot"></span>Live</span>
+          </div>
+          <div class="station-rows">
+            <div class="s-row">
+              <span class="s-icon">💬</span>
+              <span class="s-who">Maria G.<span class="s-what">Follow-up · fence quote</span></span>
+              <span class="s-status st-waiting">Waiting</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">📞</span>
+              <span class="s-who">Dan R.<span class="s-what">Call · missed Tuesday appt</span></span>
+              <span class="s-status st-queued">Queued 2:00 PM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">✉️</span>
+              <span class="s-who">Priya S.<span class="s-what">Email · estimate reminder</span></span>
+              <span class="s-status st-sent">Sent 9:16 AM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">💬</span>
+              <span class="s-who">Tom W.<span class="s-what">Text · never booked</span></span>
+              <span class="s-status st-replied">Replied</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">📞</span>
+              <span class="s-who">Lena K.<span class="s-what">Call · quote went quiet</span></span>
+              <span class="s-status st-queued">Queued 4:30 PM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
 
-<section class="statement" id="story">
-  <h2 class="h1 reveal">A new kind of employee.<br><span class="lite">Who never goes home.</span></h2>
-</section>
-
-<div style="padding:16px 22px 0;text-align:center">
-  <div class="trust-chip">
-    <span class="trust-dot"></span>
-    Live now — start your free trial in under 2 minutes
-  </div>
-</div>
-
-<section class="bento-wrap" id="features">
-  <div class="bento">
-
-    <!-- 1. NEVER SLEEPS -->
-    <div class="cell dark span-4 row-2 reveal">
-      <div class="cell-eyebrow">Works while you sleep</div>
-      <div class="cell-title">The hardest working employee you've ever had. Never calls in sick. Never sleeps.</div>
-      <div class="cell-sub">While your team is off the clock, Adapix keeps going. No breaks. No missed follow-ups. No leads going cold overnight.</div>
-      <div class="live-feed">
-        <div class="live-row"><span class="live-dot"></span><span class="time">2:17am</span><span>Draft ready — Chen missed his appointment Tuesday</span></div>
-        <div class="live-row"><span class="live-dot"></span><span class="time">3:44am</span><span>Follow-up sent to Martinez (day 7, lead went cold)</span></div>
-        <div class="live-row"><span class="live-dot"></span><span class="time">5:02am</span><span>Johnson replied — wants to schedule for next week</span></div>
-        <div class="live-row"><span class="live-dot"></span><span class="time">6:31am</span><span>3 new drafts ready for your morning review</span></div>
+    <div class="grid grid-3" style="margin-top:36px">
+      <div class="card reveal">
+        <h3>See it before it happens</h3>
+        <p>You don't find out after the fact. The Station shows you what's about to happen — every call, text, and email, queued before the AI has even written it. Cancel anything with one click.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Your rules, not a template's</h3>
+        <p>You decide when the first follow-up goes, how many tries before it backs off, and the tone it writes in. If a customer replies, the counter resets — it never pesters someone who's already talking to you.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Auto-approve when you're ready</h3>
+        <p>Once you've read enough drafts to trust it, you can turn on auto-approve for the routine stuff. That's your call, on your timeline. Day one, it asks permission for everything — and plenty of owners keep it that way.</p>
       </div>
     </div>
-
-    <!-- FREE TRIAL -->
-    <div class="cell span-2 reveal">
-      <div class="cell-eyebrow">Start for</div>
-      <div class="cell-stat">$0</div>
-      <div class="cell-sub" style="margin-top:8px">14-day free trial, no credit card. After that, plans start at $29/mo. You only ever pay for value Adapix actually delivers.</div>
-    </div>
-
-    <!-- 3. EASY SETUP -->
-    <div class="cell span-2 reveal">
-      <div class="cell-eyebrow">Setup takes</div>
-      <div class="cell-stat" style="font-size:clamp(36px,4vw,64px)">5 min</div>
-      <div class="cell-sub" style="margin-top:8px">Sign up, connect your email, tell Adapix about your business. That's it — no IT team, no developers, no installs.</div>
-    </div>
-
-    <!-- 2. AI SPECIALISTS -->
-    <div class="cell accent span-3 reveal">
-      <div class="cell-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg></div>
-      <div class="cell-title">A full team of AI specialists, on demand.</div>
-      <div class="cell-sub">Strategy, marketing, finance, operations — Adapix has a specialist for every part of your business. Pick a task and your team gets to work.</div>
-    </div>
-
-    <!-- 4. AUTOMATIONS -->
-    <div class="cell span-3 reveal">
-      <div class="cell-icon" style="background:linear-gradient(140deg,#34d399,#22d3ee)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></svg></div>
-      <div class="cell-title">Automations and connections that run your business.</div>
-      <div class="cell-sub">Connect your tools, set your rules, and let Adapix handle the rest. Follow-ups, sequences, reminders — all running without you lifting a finger.</div>
-    </div>
-
   </div>
 </section>
 
+<!-- ================= TEACH ================= -->
+<section id="teach">
+  <div class="wrap">
+    <div class="teach-grid">
+      <div class="reveal">
+        <span class="eyebrow">brief it like a new hire</span>
+        <h2>Teach it once, and it <span class="grad-text">stops bugging you</span></h2>
+        <p style="font-size:17px">There are no settings menus to fight with. You just tell it about your business in plain English, the way you'd train a new front-desk hire. Tell it what you do, your services, your real prices (one-time or subscription), and the answers to the questions you get every week.</p>
+        <ul class="check-list">
+          <li>Answers customer questions directly, with your real answers and real prices — no "someone will get back to you."</li>
+          <li>Knows its limits: anything it wasn't taught gets flagged to you immediately, with the full conversation attached.</li>
+          <li>Upset customer, emergency, or someone asking for a human? It hands off to you right away. It doesn't bluff.</li>
+        </ul>
+      </div>
+      <div class="reveal">
+        <div class="qa-stack" aria-label="Example conversation">
+          <div class="qa qa-q">"Do you take walk-ins?"</div>
+          <div class="qa qa-a">"We do — weekdays until 4pm. Weekends are appointment-only, and I can get you booked right now if you'd like."</div>
+          <div class="qa qa-q">"My basement is flooding RIGHT NOW, I need someone!"</div>
+          <div class="qa qa-flag"><strong>⚑ Flagged to you instantly</strong> — emergency detected. Full conversation attached so you step in knowing exactly what's going on.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section class="feature alt">
+<!-- ================= AI TEAM + SETUP ================= -->
+<section id="team" style="padding-top:0">
+  <div class="wrap">
+    <div class="grid grid-2">
+      <div class="card reveal" style="padding:38px 34px">
+        <span class="eyebrow">bonus: second opinions</span>
+        <h3 style="font-size:24px;margin-bottom:12px">An AI Team of 57 specialists</h3>
+        <p style="font-size:16px">Wondering how to word a price increase? Whether that contract clause is normal? What to post this month? Adapix comes with 57 specialists — marketing, finance, sales, legal, and more — you can chat with anytime. Advisors on call, without the hourly rate.</p>
+      </div>
+      <div class="card reveal" style="padding:38px 34px">
+        <span class="eyebrow">running today</span>
+        <h3 style="font-size:24px;margin-bottom:12px">Set up in about five minutes</h3>
+        <p style="font-size:16px">You can start using it today. A guided wizard connects your email, sets up your business's own calling number, and learns your business. Adapix supports roughly 200 business types — dentists, plumbers, salons, law firms, contractors. If you give quotes or book appointments, it fits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRIAL ================= -->
+<section id="trial" style="padding-top:0">
+  <div class="wrap">
+    <div class="trial-box reveal">
+      <span class="eyebrow" style="color:var(--violet)">try it, judge it, keep the last word</span>
+      <h2 style="max-width:640px;margin:0 auto 8px">14 days free. <span class="grad-text">No credit card.</span></h2>
+      <p class="lede" style="margin:0 auto">Sign up, run the five-minute wizard, and start approving follow-ups the same day. Watch the Station, read the drafts it writes, and judge it on the messages in front of you.</p>
+      <div class="trial-points">
+        <span>No credit card up front</span>
+        <span>5-minute guided setup</span>
+        <span>Cancel by closing the tab</span>
+      </div>
+      <a class="btn btn-primary" href="https://adapix-web-production.up.railway.app/signup">Start my free 14-day trial</a>
+      <span class="cta-note">You'll see plans inside — you won't be charged anything during the trial.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq" style="padding-top:24px">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center">
+      <span class="eyebrow">fair questions</span>
+      <h2>The things you're <span class="grad-text">actually wondering</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">What if the AI says something wrong or embarrassing to my customers?<span class="chev">+</span></button>
+        <div class="faq-a"><p>It can't send anything by itself. Every message it writes sits in your Inbox as a draft until you approve it — you can edit the wording or reject it entirely. You're always the last check before anything reaches a customer. And phone calls come back to you with the full recording and transcript, so nothing ever happens behind your back.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">Will my customers know it's a robot? Won't that annoy them?<span class="chev">+</span></button>
+        <div class="faq-a"><p>Everything comes from your business — your phone number on their caller ID, your email address in their inbox, your name. Not a shared sender, not a stranger's number. And because you read every draft before it sends, nothing goes out that doesn't sound like you. Most people are annoyed by silence, not by a polite check-in.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">What happens when a customer asks something the AI doesn't know?<span class="chev">+</span></button>
+        <div class="faq-a"><p>It flags you immediately with the full conversation attached instead of making something up. Same for upset customers, emergencies, or anyone who asks for a human — those come straight to you. It's built to hand off, not to bluff.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">How do I stop it from pestering people?<span class="chev">+</span></button>
+        <div class="faq-a"><p>You set the rules: when the first follow-up goes, how many attempts before it backs off, and the tone. If someone replies, the counter resets — it never keeps hammering a person who's already talking to you. You can cancel any queued follow-up from the Station with one click, and a master Pause button stops everything instantly.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">I'm not technical. How hard is this to set up?<span class="chev">+</span></button>
+        <div class="faq-a"><p>The setup wizard takes about five minutes. Gmail and Outlook connect with one click; other inboxes like iCloud or Yahoo take an app password (the wizard walks you through it). You describe your business in plain English — no coding, no spreadsheets, no IT guy. If you can send a text, you can run Adapix.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">I run a salon / law firm / contracting business — does it fit?<span class="chev">+</span></button>
+        <div class="faq-a"><p>Almost certainly. Adapix supports roughly 200 business types. During the five-minute setup you teach it what you do, your services and real prices, and answers to your common questions — in plain English.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">I've been burned by tools that promised the world. Why is this different?<span class="chev">+</span></button>
+        <div class="faq-a"><p>Fair. That's why the trial is 14 days with no credit card — you risk nothing but a few minutes of setup. Watch the Station, read the drafts it writes, and judge it on the messages in front of you. If it doesn't earn its keep, you close the tab and never get billed.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" aria-expanded="false">What does it cost after the trial?<span class="chev">+</span></button>
+        <div class="faq-a"><p>Start the free trial first — you'll see plans inside, and you won't be charged anything during the 14 days because we never take a card up front.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL CTA ================= -->
+<section class="final">
   <div class="wrap reveal">
-    <div>
-      <div class="eyebrow">The dashboard</div>
-      <h2 class="h2">Every morning,<br>a clear desk.</h2>
-      <p class="kicker" style="margin-top:14px">See what your AI team did overnight. Review tasks, approve messages, and read flagged replies. Then close the tab and get back to running your business.</p>
-    </div>
-    <div class="feature-art dark">
-      <div class="mini-dash">
-        <div class="mini-dash-bar"><span></span><span></span><span></span></div>
-        <div class="mini-stat-grid">
-          <div class="mini-stat green"><div class="n count-up" data-target="47">0</div><div class="l">Sent today</div></div>
-          <div class="mini-stat cyan"><div class="n count-up" data-target="3">0</div><div class="l">Drafts</div></div>
-          <div class="mini-stat"><div class="n count-up" data-target="12">0</div><div class="l">Booked</div></div>
-          <div class="mini-stat"><div class="n count-up" data-target="1">0</div><div class="l">Flagged</div></div>
-        </div>
-      </div>
-    </div>
+    <span class="eyebrow">the last word is always yours</span>
+    <h2>Stop losing jobs to <span class="grad-text">silence</span>.</h2>
+    <p class="lede">Adapix does the chasing. You keep the last word on every single message. Try it free for 14 days — if it doesn't earn its keep, walk away.</p>
+    <a class="btn btn-primary" href="https://adapix-web-production.up.railway.app/signup">Start my free 14-day trial</a>
+    <span class="cta-note">No credit card required.</span>
   </div>
 </section>
 
-<section class="feature flip">
-  <div class="wrap reveal">
-    <div>
-      <div class="eyebrow">Approval, not autopilot</div>
-      <h2 class="h2">You stay in charge<br>of every word.</h2>
-      <p class="kicker" style="margin-top:14px">No message leaves the building without a human tap. Adapix drafts; you approve. Push the right one and it's gone. Edit first if you want.</p>
-    </div>
-    <div class="feature-art">
-      <div class="phone">
-        <div class="phone-screen">
-          <div class="phone-msg">
-            <b>Adapix · Draft</b>
-            Hi Lisa — quick reminder that we have you down for Friday at 2pm. Reply YES to confirm or pick a new time here…
-          </div>
-          <div class="phone-msg" style="background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3);color:#d8d0ff">
-            <b>To: Lisa K.</b>
-            Looks great. Send.
-          </div>
-          <div class="phone-actions">
-            <div class="phone-btn">Approve</div>
-            <div class="phone-btn ghost">Edit</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SECURITY / COMPLIANCE -->
-<section class="security" id="security">
-  <div class="wrap reveal">
-    <div>
-      <div class="eyebrow" style="color:var(--adapix-2)">Security &amp; privacy</div>
-      <h2 class="h2">Enterprise-grade security,<br>built in.</h2>
-      <p class="kicker" style="margin-top:16px">Your data is encrypted in transit and at rest, isolated per business, and never shared. Every message requires human approval before it sends. For regulated industries like healthcare and legal, HIPAA-ready architecture and a BAA are available.</p>
-    </div>
-    <div class="security-pillars">
-      <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2" fill="rgba(167,139,250,.95)" stroke="none"/></svg></div>
-        <div class="title">AES-256 Encryption</div>
-        <div class="desc">All customer data encrypted at rest and in transit, every step of the way.</div>
-      </div>
-      <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
-        <div class="title">Compliance-Ready</div>
-        <div class="desc">HIPAA BAA available for healthcare. Built to work in regulated industries.</div>
-      </div>
-      <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><polyline points="9,12 11,14 15,10"/></svg></div>
-        <div class="title">Isolated Per Business</div>
-        <div class="desc">Every account's data is logically separated. Your contacts are never mixed or shared.</div>
-      </div>
-      <div class="sec-pill">
-        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <div class="title">Human Approval First</div>
-        <div class="desc">Nothing sends on its own. Every message waits for a person to approve it — opt-out handling included.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<section class="pricing" id="pricing">
-  <div class="eyebrow reveal">Pricing</div>
-  <h2 class="h2 reveal">Start free.<br><span class="lite">Pay as you grow.</span></h2>
-  <p class="kicker reveal">Try Adapix free for 14 days — no credit card. When you're ready, pick the plan that fits your volume. No contracts, cancel anytime.</p>
-
-  <div class="plan-grid reveal">
-    <div class="plan">
-      <div class="plan-name">Starter</div>
-      <div class="plan-price">$29<span>/mo</span></div>
-      <div class="plan-tag">For solo operators and small teams just getting started.</div>
-      <ul class="plan-feats">
-        <li>Up to 150 approved messages / mo</li>
-        <li>AI follow-up &amp; reminders</li>
-        <li>1 connected inbox (Gmail or Outlook)</li>
-        <li>CSV contact import</li>
-        <li>Email support</li>
-      </ul>
-      <a href="/signup" class="btn btn-outline" style="justify-content:center;width:100%">Start free trial</a>
-    </div>
-    <div class="plan featured">
-      <div class="plan-badge">Most popular</div>
-      <div class="plan-name">Growth</div>
-      <div class="plan-price">$99<span>/mo</span></div>
-      <div class="plan-tag">For growing businesses that follow up at real volume.</div>
-      <ul class="plan-feats">
-        <li>Up to 750 approved messages / mo</li>
-        <li>Everything in Starter, plus:</li>
-        <li>Automations &amp; sequences</li>
-        <li>Multiple inboxes &amp; staff logins</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="/signup" class="btn btn-primary" style="justify-content:center;width:100%">Start free trial</a>
-    </div>
-    <div class="plan">
-      <div class="plan-name">Scale</div>
-      <div class="plan-price">$1,500<span>/mo</span></div>
-      <div class="plan-tag">For high-volume and multi-location operations.</div>
-      <ul class="plan-feats">
-        <li>High-volume sending</li>
-        <li>Full AI specialist team</li>
-        <li>HIPAA BAA included</li>
-        <li>Multi-location support</li>
-        <li>Dedicated onboarding</li>
-      </ul>
-      <a href="mailto:hello@adapixai.com?subject=Adapix+Scale" class="btn btn-outline" style="justify-content:center;width:100%">Talk to us</a>
-    </div>
-  </div>
-  <p class="price-ex-note" style="margin-top:32px">Every plan starts with a 14-day free trial — no credit card. A message only counts when it's sent and approved; drafts you reject cost nothing.</p>
-</section>
-
-<!-- COMPARE TO ALTERNATIVES -->
-<section class="compare">
-  <div class="wrap">
-    <div class="eyebrow reveal center">Why Adapix</div>
-    <h2 class="h2 reveal center" style="max-width:18ch;margin:0 auto">See how it stacks up.</h2>
-    <table class="compare-table reveal">
-      <thead>
-        <tr>
-          <th>Feature</th>
-          <th>Adapix</th>
-          <th>Part-time admin</th>
-          <th>Follow-up software</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="hl">
-          <td>Monthly cost</td>
-          <td>From $29/mo · free trial</td>
-          <td>$2,000+</td>
-          <td>$200–400 flat</td>
-        </tr>
-        <tr>
-          <td>Sends from your number / address</td>
-          <td><span class="check">✓</span></td>
-          <td><span class="check">✓</span></td>
-          <td><span class="cross">—</span></td>
-        </tr>
-        <tr class="hl">
-          <td>Human approval before every send</td>
-          <td><span class="check">✓</span></td>
-          <td><span class="check">✓</span></td>
-          <td><span class="cross">—</span></td>
-        </tr>
-        <tr>
-          <td>Works while your office is closed</td>
-          <td><span class="check">✓</span></td>
-          <td><span class="cross">—</span></td>
-          <td><span class="check">✓</span></td>
-        </tr>
-        <tr class="hl">
-          <td>Your data encrypted &amp; isolated</td>
-          <td><span class="check">✓</span></td>
-          <td><span class="cross">—</span></td>
-          <td>Varies</td>
-        </tr>
-        <tr>
-          <td>HIPAA-ready / BAA available</td>
-          <td><span class="check">✓</span></td>
-          <td>Varies</td>
-          <td><span class="cross">—</span></td>
-        </tr>
-        <tr class="hl">
-          <td>Handles inbound replies automatically</td>
-          <td><span class="check">✓</span></td>
-          <td><span class="check">✓</span></td>
-          <td>Limited</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<div style="padding:0 22px 64px;text-align:center">
-  <a href="/signup" class="btn btn-primary btn-lg">Start your free trial</a>
-</div>
-
-<!-- FAQ -->
-<section class="faq" id="faq">
-  <div class="wrap">
-    <div class="eyebrow reveal">FAQ</div>
-    <h2 class="h2 reveal">Questions we hear most.</h2>
-    <div class="faq-list reveal">
-
-      <div class="faq-item">
-        <div class="faq-q">Does this work with Outlook? Or only Gmail?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Both. Adapix connects to Google Workspace (Gmail) and Microsoft 365 (Outlook) via secure OAuth. You sign in once and messages go out from your real business address — no forwarding or aliases.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Do I need my own Anthropic or Claude account?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">No. Adapix manages the AI on your behalf — it's included in your plan. You don't need to sign up for anything with Anthropic. The only account you need is Adapix.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Is this software or hardware? What do I need to install?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Adapix is cloud software — there's nothing to install and no hardware to buy. Sign up, open it in your browser, connect your email, and you're running. It works on any computer, tablet, or phone.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Is this HIPAA compliant? What about sensitive customer data?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">All customer data is AES-256 encrypted in transit and at rest, and isolated per business. For healthcare, legal, and other regulated industries, we provide a Business Associate Agreement (BAA). The AI composes replies from the minimum context needed — it doesn't send full records anywhere.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">What if I have multiple staff members?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Staff logins are included on Growth and Scale plans — your whole team sees the same approval queue and inbox. Everyone can review and approve drafts. Multi-location support is available; <a href="mailto:hello@adapixai.com">reach out</a> for a quote.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">What if a message goes out wrong — am I liable?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Adapix requires a human approval tap before any message is sent (unless you switch on auto-mode, which is off by default). Your staff reviews every draft. If something looks off, you edit or reject it. The tool helps you follow up faster — your team stays in control of what actually goes out.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Can I use my existing CRM or business software?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Yes, via CSV import today. Export your customer or contact list from your CRM, PMS, or spreadsheet and Adapix ingests it in seconds. Direct integrations with popular CRMs are on the roadmap. <a href="mailto:hello@adapixai.com">Tell us what software you use</a> and we'll prioritize accordingly.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">How does Adapix know what to write? Does it make things up?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">You train Adapix on your business during onboarding — your tone, your services, your follow-up rules. It drafts based only on what you tell it and the customer context you provide. It does not improvise. If a draft looks wrong, you reject it before it goes anywhere.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Can customers opt out of messages?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Yes. Every outbound message includes a standard opt-out. Adapix removes opted-out contacts from future sequences automatically. You can also manually suppress any contact at any time from the dashboard.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Am I locked into a contract?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">No contracts, no lock-in. Start with a 14-day free trial, then pick a monthly plan. Cancel anytime from your account — we never auto-charge without your confirmation at the end of the trial.</div></div>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">What does the free trial include? Is there a payment now?<span class="icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">The 14-day free trial gives you full access with no credit card and no payment today. Connect your email, import contacts, and let Adapix start drafting follow-ups. If it's a fit, pick a plan when the trial ends — otherwise it simply stops, no charge.</div></div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<section class="reserve" id="reserve">
-  <div class="wrap">
-    <div class="eyebrow reveal">Get started</div>
-    <h2 class="h2 reveal">Up and running<br><span class="lite">in minutes.</span></h2>
-
-    <div class="reserve-steps reveal">
-      <div class="reserve-step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <div class="step-title">Start your free trial</div>
-          <div class="step-desc">No payment. 30 seconds. Just your name and email.</div>
-        </div>
-      </div>
-      <div class="step-arrow">→</div>
-      <div class="reserve-step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <div class="step-title">Connect your email &amp; contacts</div>
-          <div class="step-desc">Sign in with Gmail or Outlook and import your list. Tell Adapix about your business.</div>
-        </div>
-      </div>
-      <div class="step-arrow">→</div>
-      <div class="reserve-step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <div class="step-title">Adapix starts following up</div>
-          <div class="step-desc">It drafts; you approve. Watch leads turn into booked appointments — same day.</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="text-align:center">
-      <a href="/signup" class="btn btn-primary btn-lg" style="justify-content:center">Start free trial — no credit card</a>
-    </div>
-
-    <p class="reserve-fine reveal">14-day free trial &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; <a href="mailto:hello@adapixai.com?subject=Demo+Request">Prefer a demo first?</a></p>
-    <p class="reserve-fine" style="margin-top:10px">Questions? Email us directly: <a href="mailto:hello@adapixai.com" style="color:var(--v-violet)">hello@adapixai.com</a></p>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="wrap">
-    <div class="copy">© 2026 Adapix. Built for businesses that actually follow up.</div>
-    <div class="footer-links">
-      <a href="mailto:hello@adapixai.com">hello@adapixai.com</a>
-      <a href="#story">Story</a>
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-brand"><img src="adapix_mark.svg" alt="">Adapix</div>
+    <span class="foot-note">Built by a small team. © 2026 Adapix.</span>
+    <div class="foot-links">
+      <a href="#how">How it works</a>
+      <a href="#control">Control</a>
       <a href="#faq">FAQ</a>
-      <a href="mailto:hello@adapixai.com?subject=HIPAA+BAA+Request">HIPAA / BAA</a>
+      <a href="https://adapix-web-production.up.railway.app/signup">Sign up</a>
     </div>
   </div>
 </footer>
 
 <script>
-// scroll reveal
-const io = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }});
-}, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-
-// animated counter for dashboard stats
-const counterIO = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    const el = e.target;
-    const target = parseInt(el.dataset.target, 10);
-    const duration = 900;
-    const start = performance.now();
-    function step(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(eased * target);
-      if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-    counterIO.unobserve(el);
+// ----- mobile nav -----
+(function(){
+  var t=document.getElementById('navToggle'),l=document.getElementById('navLinks');
+  t.addEventListener('click',function(){
+    var open=l.classList.toggle('open');
+    t.setAttribute('aria-expanded',open?'true':'false');
   });
-}, { threshold: 0.5 });
-document.querySelectorAll('.count-up').forEach(el => counterIO.observe(el));
-
-// FAQ accordion
-document.querySelectorAll('.faq-item').forEach(item => {
-  item.querySelector('.faq-q').addEventListener('click', () => {
-    const isOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
-    if (!isOpen) item.classList.add('open');
+  l.addEventListener('click',function(e){
+    if(e.target.tagName==='A'){l.classList.remove('open');t.setAttribute('aria-expanded','false');}
   });
-});
+})();
 
-// reserve form
-function handleReserve(ev){
-  ev.preventDefault();
-  const form = ev.target;
-  // attempt Netlify submission
-  fetch('/', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: new URLSearchParams(new FormData(form)).toString()
-  }).catch(() => {});
-  setTimeout(() => {
-    form.style.display = 'none';
-    document.querySelectorAll('.reserve-next, .reserve-divider, .demo-cta').forEach(el => el.style.display = 'none');
-    const done = document.getElementById('reserveDone');
-    if (done) done.style.display = 'block';
-  }, 80);
-}
+// ----- FAQ accordion -----
+(function(){
+  var items=document.querySelectorAll('.faq-item');
+  items.forEach(function(item){
+    var btn=item.querySelector('.faq-q'),body=item.querySelector('.faq-a');
+    btn.addEventListener('click',function(){
+      var isOpen=item.classList.contains('open');
+      items.forEach(function(o){
+        o.classList.remove('open');
+        o.querySelector('.faq-a').style.maxHeight=null;
+        o.querySelector('.faq-q').setAttribute('aria-expanded','false');
+      });
+      if(!isOpen){
+        item.classList.add('open');
+        body.style.maxHeight=body.scrollHeight+'px';
+        btn.setAttribute('aria-expanded','true');
+      }
+    });
+  });
+})();
+
+// ----- scroll reveal -----
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(el){el.classList.add('in');});
+    return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}
+    });
+  },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  els.forEach(function(el){io.observe(el);});
+})();
 </script>
 </body>
 </html>
