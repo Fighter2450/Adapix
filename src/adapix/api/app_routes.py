@@ -1041,6 +1041,57 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
     return {"ok": status in ("sent",), "status": status, "message_id": message_id}
 
 
+# ---------------------------------------------------------------------------
+# Follow-up rules — the Settings page that actually governs the engine.
+# first_followup_days gates when composing starts, max_touches caps outbound
+# messages without a reply (both enforced in CampaignRunner.run_due_messages),
+# auto_approve flips the org's approval_mode (via load_practice's DB-org
+# fallback), and tone feeds the composer's prompt.
+# ---------------------------------------------------------------------------
+class RulesBody(BaseModel):
+    first_followup_days: int = 0
+    max_touches: int = 0
+    auto_approve: bool = False
+    tone: str = ""
+
+
+@router.get("/api/v1/rules")
+def api_rules_get(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+    rules = data.get("rules") or {}
+    return {
+        "first_followup_days": int(rules.get("first_followup_days") or 0),
+        "max_touches": int(rules.get("max_touches") or 0),
+        "auto_approve": bool(rules.get("auto_approve")),
+        "tone": data.get("tone") or "warm_professional",
+    }
+
+
+@router.post("/api/v1/rules")
+def api_rules_save(body: RulesBody, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    if body.first_followup_days not in (0, 1, 2, 3, 7):
+        raise HTTPException(status_code=400, detail="invalid first_followup_days")
+    if body.max_touches not in (0, 1, 2, 3):
+        raise HTTPException(status_code=400, detail="invalid max_touches")
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        data["rules"] = {
+            "first_followup_days": body.first_followup_days,
+            "max_touches": body.max_touches,
+            "auto_approve": bool(body.auto_approve),
+        }
+        if body.tone in ("warm_professional", "casual_friendly", "clinical_formal"):
+            data["tone"] = body.tone
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
 class PauseBody(BaseModel):
     paused: bool
 

@@ -133,11 +133,51 @@ def load_workflow(workflow_id: str, root: Path | None = None) -> WorkflowConfig:
 
 def load_practice(practice_id: str, root: Path | None = None) -> PracticeConfig:
     path = (root or DEFAULT_PRACTICE_ROOT) / f"{practice_id}.yaml"
-    if not path.exists():
-        raise FileNotFoundError(f"Practice config not found: {path}")
-    with path.open() as f:
-        data = yaml.safe_load(f)
-    return PracticeConfig(**data)
+    if path.exists():
+        with path.open() as f:
+            data = yaml.safe_load(f)
+        return PracticeConfig(**data)
+
+    # No YAML — this is a DB-backed org (the multi-tenant path). Build the
+    # config from the org's profile instead. This is what makes the campaign
+    # engine actually RUN for real signups: before this fallback, every DB
+    # org silently failed here with FileNotFoundError and never composed a
+    # single campaign step. It also routes everything the owner taught
+    # Adapix (Database tab: description, services & pricing, Q&A knowledge,
+    # tone) into the composer's prompt via additional_knowledge, and honors
+    # the Follow-up rules page's auto-approve setting via approval_mode.
+    from .practice import load_profile
+
+    profile = load_profile(practice_id)
+    rules = getattr(profile, "rules", {}) or {}
+
+    additional: dict[str, Any] = {}
+    if profile.description.strip():
+        additional["what_this_business_does"] = profile.description.strip()
+    services_str = "; ".join(
+        f"{e['name'].strip()}: {profile.format_service_price(e)}" if (e.get("price") or "").strip() else e["name"].strip()
+        for e in (profile.services or []) if (e.get("name") or "").strip()
+    )
+    if services_str:
+        additional["services_and_pricing"] = services_str
+    qa = " | ".join(
+        f"Q: {e['q'].strip()} A: {e['a'].strip()}"
+        for e in (profile.knowledge_base or [])
+        if (e.get("q") or "").strip() and (e.get("a") or "").strip()
+    )
+    if qa:
+        additional["owner_taught_answers"] = qa
+    additional["tone_guidance"] = profile.tone_guidance()
+
+    return PracticeConfig(
+        id=practice_id,
+        name=profile.practice_name,
+        doctor_name=profile.doctor,
+        office_phone=profile.phone or "(not configured)",
+        office_hours=profile.hours or "(not configured)",
+        additional_knowledge=additional,
+        approval_mode="auto" if rules.get("auto_approve") else "required",
+    )
 
 
 def list_workflows(root: Path | None = None) -> list[str]:

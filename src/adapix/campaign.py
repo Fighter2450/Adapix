@@ -90,6 +90,17 @@ class CampaignRunner:
     def run_due_messages(self) -> int:
         sent = 0
         max_day = max((step.day for step in self.workflow.cadence), default=0)
+
+        # Owner-set follow-up rules (Settings → Follow-up rules). Empty dict
+        # for legacy YAML practices — every gate below then no-ops.
+        try:
+            from .practice import load_profile
+            rules = load_profile(self.practice_id).rules or {}
+        except Exception:
+            rules = {}
+        first_followup_days = int(rules.get("first_followup_days") or 0)
+        max_touches = int(rules.get("max_touches") or 0)
+
         with get_session(self.settings) as s:
             campaigns = (
                 s.query(Campaign)
@@ -103,6 +114,18 @@ class CampaignRunner:
             now = datetime.utcnow()
             for c in campaigns:
                 days_since_start = (now - c.started_at).days
+
+                # Rule: don't start following up until N days after the
+                # campaign begins (owner's "first follow-up after" setting).
+                if c.last_step_completed == 0 and days_since_start < first_followup_days:
+                    continue
+
+                # Rule: stop after N outbound messages with no reply.
+                # A reply resets the counter naturally (we count outbound
+                # SINCE the most recent inbound).
+                if max_touches > 0 and self._outbound_since_last_reply(s, c.id) >= max_touches:
+                    continue
+
                 for step in self.workflow.cadence:
                     if step.day > days_since_start:
                         continue
@@ -120,6 +143,24 @@ class CampaignRunner:
                 if c.last_step_completed >= max_day and max_day > 0:
                     c.status = CampaignStatus.completed.value
         return sent
+
+    @staticmethod
+    def _outbound_since_last_reply(session, campaign_id: int) -> int:
+        """Outbound messages composed since the contact last replied —
+        the counter behind the 're-contact window' rule."""
+        msgs = (
+            session.query(Message)
+            .filter(Message.campaign_id == campaign_id)
+            .order_by(Message.created_at.asc())
+            .all()
+        )
+        count = 0
+        for m in msgs:
+            if m.direction == "inbound":
+                count = 0
+            elif m.direction == "outbound" and m.status != "rejected":
+                count += 1
+        return count
 
     # ------------------------------------------------------------------
     # Internals

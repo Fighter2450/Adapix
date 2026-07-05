@@ -3806,6 +3806,44 @@ body::after{
     }
   }
 
+  // Settings → Follow-up rules — real values in, real engine behavior out.
+  async function loadRulesPage(){
+    let r;
+    try { r = await api('/api/v1/rules'); }
+    catch(_){ toast('Could not load your rules', true); return; }
+
+    const firstEl = document.getElementById('rules-first');
+    const touchesEl = document.getElementById('rules-touches');
+    const autoEl = document.getElementById('rules-auto');
+    const toneWrap = document.getElementById('rules-tone');
+    if (!firstEl || !touchesEl || !autoEl || !toneWrap) return;
+
+    firstEl.value = String(r.first_followup_days);
+    touchesEl.value = String(r.max_touches);
+    autoEl.checked = !!r.auto_approve;
+    let tone = r.tone || 'warm_professional';
+    function paintTone(){
+      toneWrap.querySelectorAll('.stone-opt').forEach(b => b.classList.toggle('active', b.dataset.tone === tone));
+    }
+    paintTone();
+    toneWrap.querySelectorAll('.stone-opt').forEach(b => b.addEventListener('click', () => { tone = b.dataset.tone; paintTone(); }));
+
+    const saveBtn = document.getElementById('rules-save');
+    if (saveBtn) saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      try {
+        await api('/api/v1/rules', { method:'POST', body: JSON.stringify({
+          first_followup_days: Number(firstEl.value),
+          max_touches: Number(touchesEl.value),
+          auto_approve: autoEl.checked,
+          tone,
+        })});
+        toast('Rules saved — they apply from the next follow-up pass');
+      } catch(_){ toast('Could not save', true); }
+      saveBtn.disabled = false; saveBtn.textContent = 'Save changes';
+    });
+  }
+
   // Settings → Teach Adapix about your business (Q&A knowledge base)
   async function loadKnowledgeCard(){
     const list = document.getElementById('knowledge-list');
@@ -3978,45 +4016,47 @@ body::after{
         <div class="scard">
           <div class="scard-title">Timing</div>
           <div class="sform-row">
-            <label class="sform-label">First follow-up after appointment</label>
-            <select class="sform-input sform-select"><option>Same day</option><option>1 day later</option><option selected>2 days later</option><option>3 days later</option><option>1 week later</option></select>
-            <div class="sform-hint">When Adapix sends the first post-visit check-in</div>
+            <label class="sform-label">First follow-up</label>
+            <select class="sform-input sform-select" id="rules-first">
+              <option value="0">Same day the campaign starts</option>
+              <option value="1">1 day later</option>
+              <option value="2">2 days later</option>
+              <option value="3">3 days later</option>
+              <option value="7">1 week later</option>
+            </select>
+            <div class="sform-hint">Adapix won't draft anything for a new contact until this long after their follow-up campaign starts.</div>
           </div>
           <div class="sform-row">
             <label class="sform-label">Re-contact window</label>
-            <select class="sform-input sform-select"><option>Once</option><option selected>Up to 2 times</option><option>Up to 3 times</option><option>Until they respond</option></select>
-            <div class="sform-hint">How many times Adapix follows up without a reply</div>
-          </div>
-          <div class="sform-row">
-            <label class="sform-label">Win-back: reach dormant customers after</label>
-            <select class="sform-input sform-select"><option>3 months</option><option>6 months</option><option selected>12 months</option><option>18 months</option><option>Never</option></select>
+            <select class="sform-input sform-select" id="rules-touches">
+              <option value="1">Once</option>
+              <option value="2">Up to 2 times</option>
+              <option value="3">Up to 3 times</option>
+              <option value="0">Keep following the full schedule</option>
+            </select>
+            <div class="sform-hint">How many messages Adapix sends without getting a reply before it stops. A reply resets the count.</div>
           </div>
         </div>
         <div class="scard">
           <div class="scard-title">Tone</div>
           <div class="sform-row">
             <label class="sform-label">Default message tone</label>
-            <div class="stone-opts">
-              <button class="stone-opt">Formal</button>
-              <button class="stone-opt active">Warm</button>
-              <button class="stone-opt">Casual</button>
-              <button class="stone-opt">Concise</button>
+            <div class="stone-opts" id="rules-tone">
+              <button class="stone-opt" data-tone="warm_professional">Warm Professional</button>
+              <button class="stone-opt" data-tone="casual_friendly">Casual Friendly</button>
+              <button class="stone-opt" data-tone="clinical_formal">Direct &amp; Formal</button>
             </div>
-            <div class="sform-hint">Applies to all automated messages. You can override per-campaign in chat.</div>
+            <div class="sform-hint">Shapes every automated message Adapix writes for you.</div>
           </div>
         </div>
         <div class="scard">
           <div class="scard-title">Approval</div>
           <div class="stoggle-row">
-            <div class="stoggle-body"><div class="stoggle-label">Auto-approve routine messages</div><div class="stoggle-hint">Standard follow-ups and reminders send without your review. Unusual messages still queue for approval.</div></div>
-            <label class="stoggle"><input type="checkbox" /><span class="stoggle-track"></span></label>
-          </div>
-          <div class="stoggle-row">
-            <div class="stoggle-body"><div class="stoggle-label">Require approval for win-back messages</div><div class="stoggle-hint">Always review messages to dormant customers before they send</div></div>
-            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+            <div class="stoggle-body"><div class="stoggle-label">Auto-approve follow-ups</div><div class="stoggle-hint">Drafts send immediately instead of waiting in your Inbox for your OK. Escalations still always come to you.</div></div>
+            <label class="stoggle"><input type="checkbox" id="rules-auto" /><span class="stoggle-track"></span></label>
           </div>
         </div>
-        <button class="sform-save" data-action="save">Save changes</button>`;
+        <button class="sform-save" id="rules-save">Save changes</button>`;
 
     } else if (page === 'account'){
       body = `
@@ -4065,10 +4105,12 @@ body::after{
 
     if (page === 'channels') { loadPhoneCard(); loadEmailCard(); }
     if (page === 'profile') { loadKnowledgeCard(); }
+    if (page === 'rules') { loadRulesPage(); }
 
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 
     main.querySelectorAll('.sform-save, [data-action="save"]').forEach(btn => {
+      if (btn.id === 'rules-save') return; // has its own real handler
       btn.addEventListener('click', () => toast('Changes saved'));
     });
     const inv = main.querySelector('[data-action="invite"]');

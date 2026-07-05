@@ -132,6 +132,15 @@ class PracticeProfile:
     # question to a human.
     services: list[dict] = field(default_factory=list)
 
+    # Follow-up rules from Settings → Follow-up rules. Consumed by the
+    # campaign engine (campaign.py) and load_practice's DB-org fallback:
+    #   first_followup_days — don't compose ANYTHING until this many days
+    #                         after the campaign starts (0 = same day)
+    #   max_touches         — stop composing after this many outbound
+    #                         messages without a reply (0 = keep going)
+    #   auto_approve        — compose+send without waiting in the Inbox
+    rules: dict = field(default_factory=dict)
+
     configured_at: str = ""
 
     # ------------------------------------------------------------------
@@ -435,6 +444,7 @@ def _raw_to_profile(raw: dict) -> PracticeProfile:
         knowledge_base=raw.get("knowledge_base") or [],
         description=raw.get("description") or "",
         services=raw.get("services") or [],
+        rules=raw.get("rules") or {},
         configured_at=raw.get("configured_at") or "",
     )
 
