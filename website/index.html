@@ -57,6 +57,10 @@ body{
 }
 ::selection{background:rgba(124,58,237,.45);color:#fff}
 
+/* ---------- 3D particle background (three.js) ---------- */
+#bg3d{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity 1.6s ease}
+#bg3d.on{opacity:1}
+
 /* ---------- ambient orbs ---------- */
 .orbs{position:fixed;inset:0;z-index:-1;pointer-events:none}
 .orbs::before,.orbs::after,.orb-rose{content:"";position:absolute;border-radius:50%;filter:blur(90px)}
@@ -361,6 +365,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 </head>
 <body>
 <div class="orbs"><div class="orb-rose"></div></div>
+<canvas id="bg3d" aria-hidden="true"></canvas>
 
 <!-- ================= NAV ================= -->
 <nav>
@@ -873,6 +878,75 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
   },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
   els.forEach(function(el){io.observe(el);});
 })();
+</script>
+
+<!-- 3D ambient particle field (three.js, self-hosted in vendor/).
+     Skipped on small screens, reduced-motion, or missing WebGL —
+     the CSS orbs remain as the fallback background. -->
+<script type="module">
+if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  try {
+    const THREE = await import('./vendor/three.module.min.js');
+    const canvas = document.getElementById('bg3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 40);
+    camera.position.z = 7;
+
+    // Particle field in brand colors: purple / violet / cyan
+    const COUNT = 700;
+    const palette = [new THREE.Color('#7c3aed'), new THREE.Color('#a78bfa'), new THREE.Color('#22d3ee')];
+    const positions = new Float32Array(COUNT * 3);
+    const colors = new Float32Array(COUNT * 3);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 22;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 14;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+      const c = palette[(Math.random() * palette.length) | 0];
+      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({
+      size: 0.05, vertexColors: true, transparent: true, opacity: 0.55,
+      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    // Gentle drift + mouse parallax
+    let mx = 0, my = 0, tx = 0, ty = 0;
+    addEventListener('pointermove', (e) => {
+      tx = (e.clientX / window.innerWidth - 0.5) * 0.35;
+      ty = (e.clientY / window.innerHeight - 0.5) * 0.25;
+    }, { passive: true });
+    addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    let running = true;
+    document.addEventListener('visibilitychange', () => { running = !document.hidden; });
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      if (!running) return;
+      const t = clock.getElapsedTime();
+      points.rotation.y = t * 0.02;
+      points.position.y = Math.sin(t * 0.18) * 0.25;
+      mx += (tx - mx) * 0.04; my += (ty - my) * 0.04;
+      camera.position.x = mx; camera.position.y = -my;
+      camera.lookAt(scene.position);
+      renderer.render(scene, camera);
+    });
+    canvas.classList.add('on');
+  } catch (e) { /* no WebGL or module failed — CSS orbs carry the background */ }
+}
 </script>
 </body>
 </html>
