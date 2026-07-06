@@ -75,6 +75,7 @@ ESCALATION_LABELS = {
 @dataclass
 class PracticeProfile:
     """Structured form of the wizard's output."""
+    org_id: str = ""   # set by load_profile(org_id) — scopes memory/chat lookups
     practice_name: str = "your practice"
     doctor: str = "Dr."
     phone: str = ""
@@ -391,7 +392,7 @@ class PracticeProfile:
         # hard rules unless they're tagged 'preference'.
         try:
             from .memory import memory_for_prompt
-            mem = memory_for_prompt(max_chars=3000)
+            mem = memory_for_prompt(max_chars=3000, org_id=self.org_id or None)
             if mem:
                 parts.append(mem)
         except Exception:
@@ -401,7 +402,7 @@ class PracticeProfile:
         # the structured facts may have missed (intent, tone, context).
         try:
             from .chat import chat_transcript_for_prompt
-            transcript = chat_transcript_for_prompt(max_chars=3000)
+            transcript = chat_transcript_for_prompt(max_chars=3000, org_id=self.org_id or None)
             if transcript:
                 parts.append(
                     "RECENT CONVERSATION WITH THIS PRACTICE (raw transcript, "
@@ -464,7 +465,9 @@ def load_profile(org_id: str | None = None) -> PracticeProfile:
             with Session(get_engine()) as s:
                 row = s.get(OrgProfile, org_id)
                 if row and row.data:
-                    return _raw_to_profile(row.data)
+                    prof = _raw_to_profile(row.data)
+                    prof.org_id = org_id
+                    return prof
         except Exception:
             pass
         return PracticeProfile()

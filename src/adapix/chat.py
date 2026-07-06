@@ -34,13 +34,17 @@ from .skills import skills_index_block, get_skill, list_skills
 # ---------------------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------------------
-def _chat_path() -> Path:
+def _chat_path(org_id: str | None = None) -> Path:
     var = os.environ.get("ADAPIX_VAR", ".")
+    if org_id:
+        # Per-tenant history — every org gets its own conversation. The
+        # legacy single-tenant path is kept for the CLI / dev tools.
+        return Path(var) / "chat_history" / f"{org_id}.json"
     return Path(var) / "chat_history.json"
 
 
-def load_history() -> list[dict]:
-    p = _chat_path()
+def load_history(org_id: str | None = None) -> list[dict]:
+    p = _chat_path(org_id)
     if not p.exists():
         return []
     try:
@@ -49,27 +53,27 @@ def load_history() -> list[dict]:
         return []
 
 
-def save_history(messages: list[dict]) -> None:
-    p = _chat_path()
+def save_history(messages: list[dict], org_id: str | None = None) -> None:
+    p = _chat_path(org_id)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({"messages": messages}, indent=2))
 
 
-def append_message(role: str, content: str) -> None:
-    msgs = load_history()
+def append_message(role: str, content: str, org_id: str | None = None) -> None:
+    msgs = load_history(org_id)
     msgs.append({
         "role": role,
         "content": content,
         "ts": datetime.utcnow().isoformat() + "Z",
     })
-    save_history(msgs)
+    save_history(msgs, org_id)
 
 
-def chat_transcript_for_prompt(max_chars: int = 6000) -> str:
+def chat_transcript_for_prompt(max_chars: int = 6000, org_id: str | None = None) -> str:
     """The full chat history as a single text block suitable for embedding
     in the agent's or classifier's system prompt. Truncated to the most
     recent ~6kB so we don't blow up token counts."""
-    msgs = load_history()
+    msgs = load_history(org_id)
     if not msgs:
         return ""
     lines = []
@@ -335,11 +339,12 @@ CONVERSATION RULES:
 # ---------------------------------------------------------------------------
 # Main chatbot call
 # ---------------------------------------------------------------------------
-def generate_opener() -> dict:
+def generate_opener(onboarding: bool = False, org_id: str | None = None) -> dict:
     """Generate the bot's opening message — used the first time the user
-    opens /chat and there's no prior history."""
-    profile = load_profile()
-    history = load_history()
+    opens /chat and there's no prior history. onboarding=True right after
+    the welcome wizard tilts the opener toward interviewing the owner."""
+    profile = load_profile(org_id)
+    history = load_history(org_id)
     missing = missing_topics(profile, history)
     sys = build_system_prompt(profile, missing) + (
         "\n\nThis is your FIRST message in this chat. Lead with 2-3 specific, "
@@ -349,6 +354,13 @@ def generate_opener() -> dict:
         "show your value immediately. End with ONE brief question only if "
         "genuinely needed. ~80-100 words. Do NOT open with a question."
     )
+    if onboarding:
+        sys += (
+            "\n\nThe owner JUST finished first-time setup. Welcome them "
+            "briefly, then ask ONE high-value question that helps you serve "
+            "their customers better (e.g. their most common customer "
+            "question, or the service they most want followed up on)."
+        )
     settings = Settings()
     client = Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(
@@ -361,7 +373,7 @@ def generate_opener() -> dict:
         }],
     )
     text = "".join(b.text for b in resp.content if hasattr(b, "text"))
-    append_message("assistant", text)
+    append_message("assistant", text, org_id)
     return {
         "message": text,
         "suggestions": suggestions_for(missing),
@@ -390,10 +402,11 @@ def _build_chat_user_content(user_message: str, attachments: list | None) -> str
     return blocks
 
 
-def reply_to(user_message: str, attachments: list | None = None) -> dict:
+def reply_to(user_message: str, attachments: list | None = None,
+             org_id: str | None = None) -> dict:
     """Append the user's message + generate Adapix's reply + extract
     any new structured facts from the user's message into memory."""
-    append_message("user", user_message)
+    append_message("user", user_message, org_id)
 
     # ---- 1) Extract structured memory from the user's message ----
     # Runs in foreground; if it fails for any reason, we still continue
@@ -401,18 +414,18 @@ def reply_to(user_message: str, attachments: list | None = None) -> dict:
     new_facts: list[dict] = []
     try:
         from .memory import remember_from_message
-        new_facts = remember_from_message(user_message)
+        new_facts = remember_from_message(user_message, org_id=org_id)
     except Exception as e:
         print(f"[chat] memory extraction failed: {e}")
 
     # ---- 2) Build the chatbot's system prompt with current memory ----
-    profile = load_profile()
-    history = load_history()
+    profile = load_profile(org_id)
+    history = load_history(org_id)
     missing = missing_topics(profile, history)
     sys = build_system_prompt(profile, missing)
     try:
         from .memory import memory_for_prompt
-        mem_block = memory_for_prompt()
+        mem_block = memory_for_prompt(org_id=org_id)
         if mem_block:
             sys = sys + "\n\n" + mem_block
         if new_facts:
@@ -445,7 +458,7 @@ def reply_to(user_message: str, attachments: list | None = None) -> dict:
         messages=msgs,
     )
     reply_text = "".join(b.text for b in resp.content if hasattr(b, "text"))
-    append_message("assistant", reply_text)
+    append_message("assistant", reply_text, org_id)
 
     # ---- 4) Detect + persist any EXPENSE described in the user message ----
     # This is the founder-bookkeeping integration — drop "$52 1TB SSD from

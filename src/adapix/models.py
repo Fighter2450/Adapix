@@ -207,6 +207,10 @@ class Automation(Base):
     __tablename__ = "automations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Owning tenant. Nullable for rows created before multi-tenancy; those
+    # legacy rows are only visible when no org filter matches (i.e. never
+    # through the API).
+    org_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     url: Mapped[str] = mapped_column(Text)
     task: Mapped[str] = mapped_column(Text)  # natural-language description of what to extract

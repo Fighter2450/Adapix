@@ -120,7 +120,7 @@ def api_chat_history(org_id: str = Depends(verify_admin)):
     from ..chat import load_history, missing_topics, suggestions_for
     from ..practice import load_profile
     profile = load_profile(org_id)
-    msgs = load_history()
+    msgs = load_history(org_id)
     return {
         "messages": msgs,
         "suggestions": suggestions_for(missing_topics(profile, msgs)),
@@ -139,7 +139,7 @@ def api_chat_opener(body: OpenerBody | None = None, _user: str = Depends(verify_
     'hi, how can I help' opener)."""
     from ..chat import generate_opener
     try:
-        return generate_opener(onboarding=bool(body and body.onboarding))
+        return generate_opener(onboarding=bool(body and body.onboarding), org_id=_user)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"opener failed: {e}")
 
@@ -203,7 +203,7 @@ async def api_chat_send(
     if not text and not attachments:
         raise HTTPException(status_code=400, detail="empty message")
     try:
-        return reply_to(text, attachments=attachments or None)
+        return reply_to(text, attachments=attachments or None, org_id=_user)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"chat failed: {e}")
 
@@ -359,15 +359,15 @@ def api_skill_detail(slug: str):
 # Structured long-term memory (facts Adapix has learned from /chat)
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/memory")
-def api_memory_list():
+def api_memory_list(_user: str = Depends(verify_admin)):
     from ..memory import all_facts
-    return {"facts": all_facts()}
+    return {"facts": all_facts(_user)}
 
 
 @router.delete("/api/v1/memory/{fact_id}")
-def api_memory_delete(fact_id: str):
+def api_memory_delete(fact_id: str, _user: str = Depends(verify_admin)):
     from ..memory import remove_fact
-    ok = remove_fact(fact_id)
+    ok = remove_fact(fact_id, _user)
     if not ok:
         raise HTTPException(status_code=404, detail="fact not found")
     return {"ok": True, "id": fact_id}
@@ -2069,7 +2069,9 @@ def api_list_automations(_user: str = Depends(verify_admin)) -> dict[str, Any]:
     from ..models import Automation, AutomationRun
     settings = Settings()
     with get_session(settings) as s:
-        autos = s.query(Automation).order_by(Automation.created_at.desc()).all()
+        autos = (s.query(Automation)
+                 .filter(Automation.org_id == _user)
+                 .order_by(Automation.created_at.desc()).all())
         items = []
         for a in autos:
             last_run = (
@@ -2107,6 +2109,7 @@ def api_create_automation(body: AutomationBody, _user: str = Depends(verify_admi
     settings = Settings()
     with get_session(settings) as s:
         a = Automation(
+            org_id=_user,
             name=body.name,
             url=body.url,
             task=body.task,
@@ -2131,7 +2134,7 @@ def api_delete_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[
     settings = Settings()
     with get_session(settings) as s:
         a = s.get(Automation, aid)
-        if not a:
+        if not a or a.org_id != _user:
             raise HTTPException(status_code=404, detail="not found")
         s.delete(a)
     return {"ok": True}
@@ -2145,7 +2148,7 @@ def api_update_automation(aid: int, body: AutomationBody, _user: str = Depends(v
     settings = Settings()
     with get_session(settings) as s:
         a = s.get(Automation, aid)
-        if not a:
+        if not a or a.org_id != _user:
             raise HTTPException(status_code=404, detail="not found")
         a.name = body.name
         a.url = body.url
@@ -2164,6 +2167,13 @@ def api_run_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[str
     """Trigger an automation immediately (outside its schedule)."""
     import threading
     from ..automations import run_automation
+    from ..config import Settings
+    from ..db import get_session
+    from ..models import Automation
+    with get_session(Settings()) as s:
+        a = s.get(Automation, aid)
+        if not a or a.org_id != _user:
+            raise HTTPException(status_code=404, detail="not found")
     def _run():
         try:
             run_automation(aid)
@@ -2181,7 +2191,7 @@ def api_pause_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[s
     settings = Settings()
     with get_session(settings) as s:
         a = s.get(Automation, aid)
-        if not a:
+        if not a or a.org_id != _user:
             raise HTTPException(status_code=404, detail="not found")
         a.status = "paused" if a.status == "active" else "active"
         new_status = a.status
@@ -2198,7 +2208,7 @@ def api_download_result(aid: int, _user: str = Depends(verify_admin)):
     settings = Settings()
     with get_session(settings) as s:
         a = s.get(Automation, aid)
-        if not a or not a.last_result_path:
+        if not a or a.org_id != _user or not a.last_result_path:
             raise HTTPException(status_code=404, detail="no result yet")
         path = FPath(a.last_result_path)
         if not path.exists():

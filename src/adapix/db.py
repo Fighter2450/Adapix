@@ -62,6 +62,9 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("blooio_channel_id", "VARCHAR(128)"),
         ("imessage_number", "VARCHAR(32)"),
     ],
+    "automations": [
+        ("org_id", "VARCHAR(64)"),
+    ],
     "email_connections": [
         ("smtp_host", "VARCHAR(255)"),
         ("smtp_port", "INTEGER"),

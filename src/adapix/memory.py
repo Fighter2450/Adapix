@@ -55,13 +55,17 @@ from .config import Settings
 # ---------------------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------------------
-def _memory_path() -> Path:
+def _memory_path(org_id: str | None = None) -> Path:
     var = os.environ.get("ADAPIX_VAR", ".")
+    if org_id:
+        # Per-tenant store — one org's taught facts must never leak into
+        # another org's prompts. Legacy single-tenant path kept for the CLI.
+        return Path(var) / "memory" / f"{org_id}.json"
     return Path(var) / "memory.json"
 
 
-def load_memory() -> dict:
-    p = _memory_path()
+def load_memory(org_id: str | None = None) -> dict:
+    p = _memory_path(org_id)
     if not p.exists():
         return {"facts": []}
     try:
@@ -70,21 +74,22 @@ def load_memory() -> dict:
         return {"facts": []}
 
 
-def save_memory(memory: dict) -> None:
-    p = _memory_path()
+def save_memory(memory: dict, org_id: str | None = None) -> None:
+    p = _memory_path(org_id)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(memory, indent=2))
 
 
-def all_facts() -> list[dict]:
-    return load_memory().get("facts", [])
+def all_facts(org_id: str | None = None) -> list[dict]:
+    return load_memory(org_id).get("facts", [])
 
 
-def add_fact(text: str, category: str = "detail", source: str = "chat") -> dict:
+def add_fact(text: str, category: str = "detail", source: str = "chat",
+             org_id: str | None = None) -> dict:
     text = (text or "").strip()
     if not text:
         return {}
-    mem = load_memory()
+    mem = load_memory(org_id)
     fact = {
         "id":       uuid.uuid4().hex[:6],
         "text":     text,
@@ -93,24 +98,24 @@ def add_fact(text: str, category: str = "detail", source: str = "chat") -> dict:
         "ts":       datetime.utcnow().isoformat() + "Z",
     }
     mem.setdefault("facts", []).append(fact)
-    save_memory(mem)
+    save_memory(mem, org_id)
     return fact
 
 
-def remove_fact(fact_id: str) -> bool:
-    mem = load_memory()
+def remove_fact(fact_id: str, org_id: str | None = None) -> bool:
+    mem = load_memory(org_id)
     before = len(mem.get("facts", []))
     mem["facts"] = [f for f in mem.get("facts", []) if f.get("id") != fact_id]
-    save_memory(mem)
+    save_memory(mem, org_id)
     return len(mem["facts"]) < before
 
 
 # ---------------------------------------------------------------------------
 # Formatting for AI system prompts
 # ---------------------------------------------------------------------------
-def memory_for_prompt(max_chars: int = 3000) -> str:
+def memory_for_prompt(max_chars: int = 3000, org_id: str | None = None) -> str:
     """Return the full structured memory as a Claude-friendly prompt block."""
-    facts = all_facts()
+    facts = all_facts(org_id)
     if not facts:
         return ""
     lines = ["PERMANENT MEMORY (everything this practice has taught me — "
@@ -215,11 +220,11 @@ def extract_new_facts(user_message: str, existing_facts: list[dict] | None = Non
         return []
 
 
-def remember_from_message(user_message: str) -> list[dict]:
-    """Extract NEW facts from a user message and persist them to memory.json.
-    Returns the list of facts that were newly added (so the UI can show them)."""
-    new_facts = extract_new_facts(user_message)
+def remember_from_message(user_message: str, org_id: str | None = None) -> list[dict]:
+    """Extract NEW facts from a user message and persist them to the org's
+    memory store. Returns the facts that were newly added (for the UI)."""
+    new_facts = extract_new_facts(user_message, existing_facts=all_facts(org_id))
     added: list[dict] = []
     for f in new_facts:
-        added.append(add_fact(f["text"], category=f["category"], source="chat"))
+        added.append(add_fact(f["text"], category=f["category"], source="chat", org_id=org_id))
     return added

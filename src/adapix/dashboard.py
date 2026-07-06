@@ -300,7 +300,7 @@ def get_widget_data(widget_id: str, org_id: str | None = None) -> dict[str, Any]
         if widget_id == "today_overview":
             return _data_today_overview(org_id)
         if widget_id == "memory_summary":
-            return _data_memory_summary()
+            return _data_memory_summary(org_id)
         if widget_id == "recent_activity":
             return _data_recent_activity()
         if widget_id == "device_status":
@@ -412,11 +412,11 @@ def _data_today_overview(org_id: str | None = None) -> dict[str, Any]:
         }
 
 
-def _data_memory_summary() -> dict[str, Any]:
+def _data_memory_summary(org_id: str | None = None) -> dict[str, Any]:
     try:
         from .memory import all_facts
-        facts = all_facts()[:6]
-        return {"facts": facts, "total": len(all_facts())}
+        facts = all_facts(org_id)[:6]
+        return {"facts": facts, "total": len(all_facts(org_id))}
     except Exception:
         return {"facts": [], "total": 0}
 
