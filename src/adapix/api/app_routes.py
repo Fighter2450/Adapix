@@ -132,7 +132,7 @@ class OpenerBody(BaseModel):
 
 
 @router.post("/api/v1/chat/opener")
-def api_chat_opener(body: OpenerBody | None = None):
+def api_chat_opener(body: OpenerBody | None = None, _user: str = Depends(verify_admin)):
     """Generate the bot's first message — used when there's no history yet.
     Pass {"onboarding": true} the first time after the welcome wizard so
     Adapix knows she's interviewing the practice (rather than the regular
@@ -194,6 +194,7 @@ class ChatSendBody(BaseModel):
 async def api_chat_send(
     message: str = Form(""),
     files: List[UploadFile] = File(default=[]),
+    _user: str = Depends(verify_admin),
 ):
     """User sent a message → return Adapix's reply + any new suggestions."""
     from ..chat import reply_to
@@ -397,7 +398,7 @@ class SubscribeBody(BaseModel):
 
 
 @router.post("/api/v1/notify/subscribe")
-def api_notify_subscribe(body: SubscribeBody):
+def api_notify_subscribe(body: SubscribeBody, _user: str = Depends(verify_admin)):
     """Persist the browser's push subscription so we can target this
     device for notifications later."""
     from ..notifications import add_subscription
@@ -417,14 +418,14 @@ class UnsubscribeBody(BaseModel):
 
 
 @router.post("/api/v1/notify/unsubscribe")
-def api_notify_unsubscribe(body: UnsubscribeBody):
+def api_notify_unsubscribe(body: UnsubscribeBody, _user: str = Depends(verify_admin)):
     from ..notifications import remove_subscription
     ok = remove_subscription(body.endpoint)
     return {"ok": ok}
 
 
 @router.get("/api/v1/notify/status")
-def api_notify_status():
+def api_notify_status(_user: str = Depends(verify_admin)):
     """How many devices are currently subscribed to push, so the UI
     can show 'Notifications on (1 device)' vs the 'Enable' button."""
     from ..notifications import list_subscriptions
@@ -439,7 +440,7 @@ class TestPushBody(BaseModel):
 
 
 @router.post("/api/v1/notify/test")
-def api_notify_test(body: TestPushBody):
+def api_notify_test(body: TestPushBody, _user: str = Depends(verify_admin)):
     """Fire a test notification to every subscribed device — used by
     the 'Send test notification' button in Settings."""
     from ..notifications import push_notification
@@ -467,7 +468,7 @@ def expenses_page():
 
 
 @router.get("/api/v1/expenses")
-def api_expenses_list():
+def api_expenses_list(_user: str = Depends(verify_admin)):
     from ..expenses import (
         list_expenses, totals_by_category, totals_by_month,
         total_all_time, total_this_month, count_all, all_categories,
@@ -499,7 +500,7 @@ class AddSubscriptionBody(BaseModel):
 
 
 @router.post("/api/v1/subscriptions")
-def api_subscriptions_add(body: AddSubscriptionBody):
+def api_subscriptions_add(body: AddSubscriptionBody, _user: str = Depends(verify_admin)):
     from ..expenses import add_subscription
     try:
         sub = add_subscription(
@@ -516,7 +517,7 @@ def api_subscriptions_add(body: AddSubscriptionBody):
 
 
 @router.post("/api/v1/subscriptions/{sub_id}/cancel")
-def api_subscriptions_cancel(sub_id: str):
+def api_subscriptions_cancel(sub_id: str, _user: str = Depends(verify_admin)):
     """Stop future auto-charges. Past charges stay in history."""
     from ..expenses import cancel_subscription
     if not cancel_subscription(sub_id):
@@ -525,7 +526,7 @@ def api_subscriptions_cancel(sub_id: str):
 
 
 @router.delete("/api/v1/subscriptions/{sub_id}")
-def api_subscriptions_delete(sub_id: str):
+def api_subscriptions_delete(sub_id: str, _user: str = Depends(verify_admin)):
     """Remove a subscription entirely from the list. Past expense entries
     from it remain in history."""
     from ..expenses import delete_subscription
@@ -543,7 +544,7 @@ class AddExpenseBody(BaseModel):
 
 
 @router.post("/api/v1/expenses")
-def api_expenses_add(body: AddExpenseBody):
+def api_expenses_add(body: AddExpenseBody, _user: str = Depends(verify_admin)):
     from ..expenses import add_expense
     try:
         rec = add_expense(
@@ -560,7 +561,7 @@ def api_expenses_add(body: AddExpenseBody):
 
 
 @router.delete("/api/v1/expenses/{expense_id}")
-def api_expenses_delete(expense_id: str):
+def api_expenses_delete(expense_id: str, _user: str = Depends(verify_admin)):
     from ..expenses import remove_expense
     if not remove_expense(expense_id):
         raise HTTPException(status_code=404, detail="expense not found")
@@ -568,7 +569,7 @@ def api_expenses_delete(expense_id: str):
 
 
 @router.get("/api/v1/expenses/export.csv", response_class=PlainTextResponse)
-def api_expenses_csv():
+def api_expenses_csv(_user: str = Depends(verify_admin)):
     from ..expenses import to_csv
     return PlainTextResponse(content=to_csv(), media_type="text/csv")
 
@@ -578,7 +579,7 @@ class BulkExpenseBody(BaseModel):
 
 
 @router.post("/api/v1/expenses/bulk")
-def api_expenses_bulk(body: BulkExpenseBody):
+def api_expenses_bulk(body: BulkExpenseBody, _user: str = Depends(verify_admin)):
     """Bulk paste — one expense per non-blank line. Each line goes through
     the Claude expense extractor and gets added if it parses as an expense.
     Returns a summary of how many were added vs skipped, plus per-line
@@ -1339,6 +1340,7 @@ def activity(limit: int = 50, _user: str = Depends(verify_admin)) -> dict[str, A
             s.query(Message, Campaign, Patient)
             .join(Campaign, Message.campaign_id == Campaign.id)
             .join(Patient, Campaign.patient_id == Patient.id)
+            .filter(Campaign.practice_id == _user)
             .order_by(Message.created_at.desc())
             .limit(limit)
             .all()
@@ -1388,6 +1390,7 @@ def activity(limit: int = 50, _user: str = Depends(verify_admin)) -> dict[str, A
             s.query(EscalationEvent, Campaign, Patient)
             .join(Campaign, EscalationEvent.campaign_id == Campaign.id)
             .join(Patient, Campaign.patient_id == Patient.id)
+            .filter(Campaign.practice_id == _user)
             .order_by(EscalationEvent.created_at.desc())
             .limit(limit)
             .all()
@@ -1427,11 +1430,16 @@ def activity(limit: int = 50, _user: str = Depends(verify_admin)) -> dict[str, A
 
 @router.get("/api/v1/feed")
 def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
-    """Everything the home screen needs: escalations, pending approvals, today's digest."""
+    """Everything the home screen needs: escalations, pending approvals, today's digest.
+
+    Every query here joins through Campaign.practice_id — this endpoint serves
+    multiple tenants and must never show one org another org's traffic."""
     with get_session() as s:
         # Open escalations (newest first)
         escalations = (
             s.query(EscalationEvent)
+            .join(Campaign, EscalationEvent.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user)
             .filter(EscalationEvent.resolved == False)  # noqa: E712
             .order_by(EscalationEvent.created_at.desc())
             .limit(25)
@@ -1474,6 +1482,8 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
         # Pending-approval messages
         pending = (
             s.query(Message)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user)
             .filter(Message.status == "pending_approval")
             .order_by(Message.created_at.desc())
             .limit(25)
@@ -1500,18 +1510,25 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
         today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         sent_today = (
             s.query(Message)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user)
             .filter(Message.direction == "outbound", Message.status.in_(["sent", "delivered"]))
             .filter(Message.created_at >= today_start)
             .count()
         )
         booked_today = (
             s.query(Patient)
+            .filter(Patient.practice_id == _user)
             .filter(Patient.status == "scheduled")
             .filter(Patient.created_at >= today_start - timedelta(days=14))
             .count()
         )
         open_escalations = (
-            s.query(EscalationEvent).filter(EscalationEvent.resolved == False).count()  # noqa: E712
+            s.query(EscalationEvent)
+            .join(Campaign, EscalationEvent.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user)
+            .filter(EscalationEvent.resolved == False)  # noqa: E712
+            .count()
         )
 
         return {
@@ -1536,8 +1553,21 @@ class RejectBody(BaseModel):
 
 
 
+def _require_message_in_org(message_id: int, org_id: str) -> None:
+    """404 unless the message belongs to a campaign owned by the caller's org.
+
+    Approve/reject act on raw message ids — without this check any logged-in
+    org could approve-and-send (or kill) another org's queued messages."""
+    with get_session() as s:
+        m = s.get(Message, message_id)
+        c = s.get(Campaign, m.campaign_id) if m else None
+        if not c or c.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="Message not found")
+
+
 @router.post("/api/v1/approvals/{message_id}/approve")
 def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_admin)):
+    _require_message_in_org(message_id, _user)
     mgr = ApprovalManager()
     try:
         mgr.approve_and_send(message_id, edited_body=body.edited_body or None)
@@ -1548,6 +1578,7 @@ def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_
 
 @router.post("/api/v1/approvals/{message_id}/reject")
 def api_reject(message_id: int, body: RejectBody, _user: str = Depends(verify_admin)):
+    _require_message_in_org(message_id, _user)
     mgr = ApprovalManager()
     try:
         mgr.reject(message_id, reason=body.reason or None)
@@ -1657,7 +1688,7 @@ def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
 # Dynamic dashboard — the widgets Adapix has decided to show.
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/dashboard")
-def api_dashboard_get():
+def api_dashboard_get(org_id: str = Depends(verify_admin)):
     """Return the current dashboard layout + the data for each widget.
     The UI uses this to render the Home view dynamically."""
     from ..dashboard import load_config, catalog_index, get_widget_data
@@ -1673,7 +1704,7 @@ def api_dashboard_get():
             **w,
             "label":       entry["label"],
             "description": entry["description"],
-            "data":        get_widget_data(wid),
+            "data":        get_widget_data(wid, org_id),
         })
     return {
         "version":   cfg.get("version", 0),
@@ -1693,7 +1724,7 @@ class WidgetMutationBody(BaseModel):
 
 
 @router.post("/api/v1/dashboard/add")
-def api_dashboard_add(body: WidgetMutationBody):
+def api_dashboard_add(body: WidgetMutationBody, _user: str = Depends(verify_admin)):
     from ..dashboard import add_widget
     if not add_widget(body.widget_id, position=body.position, reason=body.reason):
         raise HTTPException(status_code=400, detail="unknown widget id")
@@ -1701,7 +1732,7 @@ def api_dashboard_add(body: WidgetMutationBody):
 
 
 @router.post("/api/v1/dashboard/remove")
-def api_dashboard_remove(body: WidgetMutationBody):
+def api_dashboard_remove(body: WidgetMutationBody, _user: str = Depends(verify_admin)):
     from ..dashboard import remove_widget
     if not remove_widget(body.widget_id, reason=body.reason):
         raise HTTPException(status_code=404, detail="widget not on dashboard")
@@ -1715,7 +1746,7 @@ class WidgetPinBody(BaseModel):
 
 
 @router.post("/api/v1/dashboard/pin")
-def api_dashboard_pin(body: WidgetPinBody):
+def api_dashboard_pin(body: WidgetPinBody, _user: str = Depends(verify_admin)):
     from ..dashboard import pin_widget
     if not pin_widget(body.widget_id, body.pinned, reason=body.reason):
         raise HTTPException(status_code=404, detail="widget not on dashboard")
@@ -1723,7 +1754,7 @@ def api_dashboard_pin(body: WidgetPinBody):
 
 
 @router.post("/api/v1/dashboard/reset")
-def api_dashboard_reset():
+def api_dashboard_reset(_user: str = Depends(verify_admin)):
     from ..dashboard import reset_to_default
     return reset_to_default()
 
@@ -1912,14 +1943,16 @@ def api_sms_test(body: TestSmsBody, _user: str = Depends(verify_admin)):
 
 @router.post("/api/v1/campaigns/run")
 def api_run_campaigns(_user: str = Depends(verify_admin)) -> dict[str, Any]:
-    """Manually trigger the campaign runner across all configured practices
-    and workflows. Composes due messages and queues them for approval."""
-    return run_all_campaigns()
+    """Manually trigger the campaign runner — for the caller's org only.
+    (The background scheduler is what runs every org; letting one tenant
+    trigger all tenants' runs invites resource abuse.)"""
+    return run_all_campaigns(only_org=_user)
 
 
-def run_all_campaigns() -> dict[str, Any]:
+def run_all_campaigns(only_org: str | None = None) -> dict[str, Any]:
     """Run campaigns for every org that has completed setup, plus legacy YAML practices.
-    Called both from the API endpoint and the background scheduler."""
+    Called from the background scheduler (all orgs) and the API endpoint
+    (only_org = the caller)."""
     from ..campaign import CampaignRunner
     from ..config import list_practices, list_workflows
     from ..db import get_engine
@@ -1940,6 +1973,8 @@ def run_all_campaigns() -> dict[str, Any]:
                 .all()
             )
             org_ids = [o.id for o, prof in rows if not (prof.data or {}).get("paused")]
+            if only_org is not None:
+                org_ids = [oid for oid in org_ids if oid == only_org]
     except Exception as exc:
         errors.append(f"db org query: {exc}")
         org_ids = []
@@ -1964,7 +1999,8 @@ def run_all_campaigns() -> dict[str, Any]:
                 errors.append(f"{practice_id}/{workflow_id}: {exc}")
 
     # --- Legacy YAML-backed practices (backwards compat) ---
-    yaml_practices = [p for p in list_practices() if p not in org_ids]
+    yaml_practices = [] if only_org is not None else [
+        p for p in list_practices() if p not in org_ids]
     for practice_id in yaml_practices:
         for workflow_id in workflows:
             try:

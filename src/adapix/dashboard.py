@@ -277,25 +277,28 @@ def reorder_widgets(ordered_ids: list[str], *, reason: str = "",
 # Data fetchers — given a widget id, return the data the UI needs to render
 # it. Each widget has its own shape; the UI knows how to render each one.
 # ---------------------------------------------------------------------------
-def get_widget_data(widget_id: str) -> dict[str, Any]:
+def get_widget_data(widget_id: str, org_id: str | None = None) -> dict[str, Any]:
     """Dispatch to the right data fetcher for this widget. Returns an empty
     dict if the widget isn't known or the fetch fails — UI should render
-    an empty state in that case."""
+    an empty state in that case.
+
+    org_id scopes every DB-backed widget to the calling tenant; None means
+    unscoped (only safe for single-tenant CLI/dev use)."""
     try:
         if widget_id == "escalations_open":
-            return _data_escalations()
+            return _data_escalations(org_id)
         if widget_id == "approvals_pending":
-            return _data_approvals()
+            return _data_approvals(org_id)
         if widget_id == "unscheduled_referrals":
-            return _data_workflow_queue("case_acceptance")
+            return _data_workflow_queue("case_acceptance", org_id)
         if widget_id == "post_op_check_ins":
-            return _data_workflow_queue("post_op_check_in")
+            return _data_workflow_queue("post_op_check_in", org_id)
         if widget_id == "recall_due_this_week":
-            return _data_workflow_queue("recall_6mo")
+            return _data_workflow_queue("recall_6mo", org_id)
         if widget_id == "financing_follow_ups":
-            return _data_workflow_queue("financing_followup")
+            return _data_workflow_queue("financing_followup", org_id)
         if widget_id == "today_overview":
-            return _data_today_overview()
+            return _data_today_overview(org_id)
         if widget_id == "memory_summary":
             return _data_memory_summary()
         if widget_id == "recent_activity":
@@ -307,13 +310,16 @@ def get_widget_data(widget_id: str) -> dict[str, Any]:
     return {}
 
 
-def _data_escalations() -> dict[str, Any]:
+def _data_escalations(org_id: str | None = None) -> dict[str, Any]:
     from .db import get_session
     from .models import EscalationEvent, Campaign, Patient
     with get_session() as s:
+        q = s.query(EscalationEvent)
+        if org_id:
+            q = q.join(Campaign, EscalationEvent.campaign_id == Campaign.id).filter(
+                Campaign.practice_id == org_id)
         rows = (
-            s.query(EscalationEvent)
-            .filter(EscalationEvent.resolved == False)  # noqa: E712
+            q.filter(EscalationEvent.resolved == False)  # noqa: E712
             .order_by(EscalationEvent.created_at.desc())
             .limit(10)
             .all()
@@ -334,13 +340,16 @@ def _data_escalations() -> dict[str, Any]:
         return {"items": items, "count": len(items)}
 
 
-def _data_approvals() -> dict[str, Any]:
+def _data_approvals(org_id: str | None = None) -> dict[str, Any]:
     from .db import get_session
     from .models import Message, Campaign, Patient
     with get_session() as s:
+        q = s.query(Message)
+        if org_id:
+            q = q.join(Campaign, Message.campaign_id == Campaign.id).filter(
+                Campaign.practice_id == org_id)
         rows = (
-            s.query(Message)
-            .filter(Message.status == "pending_approval")
+            q.filter(Message.status == "pending_approval")
             .order_by(Message.created_at.desc())
             .limit(10)
             .all()
@@ -358,36 +367,44 @@ def _data_approvals() -> dict[str, Any]:
         return {"items": items, "count": len(items)}
 
 
-def _data_workflow_queue(workflow_id: str) -> dict[str, Any]:
+def _data_workflow_queue(workflow_id: str, org_id: str | None = None) -> dict[str, Any]:
     """Patients currently in this workflow. v0: just returns campaign count.
     Full implementation comes later when we wire the patient roster."""
     from .db import get_session
     from .models import Campaign
     with get_session() as s:
+        q = s.query(Campaign)
+        if org_id:
+            q = q.filter(Campaign.practice_id == org_id)
         count = (
-            s.query(Campaign)
-            .filter(Campaign.workflow_id == workflow_id)
+            q.filter(Campaign.workflow_id == workflow_id)
             .filter(Campaign.status == "active")
             .count()
         )
         return {"count": count, "workflow_id": workflow_id, "items": []}
 
 
-def _data_today_overview() -> dict[str, Any]:
+def _data_today_overview(org_id: str | None = None) -> dict[str, Any]:
     from datetime import datetime, timedelta
     from .db import get_session
-    from .models import Message, EscalationEvent
+    from .models import Message, EscalationEvent, Campaign
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     with get_session() as s:
+        mq = s.query(Message)
+        eq = s.query(EscalationEvent)
+        if org_id:
+            mq = mq.join(Campaign, Message.campaign_id == Campaign.id).filter(
+                Campaign.practice_id == org_id)
+            eq = eq.join(Campaign, EscalationEvent.campaign_id == Campaign.id).filter(
+                Campaign.practice_id == org_id)
         sent_today = (
-            s.query(Message)
-            .filter(Message.direction == "outbound")
+            mq.filter(Message.direction == "outbound")
             .filter(Message.status.in_(["sent", "delivered"]))
             .filter(Message.created_at >= today_start)
             .count()
         )
-        pending = s.query(Message).filter(Message.status == "pending_approval").count()
-        open_esc = s.query(EscalationEvent).filter(EscalationEvent.resolved == False).count()  # noqa: E712
+        pending = mq.filter(Message.status == "pending_approval").count()
+        open_esc = eq.filter(EscalationEvent.resolved == False).count()  # noqa: E712
         return {
             "sent_today": sent_today,
             "pending_approvals": pending,
