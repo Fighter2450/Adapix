@@ -126,8 +126,14 @@ class CampaignRunner:
                 if max_touches > 0 and self._outbound_since_last_reply(s, c.id) >= max_touches:
                     continue
 
+                first_day = min((st.day for st in self.workflow.cadence), default=0)
                 for step in self.workflow.cadence:
-                    if step.day > days_since_start:
+                    # The opening touch drafts immediately (day 0) — a brand-new
+                    # user shouldn't wait until tomorrow to see Adapix do
+                    # anything. The owner's first_followup_days gate above
+                    # still delays it when they've set one.
+                    is_first_touch = step.day == first_day and c.last_step_completed == 0
+                    if step.day > days_since_start and not is_first_touch:
                         continue
                     if step.day <= c.last_step_completed:
                         continue
