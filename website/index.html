@@ -360,6 +360,20 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-who{font-size:14px;font-weight:700;color:var(--ink)}
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
+/* ---------- shepherd tour (dark neon theme) ---------- */
+.shepherd-element{background:var(--card-2);border:1px solid rgba(124,58,237,.5);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(124,58,237,.15);max-width:340px}
+.shepherd-header{background:transparent!important;padding-bottom:0}
+.shepherd-title{color:var(--ink);font-weight:700;font-size:16px}
+.shepherd-text{color:var(--ink-2);font-size:14.5px;line-height:1.55}
+.shepherd-button{background:linear-gradient(135deg,#7c3aed,#a78bfa);border:0;border-radius:10px;color:#fff;font-weight:700;font-size:14px;padding:9px 18px}
+.shepherd-button:not(:disabled):hover{background:linear-gradient(135deg,#8b5cf6,#b79cfc);color:#fff}
+.shepherd-button.shepherd-button-secondary{background:rgba(124,58,237,.12);color:var(--ink-2)}
+.shepherd-button.shepherd-button-secondary:not(:disabled):hover{background:rgba(124,58,237,.2);color:var(--ink)}
+.shepherd-arrow:before{background:var(--card-2);border:1px solid rgba(124,58,237,.5)}
+.shepherd-cancel-icon{color:var(--ink-3)}
+.shepherd-cancel-icon:hover{color:var(--ink)}
+.shepherd-modal-overlay-container.shepherd-modal-is-visible{opacity:.6}
+
 /* ---------- reveal ---------- */
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
@@ -517,6 +531,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
       <span class="eyebrow">the part that matters</span>
       <h2>Nothing goes out <span class="grad-text">without your OK</span></h2>
       <p class="lede">Here's the fear with AI tools, and it's a fair one: what if it says something dumb to a customer? With Adapix, it can't — because it never sends anything on its own. Every draft waits in your Inbox. You're the last set of eyes on everything, every time.</p>
+      <button class="btn btn-ghost btn-sm" id="tourBtn" type="button" style="margin-top:20px">Take the 30-second tour →</button>
     </div>
 
     <div class="control-visuals">
@@ -845,20 +860,47 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
   });
 })();
 
-// ----- approval card live demo (waiting -> send pressed -> sent, loops) -----
+// ----- approval card live demo -----
+// typed.js live-types the draft, the Send button presses itself, the pill
+// flips to Sent ✓ (confetti on the first completion), then it loops.
+// Falls back to simple timed cycling if the vendor libs haven't loaded.
 (function(){
   var card=document.querySelector('.approval-card');
   if(!card||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  var pill=card.querySelector('.ac-pill'),send=card.querySelector('.ac-send');
-  if(!pill||!send)return;
+  var pill=card.querySelector('.ac-pill'),send=card.querySelector('.ac-send'),msg=card.querySelector('.ac-msg');
+  if(!pill||!send||!msg)return;
+  var draftText=msg.textContent.trim(),typed=null,firstSend=true;
+
   function cycle(){
     card.classList.remove('sent');pill.textContent='Waiting for you';
-    setTimeout(function(){send.classList.add('pressed');},2800);
+    if(window.Typed){
+      msg.textContent='';
+      if(typed)typed.destroy();
+      typed=new Typed(msg,{
+        strings:[draftText],typeSpeed:13,showCursor:false,
+        onComplete:function(){setTimeout(pressSend,1300);}
+      });
+    }else{
+      msg.textContent=draftText;
+      setTimeout(pressSend,2800);
+    }
+  }
+  function pressSend(){
+    send.classList.add('pressed');
     setTimeout(function(){
       send.classList.remove('pressed');
       card.classList.add('sent');pill.textContent='Sent ✓';
-    },3150);
-    setTimeout(cycle,7500);
+      if(firstSend&&window.confetti){
+        firstSend=false;
+        var r=send.getBoundingClientRect();
+        confetti({
+          particleCount:34,spread:60,startVelocity:20,scalar:.7,ticks:80,
+          origin:{x:(r.left+r.width/2)/window.innerWidth,y:r.top/window.innerHeight},
+          colors:['#7c3aed','#a78bfa','#22d3ee','#f472b6'],disableForReducedMotion:true
+        });
+      }
+      setTimeout(cycle,4500);
+    },350);
   }
   if(!('IntersectionObserver' in window)){cycle();return;}
   var io=new IntersectionObserver(function(en){
@@ -913,6 +955,111 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
     });
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
+})();
+</script>
+
+<!-- Interactivity layer (all self-hosted in vendor/):
+     lenis      — buttery smooth scrolling, synced with ScrollTrigger
+     typed.js   — the approval-card draft types itself out live
+     confetti   — one small burst the first time the demo card hits Sent
+     tilt       — cards respond to the cursor in 3D (desktop only)
+     shepherd   — guided 30-second product tour, loaded on demand -->
+<script defer src="vendor/lenis.min.js"></script>
+<script defer src="vendor/typed.umd.js"></script>
+<script defer src="vendor/confetti.browser.js"></script>
+<script defer src="vendor/vanilla-tilt.min.js"></script>
+<script defer>
+// ----- Lenis smooth scrolling (synced with GSAP ScrollTrigger) -----
+(function(){
+  if(!window.Lenis||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  document.documentElement.style.scrollBehavior='auto'; // lenis replaces CSS smooth scroll
+  var lenis=new Lenis({autoRaf:false});
+  if(window.gsap&&window.ScrollTrigger){
+    lenis.on('scroll',ScrollTrigger.update);
+    gsap.ticker.add(function(t){lenis.raf(t*1000);});
+    gsap.ticker.lagSmoothing(0);
+  }else{
+    (function raf(t){lenis.raf(t);requestAnimationFrame(raf);})(0);
+  }
+  // route anchor clicks through lenis, offset for the fixed nav
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var id=a.getAttribute('href');
+      if(id.length>1&&document.querySelector(id)){
+        e.preventDefault();
+        lenis.scrollTo(id,{offset:-76});
+      }
+    });
+  });
+})();
+
+// ----- vanilla-tilt: cards respond to the cursor (desktop pointers only) -----
+(function(){
+  if(!window.VanillaTilt)return;
+  if(!window.matchMedia('(pointer: fine)').matches)return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  VanillaTilt.init(document.querySelectorAll('.card'),{max:5,speed:700,glare:true,'max-glare':.08,scale:1.01});
+  VanillaTilt.init(document.querySelectorAll('.approval-card,.station'),{max:3.5,speed:800});
+})();
+
+// ----- Shepherd guided tour — loads shepherd.mjs + css only when asked -----
+(function(){
+  var btn=document.getElementById('tourBtn');
+  if(!btn)return;
+  var cssLoaded=false;
+  btn.addEventListener('click',function(){
+    if(!cssLoaded){
+      var l=document.createElement('link');l.rel='stylesheet';l.href='vendor/shepherd.css';
+      document.head.appendChild(l);cssLoaded=true;
+    }
+    import('./vendor/shepherd.mjs').then(function(m){
+      var Shepherd=m.default||m.Shepherd||window.Shepherd;
+      if(!Shepherd)return;
+      var tour=new Shepherd.Tour({
+        useModalOverlay:true,
+        defaultStepOptions:{
+          scrollTo:{behavior:'smooth',block:'center'},
+          cancelIcon:{enabled:true}
+        }
+      });
+      function btns(){
+        return [{text:'Back',secondary:true,action:tour.back},{text:'Next',action:tour.next}];
+      }
+      tour.addStep({
+        title:'Every message starts as a draft',
+        text:'Adapix writes the follow-up, but it just sits here — visibly waiting for you. Nothing has been sent.',
+        attachTo:{element:'.approval-card',on:'top'},
+        buttons:[{text:'Next',action:tour.next}]
+      });
+      tour.addStep({
+        title:'You send it — not the AI',
+        text:'One tap and it goes out from your own number or inbox. Edit or reject it first if it doesn\'t sound like you.',
+        attachTo:{element:'.ac-send',on:'bottom'},
+        buttons:btns()
+      });
+      tour.addStep({
+        title:'The big red switch',
+        text:'Master Pause freezes every queued call, text, and email instantly. You\'re never locked into anything.',
+        attachTo:{element:'.pause-strip',on:'bottom'},
+        buttons:btns()
+      });
+      tour.addStep({
+        title:'See everything before it happens',
+        text:'The Station lists every follow-up that\'s queued, sent, or answered — cancel any of them with one click.',
+        attachTo:{element:'.station',on:'left'},
+        buttons:btns()
+      });
+      tour.addStep({
+        title:'That\'s the whole loop',
+        text:'It drafts, you approve, customers come back. Try it on your own quiet customers — free for 14 days, no card.',
+        buttons:[
+          {text:'Start free trial',action:function(){window.location.href='https://adapix-web-production.up.railway.app/signup';}},
+          {text:'Done',secondary:true,action:tour.complete}
+        ]
+      });
+      tour.start();
+    });
+  });
 })();
 </script>
 
