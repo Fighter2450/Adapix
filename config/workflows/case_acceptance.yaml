@@ -3,13 +3,18 @@
 # THE ADAPTIVE LAYER LIVES HERE.
 # This file defines BEHAVIOR. The agent code (src/adapix/agent.py) is workflow-
 # agnostic — it reads this YAML and adapts. To ship a new workflow (recall,
-# no-show, new patient intake, post-treatment, supplier coordination for an
-# HVAC shop someday), drop another YAML next to this one. No Python changes.
+# no-show, new customer intake, post-job check-in), drop another YAML next to
+# this one. No Python changes.
+#
+# IMPORTANT: this workflow serves EVERY business type (plumber, salon, law
+# firm, dentist…). Keep the language business-generic. Business-specific
+# facts — services, prices, payment options — come from what the owner taught
+# in the Database tab, NEVER from assumptions in these prompts.
 
 id: case_acceptance
-name: "Case Acceptance Follow-Up"
-description: "30-day personalized follow-up for parents who consulted but have not yet committed to treatment."
-version: 1
+name: "Interested-but-quiet Follow-Up"
+description: "30-day personalized follow-up for customers who asked about a service but haven't committed yet."
+version: 2
 
 # Who this workflow targets
 target:
@@ -21,70 +26,70 @@ target:
 
 # What the agent is trying to accomplish
 objective: |
-  Help the parent decide to start treatment. Surface the value of the recommended
-  treatment plan, address common concerns (cost, timing, child's hesitation),
-  proactively offer financing options, and make it easy to schedule the start
-  date. Do not pressure. Be warm, informative, and patient. Defer to the practice
-  on any clinical question.
+  Help the customer decide to move forward with the service they asked about.
+  Surface the value of what was discussed, address common concerns (cost,
+  timing, uncertainty), and make it easy to book or take the next step.
+  ONLY mention prices, payment options, or offers the business has actually
+  taught you — never invent or assume one exists. Do not pressure. Be warm,
+  informative, and patient. Defer to the business on anything you weren't
+  taught.
 
 # Voice and tone
 voice:
   warmth: high
   formality: medium
-  audience: "parent of patient (typically the mother of a teenager)"
+  audience: "a customer who showed interest and went quiet"
   forbidden_phrases:
     - "limited time offer"
     - "act now"
     - "guaranteed result"
     - "best price"
+    - "financing"   # unless the owner taught a payment-plan option, never raise it
 
 # Cadence — when to send messages over the 30-day window
 cadence:
   - day: 1
     channel: sms
-    intent: "Warm check-in. Surface one common concern (cost or timing). Ask if any questions came up after the consult."
+    intent: "Warm check-in. Ask if any questions came up since you last spoke. Reference the service they asked about if known."
   - day: 3
     channel: email
-    intent: "Share treatment plan summary in plain language plus financing options. Calm, informative."
+    intent: "Recap what was discussed in plain language. If the owner taught pricing or payment options for it, restate them clearly; otherwise just offer to answer questions."
   - day: 7
     channel: sms
-    intent: "Follow up on financing. Offer to schedule a start date or a financing call."
+    intent: "Offer a concrete next step — book a time, get a firm quote, or a quick call. Make saying yes easy."
   - day: 14
     channel: email
-    intent: "Share a relatable patient story or before/after framing. Gentle nudge."
+    intent: "Address the most common reason people hesitate for this kind of service. Gentle nudge, no pressure."
   - day: 21
     channel: sms
-    intent: "Direct: are you ready to schedule a start date? Make booking easy."
+    intent: "Direct: are you ready to get this scheduled? Make booking easy."
   - day: 30
     channel: email
     intent: "Final touch. Let them know we'll pause outreach but they can reach out anytime. No pressure."
 
 # Escalation rules — when humans take over
 escalation:
-  - trigger: "patient or parent asks a clinical question"
-    action: "do not answer; flag for doctor review"
-  - trigger: "patient explicitly declines treatment"
+  - trigger: "customer asks a technical or professional question you weren't taught"
+    action: "do not answer; flag for owner review"
+  - trigger: "customer explicitly declines"
     action: "stop campaign, mark declined, send respectful acknowledgment"
-  - trigger: "patient asks for a callback"
-    action: "flag for office manager, send confirmation that someone will call"
+  - trigger: "customer asks for a callback"
+    action: "flag for owner, send confirmation that someone will call"
   - trigger: "negative sentiment detected for 3 consecutive turns"
     action: "stop campaign, flag for owner review"
-  - trigger: "patient mentions emergency or pain"
-    action: "immediate office phone redirect, stop campaign"
+  - trigger: "customer mentions an emergency"
+    action: "immediate phone redirect, stop campaign"
 
-# What knowledge the agent needs from the practice config
+# What knowledge the agent needs from the business profile
 knowledge_required:
   - practice_name
   - doctor_name
   - office_phone
   - office_hours
-  - financing_options
-  - typical_treatment_duration
 
 # How we know it's working
 success_metric:
-  primary: "treatment plans signed within 45 days of campaign start"
+  primary: "jobs booked within 45 days of campaign start"
   secondary:
-    - "consultations rebooked"
-    - "financing applications started"
-    - "office callbacks requested"
+    - "appointments scheduled"
+    - "callbacks requested"

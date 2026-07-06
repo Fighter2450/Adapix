@@ -677,13 +677,18 @@ def api_setup_save(body: SetupBody, org_id: str = Depends(verify_admin)):
 def api_setup_status(org_id: str = Depends(verify_admin)):
     """Read current setup state for the calling org."""
     from ..db import get_engine
-    from ..models import OrgProfile
+    from ..models import Organization, OrgProfile
     from sqlalchemy.orm import Session
     try:
         with Session(get_engine()) as s:
             row = s.get(OrgProfile, org_id)
             if row:
                 return {"configured": True, "profile": row.data}
+            # Not configured yet — surface the business name given at signup
+            # so the wizard can prefill instead of asking for it twice.
+            org = s.get(Organization, org_id)
+            if org and org.name:
+                return {"configured": False, "profile": None, "org_name": org.name}
     except Exception:
         pass
     # Legacy fallback for dev environments

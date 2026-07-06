@@ -118,8 +118,12 @@ class PracticeConfig(BaseModel):
     approval_mode: str = "required"  # "required" | "auto"
 
 
-DEFAULT_WORKFLOW_ROOT = Path("config/workflows")
-DEFAULT_PRACTICE_ROOT = Path("config/practices")
+# Anchored to the repo root (…/src/adapix/config.py → three parents up), NOT
+# the process CWD — a server started from any other directory would otherwise
+# find zero workflows and the engine would silently do nothing.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DEFAULT_WORKFLOW_ROOT = _REPO_ROOT / "config" / "workflows"
+DEFAULT_PRACTICE_ROOT = _REPO_ROOT / "config" / "practices"
 
 
 def load_workflow(workflow_id: str, root: Path | None = None) -> WorkflowConfig:

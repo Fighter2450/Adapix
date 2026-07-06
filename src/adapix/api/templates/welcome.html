@@ -449,7 +449,7 @@ p.lede{
       </div>
 
       <div class="preview">
-        <div class="ph">Sample outreach Adapt would send</div>
+        <div class="ph">Sample outreach Adapix would send</div>
         <div class="msg" id="tone-preview"></div>
       </div>
 
@@ -481,7 +481,7 @@ p.lede{
         <div class="choice" style="cursor:default;transform:none">
           <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan-2);font-weight:600;margin-top:2px;flex:0 0 auto">03</span>
           <div><b>Teach me, and I'll answer it myself</b>
-            <span>In Settings you can teach me your services, pricing, and FAQs — once you do, I answer those questions directly instead of escalating them. Anything I'm genuinely unsure about, or that needs a human touch, still gets flagged at the top of your Inbox with the full story.</span></div>
+            <span>In the Database tab you can teach me your services, pricing, and FAQs — once you do, I answer those questions directly instead of escalating them. Anything I'm genuinely unsure about, or that needs a human touch, still gets flagged at the top of your Inbox with the full story.</span></div>
         </div>
       </div>
 
@@ -560,11 +560,11 @@ p.lede{
       <div style="display:flex;flex-direction:column;gap:10px;max-width:440px;margin:0 auto 30px;text-align:left">
         <div style="display:flex;gap:12px;align-items:flex-start;padding:13px 16px;background:rgba(124,58,237,.06);border:1px solid var(--line);border-radius:12px">
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan-2);font-weight:600;margin-top:2px">01</span>
-          <div><b style="display:block;font-size:14px;color:#fff;font-weight:600">Connect your email</b><span style="font-size:13px;color:var(--ink-soft)">Gmail or Outlook in one click — or any inbox (iCloud, Yahoo…) with an app password. Follow-ups send as you, not a shared address.</span></div>
+          <div><b style="display:block;font-size:14px;color:#fff;font-weight:600">Connect your email</b><span style="font-size:13px;color:var(--ink-soft)">Gmail in one click — or any inbox (Outlook, iCloud, Yahoo…) with an app password. Follow-ups send as you, not a shared address.</span></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:13px 16px;background:rgba(124,58,237,.06);border:1px solid var(--line);border-radius:12px">
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan-2);font-weight:600;margin-top:2px">02</span>
-          <div><b style="display:block;font-size:14px;color:#fff;font-weight:600">Set up your calling line</b><span style="font-size:13px;color:var(--ink-soft)">Your own dedicated number — my AI calls customers showing your business name, and you get the recording and transcript back.</span></div>
+          <div><b style="display:block;font-size:14px;color:#fff;font-weight:600">Set up your calling line</b><span style="font-size:13px;color:var(--ink-soft)">Your own dedicated number, the same one every time — and you get the recording and transcript back after every call.</span></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:13px 16px;background:rgba(124,58,237,.06);border:1px solid var(--line);border-radius:12px">
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan-2);font-weight:600;margin-top:2px">03</span>
@@ -642,6 +642,12 @@ p.lede{
     }, 400);
     refreshButtons();
   }
+  // Prefill the business name from signup — asking for it twice feels broken.
+  fetch('/api/v1/setup/status', {credentials:'include'}).then(r=>r.json()).then(st=>{
+    const inp = document.getElementById('f_name');
+    if (st && st.org_name && inp && !inp.value) { inp.value = st.org_name; data.practice.name = st.org_name; refreshButtons(); }
+  }).catch(()=>{});
+
   window.goNext = ()=>{
     if (step === 1) {
       const v = document.getElementById('f_name').value.trim();
@@ -681,8 +687,8 @@ p.lede{
   }
 
   const previews = {
-    warm_professional: "Hi Maria, this is the team at your business. Just checking in to see if you'd like to set up that follow-up we talked about. Want me to find a time that works?",
-    casual_friendly:   "Hey Maria! Just checking in from our team. You still interested in setting something up? Happy to find a time that works for you :)",
+    warm_professional: "Hi Maria, this is the team at [Business Name]. Just checking in to see if you'd like to set up that follow-up we talked about. Want me to find a time that works?",
+    casual_friendly:   "Hey Maria! Just checking in from [Business Name]. You still interested in setting something up? Happy to find a time that works for you :)",
     clinical_formal:   "Maria — this is the office of [Owner Name] at [Business Name]. We are following up regarding our previous conversation. Please contact us at (412) 555-0100 to schedule the next step.",
   };
   let typeTimer = null;
@@ -1144,7 +1150,7 @@ p.lede{
     }
     document.getElementById('done-doctor').textContent = data.practice.doctor || 'friend';
     document.getElementById('done-practice').textContent = data.practice.name || 'your business';
-    show(7);
+    show(6);  // the done screen — keep in sync with data-step="6" above
   };
 
   window.finalLaunch = ()=>{
