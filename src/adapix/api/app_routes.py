@@ -663,7 +663,22 @@ def api_setup_save(body: SetupBody, org_id: str = Depends(verify_admin)):
         with Session(get_engine()) as s:
             row = s.get(OrgProfile, org_id)
             if row:
-                row.data = payload
+                # MERGE, never replace. The profile blob also holds everything
+                # taught after the wizard (knowledge_base, services, rules,
+                # description, paused…) — a wizard re-run must not wipe it.
+                # Empty wizard values never overwrite existing non-empty ones.
+                merged = dict(row.data or {})
+                for k, v in payload.items():
+                    if k == "practice" and isinstance(v, dict):
+                        practice = dict(merged.get("practice") or {})
+                        for pk, pv in v.items():
+                            if pv not in ("", None, []):
+                                practice[pk] = pv
+                        merged["practice"] = practice
+                    elif v not in ("", None, []):
+                        merged[k] = v
+                merged["configured_at"] = payload["configured_at"]
+                row.data = merged
                 row.configured_at = datetime.utcnow()
             else:
                 s.add(OrgProfile(org_id=org_id, data=payload))

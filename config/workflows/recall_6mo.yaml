@@ -1,20 +1,24 @@
+# Serves EVERY business type. Business-specific facts come from what the
+# owner taught in the Database tab — never from assumptions in these prompts.
 id: recall_6mo
-name: "6-Month Recall Reminder"
-description: "Re-engagement campaign for patients due for a recall or follow-up visit."
-version: 1
+name: "Time-to-Come-Back Reminder"
+description: "Re-engagement campaign for customers due for their next visit, service, or maintenance."
+version: 2
 
 target:
   patient_status: "recall_due"
 
 objective: |
-  Re-engage patients who are due for a recall appointment. Make scheduling easy,
-  remind them of the importance of regular check-ups, and handle any hesitation
-  around cost or scheduling. Keep it brief and friendly.
+  Re-engage customers who are due for their next appointment, service, or
+  maintenance (a cleaning, a tune-up, a seasonal service — whatever this
+  business does on a repeat cycle). Make booking easy and handle hesitation
+  gently. ONLY mention prices or offers the business actually taught you.
+  Keep it brief and friendly.
 
 voice:
   warmth: medium
   formality: medium
-  audience: "existing patient or their parent"
+  audience: "an existing customer due for a repeat visit or service"
   forbidden_phrases:
     - "you're overdue"
     - "you missed"
@@ -23,19 +27,19 @@ voice:
 cadence:
   - day: 1
     channel: sms
-    intent: "Friendly reminder that it's time for their recall visit. Make booking easy with a link or phone number."
+    intent: "Friendly reminder that it's about time for their next visit/service. Make booking easy with the business's phone number."
   - day: 7
     channel: email
-    intent: "Follow up if no response. Mention the value of staying on schedule. Offer flexible times."
+    intent: "Follow up if no response. Mention the value of staying on schedule for this kind of service. Offer flexible times."
   - day: 14
     channel: sms
     intent: "Final nudge. Keep it short. Offer to handle scheduling with one reply."
 
 escalation:
-  - trigger: "patient says they've moved or switched providers"
-    action: "stop campaign, update patient record, flag for office"
-  - trigger: "patient reports a dental concern or pain"
-    action: "flag for clinical staff immediately"
+  - trigger: "customer says they've moved or switched providers"
+    action: "stop campaign, update customer record, flag for the owner"
+  - trigger: "customer reports a problem or urgent issue"
+    action: "flag for the owner immediately"
 
 knowledge_required:
   - practice_name
@@ -44,4 +48,4 @@ knowledge_required:
   - office_hours
 
 success_metric:
-  primary: "recall appointment booked within 21 days of campaign start"
+  primary: "next appointment booked within 21 days of campaign start"
