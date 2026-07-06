@@ -360,6 +360,41 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-who{font-size:14px;font-weight:700;color:var(--ink)}
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
+/* ---------- cursor spotlight: surfaces glow where the pointer is ---------- */
+.card,.faq-item,.approval-card,.station{position:relative;isolation:isolate}
+.card::after,.faq-item::after,.approval-card::after,.station::after{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  z-index:-1;opacity:0;transition:opacity .35s ease;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(167,139,250,.13),transparent 65%);
+}
+.card:hover::after,.faq-item:hover::after,.approval-card:hover::after,.station:hover::after{opacity:1}
+
+/* ---------- film grain: unifies the DOM and WebGL layers ---------- */
+.grain{
+  position:fixed;inset:-50%;z-index:2000;pointer-events:none;opacity:.05;
+  animation:grainShift .9s steps(4) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes grainShift{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-3%,2%)}
+  40%{transform:translate(2%,-3%)}
+  60%{transform:translate(-2%,-2%)}
+  80%{transform:translate(3%,3%)}
+}
+
+/* ---------- living Station rows ---------- */
+.s-row{transition:background .5s ease,opacity .45s ease}
+@keyframes rowIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.s-new{animation:rowIn .5s ease}
+
+/* ---------- oryzo-style masked word reveals ---------- */
+/* each word sits inside an overflow-hidden mask and slides up into view.
+   .w gets a descender-safe padding trick so letters like g/y aren't clipped. */
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.12em;margin-bottom:-.12em}
+.wi{display:inline-block;will-change:transform}
+.wi.grad-w{background:var(--grad);background-size:220% 220%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s ease-in-out infinite}
+
 /* ---------- shepherd tour (dark neon theme) ---------- */
 .shepherd-element{background:var(--card-2);border:1px solid rgba(124,58,237,.5);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(124,58,237,.15);max-width:340px}
 .shepherd-header{background:transparent!important;padding-bottom:0}
@@ -383,6 +418,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 <body>
 <div class="orbs"><div class="orb-rose"></div></div>
 <canvas id="bg3d" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
 
 <!-- ================= NAV ================= -->
 <nav>
@@ -1002,6 +1038,168 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
   VanillaTilt.init(document.querySelectorAll('.approval-card,.station'),{max:3.5,speed:800});
 })();
 
+// ----- cursor spotlight: track the pointer per surface via CSS vars -----
+(function(){
+  if(!window.matchMedia('(pointer: fine)').matches)return;
+  document.querySelectorAll('.card,.faq-item,.approval-card,.station').forEach(function(el){
+    el.addEventListener('pointermove',function(e){
+      var r=el.getBoundingClientRect();
+      el.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      el.style.setProperty('--my',(e.clientY-r.top)+'px');
+    },{passive:true});
+  });
+})();
+
+// ----- the Station comes alive: statuses flip, new follow-ups arrive -----
+// Runs only while the board is on screen; pauses when scrolled away.
+(function(){
+  var rowsBox=document.querySelector('.station-rows');
+  if(!rowsBox||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var people=[
+    ['💬','Alex P.','Text · quote follow-up'],
+    ['📞','Sam K.','Call · missed Thursday appt'],
+    ['✉️','Nina R.','Email · estimate reminder'],
+    ['💬','Chris D.','Text · went quiet'],
+    ['📞','Maya L.','Call · never booked'],
+    ['✉️','Omar B.','Email · still deciding']
+  ];
+  var times=['9:40 AM','10:15 AM','11:05 AM','1:30 PM','2:00 PM','3:45 PM','4:30 PM'];
+  var pi=0,ti=0,step=0;
+  function flash(row){
+    row.style.background='rgba(124,58,237,.10)';
+    setTimeout(function(){row.style.background='';},700);
+  }
+  function setStatus(row,cls,text){
+    var s=row.querySelector('.s-status');
+    if(!s)return;
+    s.className='s-status '+cls;
+    s.textContent=text;
+    flash(row);
+  }
+  function firstWith(cls){return rowsBox.querySelector('.s-status.'+cls);}
+  function tick(){
+    var s;
+    if(step%3===0&&(s=firstWith('st-queued'))){
+      setStatus(s.closest('.s-row'),'st-sent','Sent just now');
+    }else if(step%3===1&&(s=firstWith('st-sent'))){
+      setStatus(s.closest('.s-row'),'st-replied','Replied');
+    }else{
+      var p=people[pi++%people.length],t=times[ti++%times.length];
+      var row=document.createElement('div');
+      row.className='s-row s-new';
+      row.innerHTML='<span class="s-icon">'+p[0]+'</span>'
+        +'<span class="s-who">'+p[1]+'<span class="s-what">'+p[2]+'</span></span>'
+        +'<span class="s-status st-queued">Queued '+t+'</span>'
+        +'<span class="s-cancel" title="Cancel">✕</span>';
+      rowsBox.insertBefore(row,rowsBox.firstChild);
+      var all=rowsBox.querySelectorAll('.s-row');
+      if(all.length>5){
+        var last=all[all.length-1];
+        last.style.opacity='0';
+        setTimeout(function(){last.remove();},450);
+      }
+    }
+    step++;
+  }
+  var timer=null;
+  var io=new IntersectionObserver(function(en){
+    if(en[0].isIntersecting){if(!timer)timer=setInterval(tick,2600);}
+    else{clearInterval(timer);timer=null;}
+  },{threshold:.3});
+  io.observe(rowsBox);
+})();
+
+// ----- Oryzo-style choreography: hero entrance, masked word reveals, -----
+// ----- and cinematic focus on the How It Works steps                 -----
+(function(){
+  if(!window.gsap||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+
+  // wrap every word in a .w mask + .wi slider, preserving gradient spans
+  function split(el){
+    Array.prototype.slice.call(el.childNodes).forEach(function(n){
+      if(n.nodeType===3){
+        var frag=document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function(part){
+          if(!part)return;
+          if(/^\s+$/.test(part)){frag.appendChild(document.createTextNode(' '));return;}
+          var w=document.createElement('span');w.className='w';
+          var wi=document.createElement('span');
+          wi.className=(el.classList&&el.classList.contains('grad-text'))?'wi grad-w':'wi';
+          wi.textContent=part;
+          w.appendChild(wi);frag.appendChild(w);
+        });
+        el.replaceChild(frag,n);
+      }else if(n.nodeType===1&&n.tagName!=='BR'){split(n);}
+    });
+  }
+
+  // hero: choreographed entrance on load
+  var h1=document.querySelector('.hero h1');
+  if(h1&&!h1.dataset.split){
+    h1.dataset.split='1';split(h1);
+    var wis=h1.querySelectorAll('.wi');
+    gsap.set(wis,{yPercent:112});
+    gsap.set(['.hero .hero-badge','.hero .lede','.hero .hero-ctas','.hero .cta-note'],{autoAlpha:0,y:16});
+    gsap.timeline({delay:.1})
+      .to('.hero .hero-badge',{autoAlpha:1,y:0,duration:.5,ease:'power2.out'})
+      .to(wis,{yPercent:0,duration:.9,stagger:.05,ease:'power3.out'},.15)
+      .to(['.hero .lede','.hero .hero-ctas','.hero .cta-note'],{autoAlpha:1,y:0,duration:.6,stagger:.12,ease:'power2.out'},.55);
+  }
+
+  if(window.ScrollTrigger){
+    // section headlines: words slide up from behind their masks on arrival
+    gsap.utils.toArray('section h2,.final h2').forEach(function(h){
+      if(h.dataset.split)return;
+      h.dataset.split='1';split(h);
+      var w=h.querySelectorAll('.wi');
+      if(!w.length)return;
+      gsap.set(w,{yPercent:112});
+      gsap.to(w,{yPercent:0,duration:.8,stagger:.04,ease:'power3.out',
+        scrollTrigger:{trigger:h,start:'top 84%',once:true}});
+    });
+
+    // How It Works: each step brightens as it takes center stage.
+    // Neutralize the .reveal CSS transition so the scrub isn't smoothed twice.
+    gsap.utils.toArray('.t-item').forEach(function(item){
+      item.classList.add('in');
+      item.style.transition='none';
+      gsap.fromTo(item,{opacity:.25},{opacity:1,ease:'none',
+        scrollTrigger:{trigger:item,start:'top 80%',end:'top 45%',scrub:true}});
+    });
+  }
+})();
+
+// ----- 3D depth: mockups flip up off the page, headline tilts with cursor -----
+(function(){
+  if(!window.gsap||!window.ScrollTrigger)return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+
+  // big visuals enter with a perspective flip-up from the "table"
+  gsap.utils.toArray('.control-visuals > .reveal,.teach-grid > .reveal:last-child,.trial-box').forEach(function(el){
+    if(el.classList.contains('reveal')){el.classList.add('in');el.style.transition='none';}
+    gsap.fromTo(el,
+      {autoAlpha:0,y:70,rotationX:14,transformPerspective:900,transformOrigin:'50% 100%'},
+      {autoAlpha:1,y:0,rotationX:0,duration:1,ease:'power3.out',
+       scrollTrigger:{trigger:el,start:'top 85%',once:true}});
+  });
+
+  // hero headline: subtle 3D tilt that follows the cursor
+  if(window.matchMedia('(pointer: fine)').matches){
+    var h1=document.querySelector('.hero h1');
+    var hero=document.querySelector('.hero');
+    if(h1&&hero){
+      gsap.set(h1,{transformPerspective:800});
+      var rx=gsap.quickTo(h1,'rotationX',{duration:.6,ease:'power2.out'});
+      var ry=gsap.quickTo(h1,'rotationY',{duration:.6,ease:'power2.out'});
+      hero.addEventListener('pointermove',function(e){
+        var nx=e.clientX/window.innerWidth-.5, ny=e.clientY/window.innerHeight-.5;
+        ry(nx*7); rx(-ny*5);
+      },{passive:true});
+      hero.addEventListener('pointerleave',function(){rx(0);ry(0);},{passive:true});
+    }
+  }
+})();
+
 // ----- Shepherd guided tour — loads shepherd.mjs + css only when asked -----
 (function(){
   var btn=document.getElementById('tourBtn');
@@ -1076,21 +1274,28 @@ if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: red
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     const scene = new THREE.Scene();
+    // exponential fog toward the page background: far particles dissolve
+    // into the dark, so the field reads as a deep space instead of a flat layer
+    scene.fog = new THREE.FogExp2(0x0b0b1c, 0.055);
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 40);
     camera.position.z = 7;
 
-    // Particle field in brand colors: purple / violet / cyan
+    // --- particle field (brand colors) with cursor repulsion ---
+    // `home` holds each particle's rest position; the render loop pushes
+    // particles away from the pointer and springs them back home.
     const COUNT = 700;
     const palette = [new THREE.Color('#7c3aed'), new THREE.Color('#a78bfa'), new THREE.Color('#22d3ee')];
-    const positions = new Float32Array(COUNT * 3);
+    const home = new Float32Array(COUNT * 3);
     const colors = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
-      positions[i * 3]     = (Math.random() - 0.5) * 22;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 14;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+      home[i * 3]     = (Math.random() - 0.5) * 22;
+      home[i * 3 + 1] = (Math.random() - 0.5) * 14;
+      home[i * 3 + 2] = (Math.random() - 0.5) * 12;
       const c = palette[(Math.random() * palette.length) | 0];
       colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
     }
+    const positions = home.slice();
+    const vel = new Float32Array(COUNT * 3);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -1101,11 +1306,64 @@ if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: red
     const points = new THREE.Points(geo, mat);
     scene.add(points);
 
-    // Gentle drift + mouse parallax
-    let mx = 0, my = 0, tx = 0, ty = 0;
+    // --- hero orb: wireframe icosahedron pair that travels with the scroll ---
+    const orbGroup = new THREE.Group();
+    const orbMatOuter = new THREE.MeshBasicMaterial({ color: 0x7c3aed, wireframe: true, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
+    const orbMatInner = new THREE.MeshBasicMaterial({ color: 0x22d3ee, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+    const orbOuter = new THREE.Mesh(new THREE.IcosahedronGeometry(1.6, 1), orbMatOuter);
+    const orbInner = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 0), orbMatInner);
+    orbGroup.add(orbOuter, orbInner);
+    orbGroup.position.set(0, 0.5, 1.5);
+    scene.add(orbGroup);
+
+    // Scroll story (Oryzo-style): the orb drifts right through the problem
+    // section, crosses left through How It Works, then settles small and dim.
+    if (window.gsap && window.ScrollTrigger) {
+      gsap.registerPlugin(ScrollTrigger);
+      const tl = gsap.timeline({ scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: 1 } });
+      tl.to(orbGroup.position, { x: 2.6, y: 0, duration: 1 }, 0)
+        .to(orbGroup.rotation, { y: Math.PI * 1.4, z: 0.3, duration: 1 }, 0)
+        .to(orbGroup.position, { x: -2.6, duration: 1 }, 1)
+        .to(orbGroup.rotation, { y: Math.PI * 2.8, duration: 1 }, 1)
+        .to(orbGroup.position, { x: 0, y: -0.6, duration: 1 }, 2)
+        .to(orbGroup.scale, { x: 0.5, y: 0.5, z: 0.5, duration: 1 }, 2)
+        .to([orbMatOuter, orbMatInner], { opacity: 0.08, duration: 1 }, 2);
+    }
+
+    // --- floating accent shapes at different depths ---
+    // Each rises with scroll at its own rate (par < 1 = deeper, slower),
+    // so scrolling reveals real parallax between layers of the scene.
+    const VIEW_H = 2 * Math.tan(THREE.MathUtils.degToRad(30)) * 7; // world height at z=0
+    const shapes = [];
+    const shapeDefs = [
+      [new THREE.TorusGeometry(0.5, 0.16, 8, 24),      0x7c3aed, -4.6,  -2,  -2.5, 0.90],
+      [new THREE.OctahedronGeometry(0.55, 0),           0x22d3ee,  4.4,  -9,  -1.5, 0.55],
+      [new THREE.TorusKnotGeometry(0.4, 0.12, 48, 8),   0xf472b6,  4.2, -18,  -3.0, 0.75],
+      [new THREE.TetrahedronGeometry(0.5, 0),           0xa78bfa, -3.8, -27,   1.0, 0.40],
+    ];
+    for (const [g, color, x, y, z, par] of shapeDefs) {
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+        color, wireframe: true, transparent: true, opacity: 0.22,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }));
+      m.position.set(x, y, z);
+      m.userData = { baseY: y, par };
+      shapes.push(m);
+      scene.add(m);
+    }
+
+    // Pointer: camera parallax + world-space point on the z=0 plane for repulsion
+    let mx = 0, my = 0, tx = 0, ty = 0, pwx = 1e9, pwy = 1e9, haveP = false;
+    const pv = new THREE.Vector3();
     addEventListener('pointermove', (e) => {
       tx = (e.clientX / window.innerWidth - 0.5) * 0.35;
       ty = (e.clientY / window.innerHeight - 0.5) * 0.25;
+      pv.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1, 0.5).unproject(camera);
+      const d = pv.sub(camera.position).normalize();
+      const k = -camera.position.z / d.z;
+      pwx = camera.position.x + d.x * k;
+      pwy = camera.position.y + d.y * k;
+      haveP = true;
     }, { passive: true });
     addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -1116,12 +1374,40 @@ if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: red
     let running = true;
     document.addEventListener('visibilitychange', () => { running = !document.hidden; });
 
+    const RADIUS = 2.4, R2 = RADIUS * RADIUS;
     const clock = new THREE.Clock();
     renderer.setAnimationLoop(() => {
       if (!running) return;
       const t = clock.getElapsedTime();
-      points.rotation.y = t * 0.02;
       points.position.y = Math.sin(t * 0.18) * 0.25;
+      orbOuter.rotation.x = t * 0.12; orbOuter.rotation.y = t * 0.17;
+      orbInner.rotation.x = -t * 0.20; orbInner.rotation.y = -t * 0.13;
+
+      // parallax shapes: rise with scroll at depth-dependent speeds
+      const sy = window.scrollY / window.innerHeight;
+      for (const s of shapes) {
+        s.position.y = s.userData.baseY + sy * VIEW_H * s.userData.par;
+        s.rotation.x = t * 0.25 * s.userData.par;
+        s.rotation.y = t * 0.18 + s.userData.baseY;
+      }
+
+      if (haveP) {
+        const py = pwy - points.position.y;   // account for the field's bob
+        for (let i = 0; i < COUNT; i++) {
+          const ix = i * 3, iy = ix + 1;
+          const dx = positions[ix] - pwx, dy = positions[iy] - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < R2 && d2 > 1e-4) {
+            const d = Math.sqrt(d2), f = (1 - d / RADIUS) * 0.05;
+            vel[ix] += dx / d * f; vel[iy] += dy / d * f;
+          }
+          vel[ix] *= 0.9; vel[iy] *= 0.9;
+          positions[ix] += vel[ix] + (home[ix] - positions[ix]) * 0.02;
+          positions[iy] += vel[iy] + (home[iy] - positions[iy]) * 0.02;
+        }
+        geo.attributes.position.needsUpdate = true;
+      }
+
       mx += (tx - mx) * 0.04; my += (ty - my) * 0.04;
       camera.position.x = mx; camera.position.y = -my;
       camera.lookAt(scene.position);
