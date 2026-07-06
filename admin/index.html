@@ -94,13 +94,14 @@
 const UPDATED = "2026-07-06";
 const TASKS = [
   // ---- Rocco (technical) ----
-  {owner:"rocco", status:"now",     title:"Upgrade Railway to Hobby ($5/mo)", note:"~$2 trial credit left — app goes offline when it runs out. railway.com/workspace/plans"},
+  {owner:"rocco", status:"done",    title:"Upgrade Railway to Hobby ($5/mo)", note:"Done 2026-07-06 — 24/7 uptime + custom domains unlocked."},
   {owner:"rocco", status:"next",    title:"Twilio A2P 10DLC registration", note:"So SMS stops being carrier-filtered. Needs business info + EIN."},
   {owner:"rocco", status:"next",    title:"Buy Blooio line + wire channel to org", note:"$39/mo shared line to start. Code is built — first blue text same day."},
   {owner:"rocco", status:"next",    title:"Azure app registration → one-click Outlook", note:"Free. Then restore the stronger claim on the site.", handoff:"Ben: update site copy once live"},
   {owner:"rocco", status:"next",    title:"Push notifications ('2 drafts waiting')", note:"Phone + desktop browser pushes. No installable/desktop app — decided against 2026-07-06."},
   {owner:"rocco", status:"next",    title:"Split AI-chat history + automations per-org", note:"Currently global stores — must land before real customers share the box."},
-  {owner:"rocco", status:"waiting", title:"Dashboard on app.adapixai.com", note:"Custom domains are paid-plan-only on Railway — blocked on the Hobby upgrade. Then: railway domain + one CNAME at Namecheap + public_base_url."},
+  {owner:"rocco", status:"done",    title:"Dashboard live on app.adapixai.com", note:"Custom domain + DNS + PUBLIC_BASE_URL done 2026-07-06. Website links updated."},
+  {owner:"rocco", status:"now",     title:"Add app.adapixai.com to Google OAuth redirect URIs", note:"Google Cloud Console → Credentials → add https://app.adapixai.com/oauth/google/callback — Gmail connect breaks on the new domain until this is done."},
   {owner:"rocco", status:"done",    title:"Founder board + auto-update protocol", note:"Both Claudes now check tasks off and add new ones on their own — see CLAUDE.md."},
   {owner:"rocco", status:"done",    title:"Multi-tenant security lockdown", note:"Feed/activity/dashboard/approvals scoped per org; 14 open endpoints now need login."},
   {owner:"rocco", status:"done",    title:"Mobile pass", note:"Sidebar bug fixed, full bottom nav, all tabs verified at 375px."},
