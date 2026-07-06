@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Adapix — Founder Board</title>
+<link rel="icon" type="image/svg+xml" href="../website/favicon.svg" />
+<style>
+  :root{
+    --bg:#0b0b1c; --card:#17142e; --card2:#211c3d;
+    --ink:#ece9ff; --ink2:#b8b2e0; --ink3:#827aa8;
+    --border:rgba(124,58,237,.20);
+    --purple:#7c3aed; --violet:#a78bfa; --cyan:#22d3ee; --rose:#f43f5e; --green:#34d399; --amber:#fbbf24;
+    --mono:ui-monospace,'Cascadia Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink2);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.55;padding:36px 20px 80px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:8px}
+  h1{color:#fff;font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .sync-hint{font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 28px;font-size:12.5px;color:var(--ink3)}
+  .legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .legend .l-now::before{background:var(--rose)}
+  .legend .l-next::before{background:var(--cyan)}
+  .legend .l-wait::before{background:var(--amber)}
+  .legend .l-done::before{background:var(--green)}
+
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:860px){.board{grid-template-columns:1fr}}
+  .lane{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px 20px 16px;min-width:0}
+  .lane-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .lane-head h2{color:#fff;font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .lane-head .role{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .lane.rocco .role{color:var(--cyan)}
+  .lane.ben .role{color:var(--violet)}
+  .lane-sub{font-size:13px;color:var(--ink3);margin-bottom:16px}
+
+  .bucket{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:18px 0 8px;display:flex;align-items:center;gap:10px}
+  .bucket::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  .task{background:var(--card2);border:1px solid var(--border);border-left-width:3px;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+  .task.now{border-left-color:var(--rose)}
+  .task.next{border-left-color:var(--cyan)}
+  .task.waiting{border-left-color:var(--amber)}
+  .task.done{border-left-color:var(--green);opacity:.55}
+  .task-title{color:var(--ink);font-weight:600;font-size:14.5px}
+  .task.done .task-title{text-decoration:line-through}
+  .task-note{font-size:13px;color:var(--ink3);margin-top:3px}
+  .handoff{display:inline-block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--amber);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:999px;padding:2px 10px}
+
+  .rules{margin-top:34px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px 24px;font-size:14px;max-width:none}
+  .rules h3{color:#fff;font-size:15px;margin-bottom:10px}
+  .rules li{margin:6px 0 6px 18px;color:var(--ink2)}
+  .rules code{font-family:var(--mono);font-size:12.5px;color:var(--violet);background:rgba(124,58,237,.1);padding:1px 6px;border-radius:6px}
+  .stamp{margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Adapix Founder Board</h1>
+    <span class="sync-hint">git pull to get the latest · edit via Claude · commit with "board:" prefix</span>
+  </header>
+  <div class="legend">
+    <span class="l-now">Now — actively being worked</span>
+    <span class="l-next">Next — queued up</span>
+    <span class="l-wait">Waiting — blocked on the other founder or an outside party</span>
+    <span class="l-done">Done — kept for a week, then pruned</span>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="rules">
+    <h3>How this works</h3>
+    <li><b>Rocco owns</b> everything under <code>src/</code> — the engine, API, dashboard app, deploys to Railway.</li>
+    <li><b>Ben owns</b> everything under <code>website/</code> — copy, design, SEO, social content, deploys to Netlify.</li>
+    <li>Shared files (this board, <code>docs/</code>): edit freely, keep commits small.</li>
+    <li>Need something from the other lane? Don't edit their files — add a task to <b>their</b> lane with a <b>handoff</b> note and set yours to Waiting.</li>
+    <li>To update the board: tell Claude "update the founder board" — it edits the <code>TASKS</code> list at the top of <code>admin/index.html</code>, commits, and pushes. Always <code>git pull</code> first.</li>
+  </div>
+  <div class="stamp" id="stamp"></div>
+</div>
+
+<script>
+/* ================================================================
+   TASKS — the single source of truth. Claude: edit ONLY this array
+   (and the UPDATED stamp), keep entries one-per-line, then commit
+   with a "board:" prefix and push.
+   owner: "rocco" | "ben"
+   status: "now" | "next" | "waiting" | "done"
+   handoff: optional — what you need from the other founder
+   ================================================================ */
+const UPDATED = "2026-07-06";
+const TASKS = [
+  // ---- Rocco (technical) ----
+  {owner:"rocco", status:"now",     title:"Upgrade Railway to Hobby ($5/mo)", note:"~$2 trial credit left — app goes offline when it runs out. railway.com/workspace/plans"},
+  {owner:"rocco", status:"next",    title:"Twilio A2P 10DLC registration", note:"So SMS stops being carrier-filtered. Needs business info + EIN."},
+  {owner:"rocco", status:"next",    title:"Buy Blooio line + wire channel to org", note:"$39/mo shared line to start. Code is built — first blue text same day."},
+  {owner:"rocco", status:"next",    title:"Azure app registration → one-click Outlook", note:"Free. Then restore the stronger claim on the site.", handoff:"Ben: update site copy once live"},
+  {owner:"rocco", status:"next",    title:"PWA install + push notifications", note:"Home-screen app icon; '2 drafts waiting' pushes. sw.js groundwork already ships."},
+  {owner:"rocco", status:"next",    title:"Split AI-chat history + automations per-org", note:"Currently global stores — must land before real customers share the box."},
+  {owner:"rocco", status:"done",    title:"Multi-tenant security lockdown", note:"Feed/activity/dashboard/approvals scoped per org; 14 open endpoints now need login."},
+  {owner:"rocco", status:"done",    title:"Mobile pass", note:"Sidebar bug fixed, full bottom nav, all tabs verified at 375px."},
+
+  // ---- Ben (marketing / growth) ----
+  {owner:"ben",   status:"now",     title:"Record 60-second demo video", note:"Draft arrives in Inbox → tap Send → Station updates. The video slot is ready in website/index.html (search DEMO VIDEO SLOT)."},
+  {owner:"ben",   status:"next",    title:"Collect 3 real testimonials from trial users", note:"Section is built + commented out in index.html — never publish invented quotes."},
+  {owner:"ben",   status:"next",    title:"Set up social accounts + first content batch", note:"Position around 'the follow-up employee'. Site copy is the voice reference."},
+  {owner:"ben",   status:"next",    title:"Outreach list: first 10 trial businesses", note:"Anyone who quotes prices or books appointments. Ortho niche first."},
+  {owner:"ben",   status:"waiting", title:"Google search snippet refresh", note:"Old 'Adapt 1.0' snippet. Recrawl requested 2026-07-05 — check in a few days; if stale after a week, tell Rocco."},
+];
+
+const BUCKETS = ["now","next","waiting","done"];
+const BUCKET_LABEL = {now:"Now", next:"Next", waiting:"Waiting", done:"Done"};
+const LANES = [
+  {id:"rocco", name:"Rocco", role:"Technical — engine, app, infra"},
+  {id:"ben",   name:"Ben",   role:"Marketing — website, social, growth"},
+];
+
+const board = document.getElementById("board");
+for (const lane of LANES){
+  const el = document.createElement("div");
+  el.className = "lane " + lane.id;
+  let html = `<div class="lane-head"><h2>${lane.name}</h2><span class="role">${lane.role}</span></div>
+              <div class="lane-sub">${lane.id==="rocco" ? "Owns src/ · deploys Railway" : "Owns website/ · deploys Netlify"}</div>`;
+  for (const b of BUCKETS){
+    const items = TASKS.filter(t => t.owner===lane.id && t.status===b);
+    if (!items.length) continue;
+    html += `<div class="bucket">${BUCKET_LABEL[b]} · ${items.length}</div>`;
+    for (const t of items){
+      html += `<div class="task ${b}"><div class="task-title">${t.title}</div>` +
+              (t.note ? `<div class="task-note">${t.note}</div>` : "") +
+              (t.handoff ? `<span class="handoff">⇄ ${t.handoff}</span>` : "") + `</div>`;
+    }
+  }
+  el.innerHTML = html;
+  board.appendChild(el);
+}
+document.getElementById("stamp").textContent = "last updated " + UPDATED + " · adapix/admin/index.html";
+</script>
+</body>
+</html>
