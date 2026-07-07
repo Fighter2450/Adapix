@@ -140,7 +140,7 @@ nav{
 }
 
 /* ---------- hero ---------- */
-.hero{padding:140px 0 110px;text-align:center;position:relative}
+.hero{padding:172px 0 110px;text-align:center;position:relative}
 .hero h1{font-size:clamp(36px,6vw,66px);font-weight:900;letter-spacing:-.03em;max-width:940px;margin:0 auto 24px}
 .hero .lede{margin:0 auto 38px}
 .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -361,13 +361,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
 /* ---------- hero film: 3D-framed brand video, scroll-scrubbed ---------- */
-/* breaks out of the 1120px wrap for a cinematic near-full-width opening */
-.hero-film{
-  width:min(1320px,94vw);
-  margin-left:calc(50% - min(1320px,94vw)/2);
-  margin-bottom:56px;
-  perspective:1200px;
-}
+.hero-film{max-width:880px;margin:0 auto 56px;perspective:1100px}
 .hero-film video{
   width:100%;display:block;border-radius:18px;border:1px solid var(--border);
   background:#0b0b1c;
