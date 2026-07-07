@@ -1,14 +1,14 @@
 # Adapix — working agreement
 
-Two founders share this repo. Respect the lane split below no matter which
-founder is prompting you.
+Two people share this repo: Rocco (Founder & CEO) and Ben (CMO — not a
+co-founder). Respect the lane split below no matter who is prompting you.
 
 ## Ownership lanes
 
-- **Rocco (technical)** owns `src/` — the FastAPI app, AI engine, campaign
+- **Rocco (Founder & CEO — technical)** owns `src/` — the FastAPI app, AI engine, campaign
   scheduler, dashboard templates, database. Deploys with `railway up`
   (Railway project `adapix`, service `adapix-web`).
-- **Ben (marketing/growth)** owns `website/` — the adapixai.com marketing
+- **Ben (CMO — marketing/growth)** owns `website/` — the adapixai.com marketing
   site, copy, SEO files, brand assets. Deploys with
   `netlify deploy --prod --dir _deploy --site 140230c6-37ec-47cf-bb40-3bcd29d34c94`
   (stage clean files into `_deploy/` first; never deploy `.bak` files).
