@@ -361,7 +361,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
 /* ---------- hero film: 3D-framed brand video, scroll-scrubbed ---------- */
-.hero-film{max-width:880px;margin:0 auto 56px;perspective:1100px}
+.hero-film{max-width:880px;margin:64px auto 0;perspective:1100px}
 .hero-film video{
   width:100%;display:block;border-radius:18px;border:1px solid var(--border);
   background:#0b0b1c;
@@ -449,13 +449,6 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 <!-- ================= HERO ================= -->
 <header class="hero">
   <div class="wrap">
-    <!-- HERO FILM — the first thing on screen. Higgsfield-generated 3D brand film.
-         Desktop: scroll scrubs the playback, so scrolling orbits the 3D "A".
-         Touch/reduced-motion: plays as a muted loop. Hidden if the file 404s. -->
-    <div class="hero-film reveal" id="heroFilm">
-      <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
-    </div>
-
     <span class="hero-badge"><span class="dot"></span>Live today &middot; 5-minute setup</span>
     <h1>Customers go quiet. <span class="grad-text">Adapix follows up</span> so you don’t have to.</h1>
     <p class="lede">The person who asked your price and never called back. The missed appointment nobody rebooked. The customer who said “let me think about it.” Adapix reaches out to all of them — by call, text, and email from <strong style="color:var(--ink)">your own number and your own inbox</strong>. And nothing sends until you tap OK.</p>
@@ -464,6 +457,13 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
       <a class="btn btn-ghost" href="#how">See how it works</a>
     </div>
     <span class="cta-note">No credit card. If it doesn't earn its keep in two weeks, walk away.</span>
+
+    <!-- HERO FILM — Higgsfield-generated 3D brand video (adapix_hero.mp4).
+         Desktop: scroll scrubs the playback, so scrolling orbits the 3D "A".
+         Touch/reduced-motion: plays as a muted loop. Hidden if the file 404s. -->
+    <div class="hero-film reveal" id="heroFilm">
+      <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
+    </div>
   </div>
 </header>
 
@@ -1234,17 +1234,15 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
     v.play&&v.play().catch(function(){});
     return;
   }
-  // film sits at the very top of the page: at scroll 0 the video is at
-  // frame 0, and the first stretch of scrolling drives the whole orbit.
-  // the tilted frame flattens over the first bit of scroll (3D entrance)
-  gsap.fromTo(v,{rotateX:8},{rotateX:0,ease:'none',
-    scrollTrigger:{trigger:document.body,start:'top top',end:'+=60%',scrub:.5}});
+  // the tilted frame flattens as it arrives (3D entrance)
+  gsap.to(v,{rotateX:0,ease:'none',
+    scrollTrigger:{trigger:'#heroFilm',start:'top 92%',end:'top 45%',scrub:.5}});
   // scroll position drives playback — scrolling orbits the 3D letter
   var target=0,ready=false;
   v.addEventListener('loadedmetadata',function(){
     ready=true;
     ScrollTrigger.create({
-      trigger:document.body,start:'top top',end:'+=250%',scrub:true,
+      trigger:'#heroFilm',start:'top 90%',end:'bottom -60%',scrub:true,
       onUpdate:function(self){target=self.progress*(v.duration||8);}
     });
   });
