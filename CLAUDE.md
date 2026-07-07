@@ -9,9 +9,12 @@ co-founder). Respect the lane split below no matter who is prompting you.
   scheduler, dashboard templates, database. Deploys with `railway up`
   (Railway project `adapix`, service `adapix-web`).
 - **Ben (CMO — marketing/growth)** owns `website/` — the adapixai.com marketing
-  site, copy, SEO files, brand assets. Deploys with
-  `netlify deploy --prod --dir _deploy --site 140230c6-37ec-47cf-bb40-3bcd29d34c94`
-  (stage clean files into `_deploy/` first; never deploy `.bak` files).
+  site, copy, SEO files, brand assets. **Deploys automatically**: pushing to
+  `main` deploys `website/` to Vercel (project `adapix`, team ChenetTech).
+  No manual deploy step, no CLI. Netlify is decommissioned (free-tier credits
+  ran out 2026-07-07) — never use the old `netlify deploy` command.
+  IMPORTANT consequence: anything committed to `website/` on main goes LIVE
+  within a minute — keep unfinished work on a branch.
 - **Shared**: `admin/` (founder board), `docs/`, this file.
 
 **Do not edit the other lane's files.** If the task requires it, instead add
