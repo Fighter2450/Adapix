@@ -21,13 +21,20 @@ All claims shown are shipped features, per the honesty rule.
 Rocco's Claude session couldn't mirror them into the repo because its
 network egress policy blocks the CDN):
 
-- **RECOMMENDED — v2 continuous shot (10s, 1280×720, silent).** After
-  reviewing v1, Rocco asked for one unbroken take: the same A throughout,
-  branches growing out of it, and the feature cards spinning around it.
-  This version is that:
-  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152051_9a05e5ba-1222-4db7-84eb-107aefc9f72c.mp4>
+- **RECOMMENDED — v3 continuous shot (10s, 1280×720, silent).** Rocco's
+  final direction after two review rounds: one unbroken take, the same A
+  throughout, branches growing out of it, and SIX feature cards from the
+  live site's copy drifting slowly around it (Approve draft · Calls from
+  your number · Emails from your inbox · Notices who went quiet · Answers
+  while you can't · 57 AI specialists):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152633_716ef677-3fe0-4a88-9470-cba0748cc44b.mp4>
+- Its final frame as a crisp still (ideal `poster` for the video element):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152518_18cb81f0-36fa-4998-a685-d9eb97d554be.png>
 
-v1 alternates (two takes stitched with a cut, same palette):
+Earlier takes (same palette, kept as alternates):
+
+- v2 continuous shot (10s, three cards, faster spin):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152051_9a05e5ba-1222-4db7-84eb-107aefc9f72c.mp4>
 
 - Stitched film (~12s, 1280×720, silent):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_151816_84e868e6-0ab2-46d8-bbbc-bbf9377cbe4f.mp4>
@@ -44,8 +51,9 @@ Higgsfield plan). If you want 1080p/2K for the hero, the account's
 `upscale_video` (Topaz/ByteDance) can upscale these, or the clips can be
 re-generated at higher res — ask Rocco's Claude or run it from your side.
 Higgsfield job ids, if you need to re-open them in the app: keyframes
-`5eaf2a7f`, `1a3689b3`; v1 clips `a62a1915`, `912bc4c5`; v1 stitch
-`84e868e6`; **v2 continuous shot `9a05e5ba`**.
+`5eaf2a7f`, `1a3689b3`, `18cb81f0` (six-card end frame); v1 clips
+`a62a1915`, `912bc4c5`; v1 stitch `84e868e6`; v2 continuous shot
+`9a05e5ba`; **v3 final `716ef677`**.
 
 ## Where to use it
 
