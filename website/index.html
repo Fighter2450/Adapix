@@ -360,15 +360,6 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-who{font-size:14px;font-weight:700;color:var(--ink)}
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
-/* ---------- hero film: 3D-framed brand video, scroll-scrubbed ---------- */
-.hero-film{max-width:880px;margin:64px auto 0;perspective:1100px}
-.hero-film video{
-  width:100%;display:block;border-radius:18px;border:1px solid var(--border);
-  background:#0b0b1c;
-  box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 60px rgba(124,58,237,.18);
-  transform:rotateX(10deg);transform-origin:50% 100%;
-}
-
 /* ---------- cursor spotlight: surfaces glow where the pointer is ---------- */
 .card,.faq-item,.approval-card,.station{position:relative;isolation:isolate}
 .card::after,.faq-item::after,.approval-card::after,.station::after{
@@ -457,13 +448,6 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
       <a class="btn btn-ghost" href="#how">See how it works</a>
     </div>
     <span class="cta-note">No credit card. If it doesn't earn its keep in two weeks, walk away.</span>
-
-    <!-- HERO FILM — Higgsfield-generated 3D brand video (adapix_hero.mp4).
-         Desktop: scroll scrubs the playback, so scrolling orbits the 3D "A".
-         Touch/reduced-motion: plays as a muted loop. Hidden if the file 404s. -->
-    <div class="hero-film reveal" id="heroFilm">
-      <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
-    </div>
   </div>
 </header>
 
@@ -1214,43 +1198,6 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
       hero.addEventListener('pointerleave',function(){rx(0);ry(0);},{passive:true});
     }
   }
-})();
-
-// ----- hero film: scroll scrubs the 3D brand video (Apple/Oryzo technique) -----
-(function(){
-  var v=document.getElementById('heroVideo');
-  if(!v)return;
-  // if the mp4 isn't deployed yet, hide the block entirely
-  v.addEventListener('error',function(){
-    var f=document.getElementById('heroFilm');
-    if(f)f.style.display='none';
-  });
-  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var fine=window.matchMedia('(pointer: fine)').matches;
-  if(reduced||!fine||!window.gsap||!window.ScrollTrigger){
-    // touch devices and reduced-motion get a simple muted loop
-    v.setAttribute('loop','');
-    v.setAttribute('autoplay','');
-    v.play&&v.play().catch(function(){});
-    return;
-  }
-  // the tilted frame flattens as it arrives (3D entrance)
-  gsap.to(v,{rotateX:0,ease:'none',
-    scrollTrigger:{trigger:'#heroFilm',start:'top 92%',end:'top 45%',scrub:.5}});
-  // scroll position drives playback — scrolling orbits the 3D letter
-  var target=0,ready=false;
-  v.addEventListener('loadedmetadata',function(){
-    ready=true;
-    ScrollTrigger.create({
-      trigger:'#heroFilm',start:'top 90%',end:'bottom -60%',scrub:true,
-      onUpdate:function(self){target=self.progress*(v.duration||8);}
-    });
-  });
-  gsap.ticker.add(function(){
-    if(!ready)return;
-    var diff=target-v.currentTime;
-    if(Math.abs(diff)>0.02)v.currentTime+=diff*0.18;
-  });
 })();
 
 // ----- Shepherd guided tour — loads shepherd.mjs + css only when asked -----
