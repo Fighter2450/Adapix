@@ -804,6 +804,7 @@ class DatabaseUpdateBody(BaseModel):
 
 @router.get("/api/v1/database")
 def api_database(org_id: str = Depends(verify_admin)):
+    from ..config import Settings
     from ..db import get_engine
     from ..models import Organization
     from ..practice import ESCALATION_LABELS, WORKFLOW_LABELS
@@ -848,7 +849,10 @@ def api_database(org_id: str = Depends(verify_admin)):
             "calling_number": org.phone_number if org else None,
             "calling_status": org.phone_status if org else "none",
             "imessage_number": org.imessage_number if org else None,
-            "imessage_connected": bool(org and org.blooio_channel_id),
+            # Blue texts are on when either the platform Claw line or a
+            # per-org Blooio line is configured.
+            "imessage_connected": bool(
+                Settings().claw_api_key or (org and org.blooio_channel_id)),
             "paused": bool(data.get("paused")),
             "email_connected": connected_email_provider is not None,
             "email_provider": connected_email_provider,

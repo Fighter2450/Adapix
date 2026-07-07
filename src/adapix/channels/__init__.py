@@ -12,11 +12,12 @@ development and demos before real carrier / Vapi accounts are wired in.
 from .sms import SmsChannel, SmsResult
 from .email import EmailChannel, EmailResult
 from .voice import VoiceChannel, VoiceResult, ai_disclosure_line
+from .claw import ClawChannel
 from .imessage import IMessageChannel, IMessageResult
 
 __all__ = [
     "SmsChannel", "SmsResult",
     "EmailChannel", "EmailResult",
     "VoiceChannel", "VoiceResult", "ai_disclosure_line",
-    "IMessageChannel", "IMessageResult",
+    "ClawChannel", "IMessageChannel", "IMessageResult",
 ]

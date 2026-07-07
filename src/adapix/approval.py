@@ -235,16 +235,30 @@ class ApprovalManager:
             # shape as connected-Gmail over the shared Resend sender. Each
             # business texts from its OWN line, never a shared one.
             result = None
-            imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
-            if imsg.is_configured(org_blooio_channel_id):
-                r = imsg.send(patient.phone or "", message.body, channel_id=org_blooio_channel_id)
+            # Provider order: Claw Messenger (platform line, cheapest),
+            # then a per-org Blooio line if one exists, then Twilio SMS.
+            from .channels import ClawChannel
+            claw = ClawChannel(self.settings, dry_run=self.dry_run)
+            if claw.is_configured():
+                r = claw.send(patient.phone or "", message.body)
                 md = dict(message.metadata_json or {})
                 if r.status != "failed":
                     result = r
-                    md["transport"] = "imessage"
+                    md["transport"] = "imessage-claw"
                 else:
                     md["imessage_error"] = r.error
                 message.metadata_json = md
+            if result is None:
+                imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
+                if imsg.is_configured(org_blooio_channel_id):
+                    r = imsg.send(patient.phone or "", message.body, channel_id=org_blooio_channel_id)
+                    md = dict(message.metadata_json or {})
+                    if r.status != "failed":
+                        result = r
+                        md["transport"] = "imessage"
+                    else:
+                        md["imessage_error"] = r.error
+                    message.metadata_json = md
             if result is None:
                 result = sms.send(patient.phone or "", message.body)
         elif message.channel == "email":

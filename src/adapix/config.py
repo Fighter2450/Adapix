@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # as the org's connected Gmail over the shared Resend sender.
     blooio_api_key: str = ""
     blooio_channel_id: str = ""
+    claw_api_key: str = ""   # Claw Messenger — iMessage relay ($5/mo tier)
 
     # Vapi (AI voice calling). Vapi handles telephony + speech + turn-taking;
     # we bring the model (Claude) and the prompt. Get these from the Vapi
