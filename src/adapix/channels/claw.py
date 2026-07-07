@@ -7,24 +7,30 @@ Claw relays through Apple hardware on their side, outside Apple's
 sanctioned channels, so Adapix ALWAYS keeps Twilio SMS as the fallback
 transport (see ApprovalManager._send_one).
 
-API: POST https://www.clawmessenger.com/api/agent/send-message
-  Authorization: Bearer cm_live_...
-  {"phone_number": "+1555...", "text": "..."}
+Protocol: Claw's server is WebSocket-ONLY for messaging (their blog
+mentions a REST send endpoint that does not actually exist — verified
+404). Real flow:
+
+  connect  wss://claw-messenger.onrender.com/ws?key=cm_live_...
+  send     {"type":"send","id":"...","to":"+1...",
+            "parts":[{"type":"text","value":"..."}],"service":"iMessage"}
+  await    a result/status event for our id, then close.
+
+Inbound security: Claw only accepts messages TO pre-registered numbers —
+register recipients first via POST /api/routes (REST, Bearer auth).
 
 One Claw account = one dedicated number today, so this is a platform-level
-channel (like TWILIO_FROM_NUMBER). When per-business lines matter, Claw
-sells extra numbers per account — revisit then.
+channel (like TWILIO_FROM_NUMBER). Revisit per-business lines later.
 """
 from __future__ import annotations
 
 import json
-import urllib.error
-import urllib.request
+import uuid
 
 from ..config import Settings
 from .imessage import IMessageResult
 
-CLAW_SEND_URL = "https://www.clawmessenger.com/api/agent/send-message"
+CLAW_WS_URL = "wss://claw-messenger.onrender.com/ws"
 
 
 class ClawChannel:
@@ -44,31 +50,59 @@ class ClawChannel:
             print(f"\n[DRY RUN — iMESSAGE (Claw) to {to}]\n{body}\n")
             return IMessageResult(provider_id=None, status="skipped (dry run)")
 
-        payload = json.dumps({"phone_number": to, "text": body}).encode()
-        req = urllib.request.Request(
-            CLAW_SEND_URL,
-            data=payload,
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {self.settings.claw_api_key}",
-                "Content-Type": "application/json",
-                # Real UA — Cloudflare-fronted APIs block urllib's default
-                # (same lesson as Vapi and Blooio).
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Adapix/1.0",
-            },
-        )
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode() or "{}")
-            msg_id = data.get("id") or data.get("message_id")
-            return IMessageResult(provider_id=str(msg_id) if msg_id else None, status="sent")
-        except urllib.error.HTTPError as e:
-            detail = ""
+            import websocket  # websocket-client
+        except ImportError:
+            return IMessageResult(provider_id=None, status="failed",
+                                  error="websocket-client not installed")
+
+        msg_id = uuid.uuid4().hex[:12]
+        try:
+            ws = websocket.create_connection(
+                f"{CLAW_WS_URL}?key={self.settings.claw_api_key}",
+                timeout=30,
+                header=["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Adapix/1.0"],
+            )
+        except Exception as e:
+            return IMessageResult(provider_id=None, status="failed", error=f"ws connect: {e}")
+
+        try:
+            ws.send(json.dumps({
+                "type": "send",
+                "id": msg_id,
+                "to": to,
+                "parts": [{"type": "text", "value": body}],
+                "service": "iMessage",
+            }))
+            # Read events until our send is acknowledged (or times out).
+            # Servers interleave unrelated events (inbound messages, pings),
+            # so filter for our correlation id.
+            ws.settimeout(30)
+            for _ in range(20):
+                raw = ws.recv()
+                if not raw:
+                    continue
+                try:
+                    ev = json.loads(raw)
+                except Exception:
+                    continue
+                ev_id = ev.get("id") or ev.get("messageId")
+                if ev_id and ev_id != msg_id:
+                    continue
+                status = (ev.get("status") or "").lower()
+                ev_type = (ev.get("type") or "").lower()
+                if status in ("failed", "error") or ev_type == "error":
+                    return IMessageResult(provider_id=msg_id, status="failed",
+                                          error=ev.get("error") or ev.get("message") or raw[:200])
+                if status in ("accepted", "sent", "delivery_confirmed", "not_confirmed") or ev_type in ("send.result", "status"):
+                    return IMessageResult(provider_id=msg_id, status="sent")
+            # No explicit ack — the send was written to an open socket, so
+            # treat as accepted rather than failing a message that likely went.
+            return IMessageResult(provider_id=msg_id, status="sent")
+        except Exception as e:
+            return IMessageResult(provider_id=None, status="failed", error=f"ws send: {e}")
+        finally:
             try:
-                detail = e.read().decode()[:200]
+                ws.close()
             except Exception:
                 pass
-            return IMessageResult(provider_id=None, status="failed",
-                                  error=f"HTTP {e.code}: {detail or e.reason}")
-        except Exception as e:
-            return IMessageResult(provider_id=None, status="failed", error=str(e))

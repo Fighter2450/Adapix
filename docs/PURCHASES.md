@@ -42,6 +42,14 @@ campaign, then a live deliverability test.
 
 ---
 
+## 3. ~~Blooio iMessage line~~ → DONE via Claw Messenger ($5/month)
+
+**Superseded 2026-07-07:** blue texts went live through Claw Messenger instead —
+$5/mo for 250 messages with a dedicated line, vs Blooio's $39/mo. 7-day free
+trial running now; first blue bubble confirmed on Rocco's iPhone.
+
+<details><summary>Original Blooio plan (kept for reference)</summary>
+
 ## 3. Blooio iMessage line — $39/month (shared) or ~$98/month (dedicated)
 
 **What it is:** Lets Adapix send **blue texts** — real iMessages instead of green SMS.
@@ -58,6 +66,8 @@ configured in the app.)
 
 **After purchase:** Tell Claude — the channel ID gets fetched and wired to your org,
 then the first blue-text test goes out within the hour.
+
+</details>
 
 ---
 
