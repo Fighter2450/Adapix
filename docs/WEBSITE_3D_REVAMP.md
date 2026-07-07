@@ -21,18 +21,20 @@ All claims shown are shipped features, per the honesty rule.
 Rocco's Claude session couldn't mirror them into the repo because its
 network egress policy blocks the CDN):
 
-- **MASTER — v5 (10s, 1280×720, silent), Rocco-approved direction.** One
-  continuous take in the composition Rocco signed off on: opens on JUST
-  the A + wordmark, cyan pulses breathe along its traces, then the branch
-  stems grow out of the A one after another and six LARGE bold-lettered
-  feature cards from the live site's copy materialize at the tips and
-  revolve slowly, ending on the approved six-card ring (Approve draft ·
-  Calls from your number · Emails from your inbox · Notices who went
-  quiet · Answers while you can't · 57 AI specialists):
-  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_154222_d94dc760-5a29-4e07-b36c-2229f8db10ae.mp4>
-- **Companion "loop" cut (10s)** — same scene with all six cards visible
-  the whole time, slowly orbiting with pulses feeding them from the A;
-  chain it after the master for a continuous hero background:
+- **MASTER — v6 (10s, 1920×1080 native, silent), Rocco-approved.** Kling
+  3.0 pro re-render of the approved take for real legible words + 1080p:
+  opens on JUST the A + wordmark, cyan pulses breathe along its traces,
+  then the branch stems grow out of the A one after another and six
+  LARGE bold-lettered feature cards from the live site's copy materialize
+  at the tips and revolve slowly, ending on the approved six-card ring
+  (Approve draft · Calls from your number · Emails from your inbox ·
+  Notices who went quiet · Answers while you can't · 57 AI specialists):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_154930_355679fe-2763-4a33-b5d7-93d4e1ed4e4b.mp4>
+- **Companion "loop" cut (10s, 720p)** — same scene with all six cards
+  visible the whole time, slowly orbiting with pulses feeding them from
+  the A; chain it after the master for a continuous hero background. If
+  you use it, upscale it to 1080p first (account has Topaz/ByteDance
+  `upscale_video`) or ask Rocco's Claude to re-render it in Kling pro:
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_153519_cfb0f70b-dc7e-4ab0-af04-dd9023cb8e36.mp4>
 - Poster still (the master's final frame):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_153139_7f5cd09d-bfa8-4cd1-aad0-dcdd21250669.png>
@@ -58,15 +60,16 @@ Earlier takes (same palette, kept as alternates):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_151203_5eaf2a7f-76e9-4ce9-9ff8-3e4c0582f1c9.png>
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_151207_1a3689b3-8e4f-4ac5-b3a7-1d85d973677f.png>
 
-Clips are 720p (kept credits low: whole run ≈ 22 of the 194 credits on the
-Higgsfield plan). If you want 1080p/2K for the hero, the account's
-`upscale_video` (Topaz/ByteDance) can upscale these, or the clips can be
-re-generated at higher res — ask Rocco's Claude or run it from your side.
+The master is native 1080p (Kling 3.0 pro); the alternates are 720p.
+Whole session ≈ 120 of the 194 credits on the Higgsfield plan. For 2K/4K
+the account's `upscale_video` (Topaz/ByteDance) can go higher — ask
+Rocco's Claude or run it from your side.
 Higgsfield job ids, if you need to re-open them in the app: keyframes
 `5eaf2a7f`, `1a3689b3`, `18cb81f0`, `7f5cd09d` (bold six-card frame),
 `4f86a1ce` (clean A opener); v1 clips `a62a1915`, `912bc4c5`; v1 stitch
-`84e868e6`; v2 `9a05e5ba`; v3 `716ef677`; v4 intro `82cdc3f3`;
-**master `d94dc760` + loop `cfb0f70b`**.
+`84e868e6`; v2 `9a05e5ba`; v3 `716ef677`; v4 intro `82cdc3f3`; v5 720p
+take `d94dc760`; **master (1080p Kling pro) `355679fe` + loop
+`cfb0f70b`**.
 
 ## Where to use it
 
