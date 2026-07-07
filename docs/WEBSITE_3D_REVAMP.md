@@ -21,18 +21,24 @@ All claims shown are shipped features, per the honesty rule.
 Rocco's Claude session couldn't mirror them into the repo because its
 network egress policy blocks the CDN):
 
-- **RECOMMENDED — v3 continuous shot (10s, 1280×720, silent).** Rocco's
-  final direction after two review rounds: one unbroken take, the same A
-  throughout, branches growing out of it, and SIX feature cards from the
-  live site's copy drifting slowly around it (Approve draft · Calls from
-  your number · Emails from your inbox · Notices who went quiet · Answers
-  while you can't · 57 AI specialists):
-  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152633_716ef677-3fe0-4a88-9470-cba0748cc44b.mp4>
-- Its final frame as a crisp still (ideal `poster` for the video element):
-  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152518_18cb81f0-36fa-4998-a685-d9eb97d554be.png>
+- **RECOMMENDED — v4 "intro" cut (10s, 1280×720, silent).** Rocco's final
+  direction after three review rounds: opens on just the A, then the
+  branches grow out of it and six LARGE bold-lettered feature cards from
+  the live site's copy appear and revolve slowly (Approve draft · Calls
+  from your number · Emails from your inbox · Notices who went quiet ·
+  Answers while you can't · 57 AI specialists):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_153303_82cdc3f3-00be-48d2-a100-c1fb894cc05f.mp4>
+- **Companion "loop" cut (10s)** — same scene with all six cards visible
+  the whole time, slowly orbiting; good as the looping hero background
+  after the intro cut plays once (Rocco approved the box treatment here):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_153519_cfb0f70b-dc7e-4ab0-af04-dd9023cb8e36.mp4>
+- Final frame as a crisp still (ideal `poster` for the video element):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_153139_7f5cd09d-bfa8-4cd1-aad0-dcdd21250669.png>
 
 Earlier takes (same palette, kept as alternates):
 
+- v3 (10s, six cards, smaller/dimmer text — superseded for legibility):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152633_716ef677-3fe0-4a88-9470-cba0748cc44b.mp4>
 - v2 continuous shot (10s, three cards, faster spin):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152051_9a05e5ba-1222-4db7-84eb-107aefc9f72c.mp4>
 
@@ -51,9 +57,9 @@ Higgsfield plan). If you want 1080p/2K for the hero, the account's
 `upscale_video` (Topaz/ByteDance) can upscale these, or the clips can be
 re-generated at higher res — ask Rocco's Claude or run it from your side.
 Higgsfield job ids, if you need to re-open them in the app: keyframes
-`5eaf2a7f`, `1a3689b3`, `18cb81f0` (six-card end frame); v1 clips
-`a62a1915`, `912bc4c5`; v1 stitch `84e868e6`; v2 continuous shot
-`9a05e5ba`; **v3 final `716ef677`**.
+`5eaf2a7f`, `1a3689b3`, `18cb81f0`, `7f5cd09d` (bold six-card frame);
+v1 clips `a62a1915`, `912bc4c5`; v1 stitch `84e868e6`; v2 `9a05e5ba`;
+v3 `716ef677`; **v4 intro `82cdc3f3` + loop `cfb0f70b`**.
 
 ## Where to use it
 
