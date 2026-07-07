@@ -9,21 +9,27 @@ yours.
 
 ## The brand film (Higgsfield, generated 2026-07-07)
 
-Two 6-second 16:9 clips in the site's exact palette (`#0b0b1c` bg,
-`#7c3aed` purple, `#22d3ee` cyan), stitched into one ~12s silent film:
-
-1. **Logo reveal** — the navy Adapix "A" as a 3D monolith, cyan circuit
-   traces energizing, slow orbital camera, "Adapix" wordmark glow.
-2. **Features scene** — the 3D mark hovering over holographic glass UI
-   cards showing the real product story: *a drafted follow-up → your
-   Approve button → goes out as your business (your number / your inbox)*.
-   All claims shown are shipped features, per the honesty rule.
+Silent 16:9 film in the site's exact palette (`#0b0b1c` bg, `#7c3aed`
+purple, `#22d3ee` cyan). The story in one take: the navy Adapix "A" as a
+3D monolith with pulsing cyan circuit traces → the branches grow out of
+the A → holographic glass UI cards light up at the branch tips and spin
+around it, showing the real product story: *a drafted follow-up → your
+Approve button → goes out as your business (your number / your inbox)*.
+All claims shown are shipped features, per the honesty rule.
 
 **Assets** (hosted on Higgsfield's CDN — download from a normal browser;
 Rocco's Claude session couldn't mirror them into the repo because its
 network egress policy blocks the CDN):
 
-- Final stitched film (~12s, 1280×720, silent):
+- **RECOMMENDED — v2 continuous shot (10s, 1280×720, silent).** After
+  reviewing v1, Rocco asked for one unbroken take: the same A throughout,
+  branches growing out of it, and the feature cards spinning around it.
+  This version is that:
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_152051_9a05e5ba-1222-4db7-84eb-107aefc9f72c.mp4>
+
+v1 alternates (two takes stitched with a cut, same palette):
+
+- Stitched film (~12s, 1280×720, silent):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_151816_84e868e6-0ab2-46d8-bbbc-bbf9377cbe4f.mp4>
 - Clip 1 — logo reveal (6s):
   <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260707_151425_a62a1915-8494-405b-a280-d1e79e8881df.mp4>
@@ -38,7 +44,8 @@ Higgsfield plan). If you want 1080p/2K for the hero, the account's
 `upscale_video` (Topaz/ByteDance) can upscale these, or the clips can be
 re-generated at higher res — ask Rocco's Claude or run it from your side.
 Higgsfield job ids, if you need to re-open them in the app: keyframes
-`5eaf2a7f`, `1a3689b3`; clips `a62a1915`, `912bc4c5`; stitch `84e868e6`.
+`5eaf2a7f`, `1a3689b3`; v1 clips `a62a1915`, `912bc4c5`; v1 stitch
+`84e868e6`; **v2 continuous shot `9a05e5ba`**.
 
 ## Where to use it
 
