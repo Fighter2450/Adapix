@@ -140,7 +140,7 @@ nav{
 }
 
 /* ---------- hero ---------- */
-.hero{padding:172px 0 110px;text-align:center;position:relative}
+.hero{padding:110px 0 110px;text-align:center;position:relative}
 .hero h1{font-size:clamp(36px,6vw,66px);font-weight:900;letter-spacing:-.03em;max-width:940px;margin:0 auto 24px}
 .hero .lede{margin:0 auto 38px}
 .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -360,6 +360,22 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-who{font-size:14px;font-weight:700;color:var(--ink)}
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
+/* ---------- film opener: full-page brand film, the first thing on screen ---------- */
+.film-opener{position:relative;height:100vh;min-height:540px;overflow:hidden;background:#0b0b1c}
+.film-opener video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* fade the bottom edge into the page background */
+.film-opener::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20vh;
+  background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none}
+.film-scroll-cue{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(236,233,255,.8);display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:none;z-index:2}
+.film-scroll-cue::after{content:"";width:1px;height:34px;
+  background:linear-gradient(180deg,var(--cyan),transparent);
+  animation:cueDrop 1.8s ease-in-out infinite}
+@keyframes cueDrop{0%{transform:scaleY(0);transform-origin:top;opacity:1}
+  60%{transform:scaleY(1);transform-origin:top;opacity:1}
+  100%{transform:scaleY(1);transform-origin:top;opacity:0}}
+
 /* ---------- cursor spotlight: surfaces glow where the pointer is ---------- */
 .card,.faq-item,.approval-card,.station{position:relative;isolation:isolate}
 .card::after,.faq-item::after,.approval-card::after,.station::after{
@@ -436,6 +452,16 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
     </div>
   </div>
 </nav>
+
+<!-- ================= FILM OPENER ================= -->
+<!-- Full-page Higgsfield brand film — the whole first screen.
+     Desktop: the section pins while scrolling plays the film through,
+     then releases into the page. Touch/reduced-motion: muted loop.
+     Hidden entirely if the mp4 is missing from a deploy. -->
+<section class="film-opener" id="heroFilm">
+  <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
+  <div class="film-scroll-cue">Scroll</div>
+</section>
 
 <!-- ================= HERO ================= -->
 <header class="hero">
@@ -1200,6 +1226,48 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
   }
 })();
 
+<<<<<<< HEAD
+=======
+// ----- hero film: scroll scrubs the 3D brand video (Apple/Oryzo technique) -----
+(function(){
+  var v=document.getElementById('heroVideo');
+  if(!v)return;
+  // if the mp4 isn't deployed yet, hide the block entirely
+  v.addEventListener('error',function(){
+    var f=document.getElementById('heroFilm');
+    if(f)f.style.display='none';
+  });
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine=window.matchMedia('(pointer: fine)').matches;
+  if(reduced||!fine||!window.gsap||!window.ScrollTrigger){
+    // touch devices and reduced-motion get a simple muted loop
+    v.setAttribute('loop','');
+    v.setAttribute('autoplay','');
+    v.play&&v.play().catch(function(){});
+    return;
+  }
+  // full-page opener: the section pins while scrolling plays the film
+  // through (scroll = the movie timeline), then releases into the page.
+  var target=0,ready=false;
+  v.addEventListener('loadedmetadata',function(){
+    ready=true;
+    ScrollTrigger.create({
+      trigger:'#heroFilm',start:'top top',end:'+=220%',pin:true,scrub:true,
+      onUpdate:function(self){target=self.progress*(v.duration||10);}
+    });
+    // the scroll cue fades once the visitor starts moving
+    gsap.to('.film-scroll-cue',{autoAlpha:0,ease:'none',
+      scrollTrigger:{trigger:'#heroFilm',start:'top top',end:'+=25%',scrub:true}});
+    ScrollTrigger.refresh();
+  });
+  gsap.ticker.add(function(){
+    if(!ready)return;
+    var diff=target-v.currentTime;
+    if(Math.abs(diff)>0.02)v.currentTime+=diff*0.18;
+  });
+})();
+
+>>>>>>> 3e58a14 (website: full-page film opener — new brand film owns the first screen)
 // ----- Shepherd guided tour — loads shepherd.mjs + css only when asked -----
 (function(){
   var btn=document.getElementById('tourBtn');

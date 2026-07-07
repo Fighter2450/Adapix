@@ -101,6 +101,8 @@ src/adapix/api/*.clean
 uploads/
 session_uploads/
 
-# Higgsfield generated videos
+# Higgsfield generated videos (raw downloads stay out of the repo)
 *.mp4
 *.webm
+# ...but the compressed hero film ships with the site
+!website/adapix_hero.mp4
