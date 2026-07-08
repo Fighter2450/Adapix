@@ -148,6 +148,21 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',
   .mobile-nav{display:flex}
 }
 
+/* ---- Push-notification prompt ---- */
+.push-prompt{
+  position:fixed;right:20px;bottom:76px;z-index:120;max-width:320px;
+  background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(34,211,238,.08)),#17142e;
+  border:1px solid rgba(124,58,237,.35);border-radius:16px;padding:16px 18px;
+  box-shadow:0 18px 50px rgba(0,0,0,.5);
+}
+.push-prompt b{color:#fff;font-size:14px;display:block;margin-bottom:4px}
+.push-prompt p{font-size:12.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.5}
+.push-prompt .row{display:flex;gap:8px}
+.push-prompt button{font-family:inherit;font-size:12.5px;font-weight:700;border-radius:9px;padding:8px 14px;cursor:pointer}
+.push-prompt .yes{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border:0}
+.push-prompt .no{background:none;border:1px solid var(--border);color:var(--ink-3)}
+@media(max-width:768px){.push-prompt{right:12px;left:12px;bottom:70px;max-width:none}}
+
 /* ---- Toast ---- */
 .toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -4356,6 +4371,73 @@ body::after{
     render();
     setInterval(()=>{ try { renderRightPane(); } catch(_){} }, 60000);
   })();
+})();
+</script>
+
+<script>
+// ----- push notifications: one-tap enable prompt -----
+(function(){
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+  if (Notification.permission === 'denied') return;
+  if (localStorage.getItem('adapix-push-dismissed')) return;
+
+  function b64ToU8(base64){
+    var pad = '='.repeat((4 - base64.length % 4) % 4);
+    var b = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(b), arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  async function alreadySubscribed(){
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      return !!(await reg.pushManager.getSubscription());
+    } catch(_) { return false; }
+  }
+
+  async function subscribe(){
+    var reg = await navigator.serviceWorker.ready;
+    var res = await fetch('/api/v1/notify/vapid-public-key', {credentials:'include'});
+    if (!res.ok) throw new Error('push not configured');
+    var key = (await res.json()).public_key;
+    var sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToU8(key)});
+    var j = sub.toJSON();
+    await fetch('/api/v1/notify/subscribe', {method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({endpoint:j.endpoint, keys:j.keys, user_agent:navigator.userAgent})});
+  }
+
+  async function maybePrompt(){
+    if (await alreadySubscribed()) return;
+    var card = document.createElement('div');
+    card.className = 'push-prompt';
+    card.innerHTML = '<b>Never miss a draft</b>' +
+      '<p>Get a ping on this device when a follow-up is waiting for your OK or a customer needs you.</p>' +
+      '<div class="row"><button class="yes">Turn on notifications</button><button class="no">Not now</button></div>';
+    document.body.appendChild(card);
+    card.querySelector('.no').addEventListener('click', function(){
+      localStorage.setItem('adapix-push-dismissed', '1');
+      card.remove();
+    });
+    card.querySelector('.yes').addEventListener('click', async function(){
+      this.disabled = true; this.textContent = 'Enabling…';
+      try {
+        if (Notification.permission !== 'granted') {
+          var p = await Notification.requestPermission();
+          if (p !== 'granted') { card.remove(); return; }
+        }
+        await subscribe();
+        card.innerHTML = '<b>Notifications on</b><p>This device will ping when something needs you.</p>';
+        setTimeout(function(){ card.remove(); }, 3500);
+      } catch(e) {
+        card.innerHTML = '<b>Could not enable</b><p>' + (e.message || 'Try again from Settings later.') + '</p>';
+        setTimeout(function(){ card.remove(); }, 4000);
+      }
+    });
+  }
+  // give the app a beat to boot before asking
+  setTimeout(maybePrompt, 6000);
 })();
 </script>
 

@@ -481,7 +481,7 @@ def reply_to(user_message: str, attachments: list | None = None,
             preview = new_facts[0].get("text") or "Saved a new fact."
             if len(preview) > 90:
                 preview = preview[:87] + "…"
-            push_notification(
+            push_notification(org_id=org_id,
                 title="Adapix learned something",
                 body=f"{preview}" + (f"  (+{n-1} more)" if n > 1 else ""),
                 url="/chat",
@@ -493,7 +493,7 @@ def reply_to(user_message: str, attachments: list | None = None,
     if expense_record:
         try:
             from .notifications import push_notification
-            push_notification(
+            push_notification(org_id=org_id,
                 title=f"+ ${expense_record['amount']:.2f} logged",
                 body=f"{expense_record['description'] or expense_record['category']}"
                      + (f"  ·  {expense_record['vendor']}" if expense_record['vendor'] else ""),

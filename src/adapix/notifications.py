@@ -141,9 +141,11 @@ def _save_subs(subs: list[dict[str, Any]]) -> None:
     p.write_text(json.dumps(subs, indent=2))
 
 
-def add_subscription(sub: dict[str, Any]) -> dict[str, Any]:
+def add_subscription(sub: dict[str, Any], org_id: str | None = None) -> dict[str, Any]:
     """Persist a browser subscription object. De-duplicates by endpoint
-    so the same device subscribing twice doesn't get notified twice."""
+    so the same device subscribing twice doesn't get notified twice.
+    org_id ties the device to a tenant so one business's notifications
+    never buzz another business's phone."""
     endpoint = (sub or {}).get("endpoint")
     if not endpoint:
         raise ValueError("subscription missing 'endpoint'")
@@ -153,6 +155,7 @@ def add_subscription(sub: dict[str, Any]) -> dict[str, Any]:
         "endpoint": endpoint,
         "keys": (sub.get("keys") or {}),
         "user_agent": sub.get("user_agent") or "",
+        "org_id": org_id,
         "added_at": int(time.time()),
     }
     subs.append(record)
@@ -169,8 +172,11 @@ def remove_subscription(endpoint: str) -> bool:
     return True
 
 
-def list_subscriptions() -> list[dict[str, Any]]:
-    return _load_subs()
+def list_subscriptions(org_id: str | None = None) -> list[dict[str, Any]]:
+    subs = _load_subs()
+    if org_id is not None:
+        subs = [s for s in subs if s.get("org_id") == org_id]
+    return subs
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +188,7 @@ def push_notification(
     *,
     url: str | None = None,
     tag: str | None = None,
+    org_id: str | None = None,
 ) -> dict[str, Any]:
     """Send a Web Push notification to every registered subscription.
 
@@ -199,6 +206,10 @@ def push_notification(
         return {"ok": False, "error": "VAPID keys not configured", "sent": 0, "failed": 0}
 
     subs = _load_subs()
+    if org_id is not None:
+        # Tenant-scoped push: only this org's devices. Subscriptions from
+        # before org tagging (org_id missing) are never matched here.
+        subs = [s for s in subs if s.get("org_id") == org_id]
     if not subs:
         return {"ok": False, "error": "no subscriptions", "sent": 0, "failed": 0}
 

@@ -120,6 +120,17 @@ class InboundProcessor:
                         suggested_action=classification.suggested_action,
                     )
                 )
+                try:
+                    from .notifications import push_notification
+                    who = f"{patient.first_name} {patient.last_name}".strip() or "A customer"
+                    cat = (classification.category or "needs you").replace("_", " ")
+                    push_notification(
+                        title=f"{who} needs you",
+                        body=f"Flagged: {cat}. The full conversation is in your Inbox.",
+                        url="/app", tag="adapix-escalation", org_id=patient.practice_id,
+                    )
+                except Exception:
+                    pass
 
             # Dispatch
             return self._dispatch(s, campaign, patient, classification, history, body)
@@ -202,6 +213,17 @@ class InboundProcessor:
                         suggested_action=classification.suggested_action,
                     )
                 )
+                try:
+                    from .notifications import push_notification
+                    who = f"{patient.first_name} {patient.last_name}".strip() or "A customer"
+                    cat = (classification.category or "needs you").replace("_", " ")
+                    push_notification(
+                        title=f"{who} needs you",
+                        body=f"Flagged after a call: {cat}. Recording + transcript in your Inbox.",
+                        url="/app", tag="adapix-escalation", org_id=patient.practice_id,
+                    )
+                except Exception:
+                    pass
                 return InboundResult(status="escalated", classification=classification)
 
             return InboundResult(status="logged", classification=classification)

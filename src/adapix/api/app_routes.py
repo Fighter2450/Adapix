@@ -407,7 +407,7 @@ def api_notify_subscribe(body: SubscribeBody, _user: str = Depends(verify_admin)
             "endpoint": body.endpoint,
             "keys": body.keys,
             "user_agent": body.user_agent or "",
-        })
+        }, org_id=_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True, "endpoint": rec["endpoint"]}
@@ -429,7 +429,7 @@ def api_notify_status(_user: str = Depends(verify_admin)):
     """How many devices are currently subscribed to push, so the UI
     can show 'Notifications on (1 device)' vs the 'Enable' button."""
     from ..notifications import list_subscriptions
-    subs = list_subscriptions()
+    subs = list_subscriptions(_user)
     return {"count": len(subs), "endpoints": [s.get("endpoint") for s in subs]}
 
 
@@ -449,6 +449,7 @@ def api_notify_test(body: TestPushBody, _user: str = Depends(verify_admin)):
         body=body.body or "This is a test notification — looking good.",
         url=body.url or "/app",
         tag="adapix-test",
+        org_id=_user,
     )
     if not res.get("ok"):
         raise HTTPException(

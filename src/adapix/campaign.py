@@ -213,6 +213,17 @@ class CampaignRunner:
                     metadata_json={"queued_for_approval": True, "intent": step.intent},
                 )
             )
+            # A draft is the product's heartbeat — tell the owner's devices.
+            try:
+                from .notifications import push_notification
+                who = f"{patient.first_name} {patient.last_name}".strip() or "a customer"
+                push_notification(
+                    title="Draft waiting for you",
+                    body=f"Adapix wrote a {step.channel} follow-up for {who} — read it and tap Send.",
+                    url="/app", tag="adapix-draft", org_id=self.practice_id,
+                )
+            except Exception:
+                pass
             return
 
         # Auto mode - send immediately
