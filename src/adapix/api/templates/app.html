@@ -1468,17 +1468,36 @@ body::after{
       if (!d.calling_number) gaps.push({label: 'Set up your calling number', channels: true});
       if (!d.email_connected) gaps.push({label: 'Connect your email', channels: true});
 
-      if (!gaps.length) { gapsEl.innerHTML = ''; return; }
-      gapsEl.innerHTML = `
-        <div class="setup-gaps">
-          ${gaps.map((g, i) => `<button class="setup-bubble" data-gap-idx="${i}"><span class="dot"></span>${escapeHTML(g.label)}<span class="chev">›</span></button>`).join('')}
-        </div>`;
-      gapsEl.querySelectorAll('.setup-bubble').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const g = gaps[Number(btn.dataset.gapIdx)];
-          if (g.channels) { goView('settings'); goSettingsView('channels'); }
-          else { state.focusDbField = g.focus; goView('database'); }
+      // Notifications bubble: shows until THIS device is subscribed.
+      // Async check, so render the rest first and append when known.
+      async function pushOffOnThisDevice(){
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          return !(await reg.pushManager.getSubscription());
+        } catch(_) { return false; }
+      }
+
+      function paintGaps(){
+        if (!gaps.length) { gapsEl.innerHTML = ''; return; }
+        gapsEl.innerHTML = `
+          <div class="setup-gaps">
+            ${gaps.map((g, i) => `<button class="setup-bubble" data-gap-idx="${i}"><span class="dot"></span>${escapeHTML(g.label)}<span class="chev">›</span></button>`).join('')}
+          </div>`;
+        gapsEl.querySelectorAll('.setup-bubble').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const g = gaps[Number(btn.dataset.gapIdx)];
+            if (g.notifications) { goView('settings'); goSettingsView('notifications'); }
+            else if (g.channels) { goView('settings'); goSettingsView('channels'); }
+            else { state.focusDbField = g.focus; goView('database'); }
+          });
         });
+      }
+      paintGaps();
+      pushOffOnThisDevice().then(off => {
+        if (!off || state.view !== 'home') return;
+        gaps.push({label: 'Turn on notifications', notifications: true});
+        paintGaps();
       });
     }).catch(() => {});
 
