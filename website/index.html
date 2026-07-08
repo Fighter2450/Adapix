@@ -361,16 +361,18 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 .quote-biz{font-size:13px;color:var(--ink-3)}
 
 /* ---------- film opener: full-page brand film, the first thing on screen ---------- */
-.film-opener{position:relative;height:100vh;min-height:540px;overflow:hidden;background:#0b0b1c}
+.film-opener{position:relative;height:100vh;height:100dvh;min-height:540px;overflow:hidden;background:#0b0b1c}
 /* ambient fill: heavily blurred copy of the film's frame behind the video,
    so the WHOLE frame is visible (object-fit contain) with no letterbox
    bars on any screen shape — the blur fills whatever the 16:9 frame doesn't */
 .film-fill{position:absolute;inset:-8%;
   background:url(adapix_hero_poster.png) center/cover no-repeat;
   filter:blur(64px) brightness(.55) saturate(1.15)}
-.film-opener video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
-/* fade the bottom edge into the page background */
-.film-opener::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20vh;
+/* the contain box starts below the fixed nav so the top of the A is
+   never hidden behind it, with a touch of breathing room at the bottom */
+.film-opener video{position:absolute;left:0;top:76px;width:100%;height:calc(100% - 96px);object-fit:contain;z-index:1}
+/* thin fade at the very bottom edge into the page background */
+.film-opener::after{content:"";position:absolute;left:0;right:0;bottom:0;height:9vh;
   background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none;z-index:2}
 .film-scroll-cue{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
   font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
