@@ -362,13 +362,19 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 
 /* ---------- film opener: full-page brand film, the first thing on screen ---------- */
 .film-opener{position:relative;height:100vh;min-height:540px;overflow:hidden;background:#0b0b1c}
-.film-opener video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* ambient fill: heavily blurred copy of the film's frame behind the video,
+   so the WHOLE frame is visible (object-fit contain) with no letterbox
+   bars on any screen shape — the blur fills whatever the 16:9 frame doesn't */
+.film-fill{position:absolute;inset:-8%;
+  background:url(adapix_hero_poster.png) center/cover no-repeat;
+  filter:blur(64px) brightness(.55) saturate(1.15)}
+.film-opener video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
 /* fade the bottom edge into the page background */
 .film-opener::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20vh;
-  background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none}
+  background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none;z-index:2}
 .film-scroll-cue{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
   font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
-  color:rgba(236,233,255,.8);display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:none;z-index:2}
+  color:rgba(236,233,255,.8);display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:none;z-index:3}
 .film-scroll-cue::after{content:"";width:1px;height:34px;
   background:linear-gradient(180deg,var(--cyan),transparent);
   animation:cueDrop 1.8s ease-in-out infinite}
@@ -490,6 +496,7 @@ a[aria-current="page"]{color:#fff !important}
      then releases into the page. Touch/reduced-motion: muted loop.
      Hidden entirely if the mp4 is missing from a deploy. -->
 <section class="film-opener" id="heroFilm">
+  <div class="film-fill" aria-hidden="true"></div>
   <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
   <div class="film-scroll-cue">Scroll</div>
 </section>
@@ -700,7 +707,11 @@ a[aria-current="page"]{color:#fff !important}
 <script defer src="vendor/typed.umd.js"></script>
 <script defer src="vendor/confetti.browser.js"></script>
 <script defer src="vendor/vanilla-tilt.min.js"></script>
-<script defer>
+<script>
+// NOTE: this is an inline script — `defer` has no effect on inline scripts,
+// so everything here is wrapped in a DOMContentLoaded guard to guarantee the
+// vendor libraries (gsap, ScrollTrigger, lenis, typed, tilt) have executed.
+(function(){function __init(){
 // ----- Lenis smooth scrolling (synced with GSAP ScrollTrigger) -----
 (function(){
   if(!window.Lenis||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -916,9 +927,10 @@ a[aria-current="page"]{color:#fff !important}
   }
   // full-page opener: the section pins while scrolling plays the film
   // through (scroll = the movie timeline), then releases into the page.
-  var target=0,ready=false;
-  v.addEventListener('loadedmetadata',function(){
-    ready=true;
+  var target=0,ready=false,armed=false;
+  function armScrub(){
+    if(armed)return;
+    armed=true;ready=true;
     ScrollTrigger.create({
       trigger:'#heroFilm',start:'top top',end:'+=220%',pin:true,scrub:true,
       onUpdate:function(self){target=self.progress*(v.duration||10);}
@@ -927,7 +939,11 @@ a[aria-current="page"]{color:#fff !important}
     gsap.to('.film-scroll-cue',{autoAlpha:0,ease:'none',
       scrollTrigger:{trigger:'#heroFilm',start:'top top',end:'+=25%',scrub:true}});
     ScrollTrigger.refresh();
-  });
+  }
+  // readyState >= 1 means metadata already arrived (e.g. cached) — the
+  // loadedmetadata event would never fire, so arm immediately.
+  if(v.readyState>=1){armScrub();}
+  else{v.addEventListener('loadedmetadata',armScrub);}
   gsap.ticker.add(function(){
     if(!ready)return;
     var diff=target-v.currentTime;
@@ -993,6 +1009,10 @@ a[aria-current="page"]{color:#fff !important}
       tour.start();
     });
   });
+})();
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',__init);}
+else{__init();}
 })();
 </script>
 
