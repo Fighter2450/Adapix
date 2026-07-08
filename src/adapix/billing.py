@@ -126,11 +126,36 @@ def confirm_checkout(org_id: str, session_id: str) -> dict[str, Any]:
     return get_billing(org_id)
 
 
+def find_subscription_by_org(org_id: str) -> dict | None:
+    """Fallback for a missed confirm (closed tab, different login): every
+    subscription we create is tagged metadata[org_id], so Stripe itself is
+    the source of truth. Records what it finds."""
+    try:
+        q = urllib.parse.quote(f"metadata['org_id']:'{org_id}'")
+        res = _call("GET", f"/subscriptions/search?query={q}&limit=1")
+        subs = res.get("data") or []
+        if subs:
+            sub = subs[0]
+            set_billing(org_id, {
+                "customer_id": sub.get("customer"),
+                "subscription_id": sub.get("id"),
+                "status": sub.get("status", "unknown"),
+            })
+            return sub
+    except Exception:
+        pass
+    return None
+
+
 def refresh_status(org_id: str) -> str:
     """Re-pull the subscription status from Stripe (cheap poll used by the
     billing page; a webhook can replace this later)."""
     rec = get_billing(org_id)
     sub_id = rec.get("subscription_id")
+    if not sub_id and configured():
+        sub = find_subscription_by_org(org_id)
+        if sub:
+            return sub.get("status", "unknown")
     if not sub_id or not configured():
         return rec.get("status") or "none"
     try:

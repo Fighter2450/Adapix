@@ -68,12 +68,10 @@ def billing_page(request: Request):
 
 @router.get("/api/v1/billing/status")
 def api_billing_status(_user: str = Depends(verify_admin)):
-    from ..billing import configured, get_billing, refresh_status
+    from ..billing import configured, refresh_status
     if not configured():
         return {"configured": False, "status": "none"}
-    rec = get_billing(_user)
-    status = refresh_status(_user) if rec.get("subscription_id") else "none"
-    return {"configured": True, "status": status}
+    return {"configured": True, "status": refresh_status(_user)}
 
 
 @router.post("/api/v1/billing/checkout")
