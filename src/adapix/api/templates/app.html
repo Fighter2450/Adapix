@@ -1159,7 +1159,23 @@ body::after{
 
 <script>
 (function(){
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js').catch(()=>{});
+  // The SW scope is /app/ but this page is /app (no slash), so
+  // navigator.serviceWorker.ready never resolves here. Await the
+  // registration itself instead — push works off the registration,
+  // not off page control.
+  window.adapixSwReg = async function(){
+    const reg = await navigator.serviceWorker.register('/app/sw.js');
+    if (reg.active) return reg;
+    await new Promise(res => {
+      const w = reg.installing || reg.waiting;
+      if (!w) return res();
+      w.addEventListener('statechange', function f(){
+        if (w.state === 'activated' || w.state === 'redundant'){ w.removeEventListener('statechange', f); res(); }
+      });
+    });
+    return reg;
+  };
+  if ('serviceWorker' in navigator) window.adapixSwReg().catch(()=>{});
 
   const $ = (id)=>document.getElementById(id);
   const main = $('main');
@@ -1473,7 +1489,7 @@ body::after{
       async function pushOffOnThisDevice(){
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
         try {
-          const reg = await navigator.serviceWorker.ready;
+          const reg = await window.adapixSwReg();
           return !(await reg.pushManager.getSubscription());
         } catch(_) { return false; }
       }
@@ -3794,7 +3810,7 @@ body::after{
         return;
       }
       let sub = null;
-      try { const reg = await navigator.serviceWorker.ready; sub = await reg.pushManager.getSubscription(); } catch(_){}
+      try { const reg = await window.adapixSwReg(); sub = await reg.pushManager.getSubscription(); } catch(_){}
       if (sub){
         status.innerHTML = '<b style="color:#34d399">Notifications are ON for this device.</b>';
         enable.style.display = 'none';
@@ -4476,13 +4492,13 @@ body::after{
 
   async function alreadySubscribed(){
     try {
-      var reg = await navigator.serviceWorker.ready;
+      var reg = await window.adapixSwReg();
       return !!(await reg.pushManager.getSubscription());
     } catch(_) { return false; }
   }
 
   async function subscribe(){
-    var reg = await navigator.serviceWorker.ready;
+    var reg = await window.adapixSwReg();
     var res = await fetch('/api/v1/notify/vapid-public-key', {credentials:'include'});
     if (!res.ok) throw new Error('push not configured');
     var key = (await res.json()).public_key;
