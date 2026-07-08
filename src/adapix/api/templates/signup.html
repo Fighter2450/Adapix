@@ -176,7 +176,7 @@ body::before{
 .auth-panel{background:rgba(23,20,46,.55)}
 .auth-panel::before{background:radial-gradient(ellipse 70% 60% at 25% 30%,rgba(124,58,237,.12) 0%,transparent 65%)}
 .auth-column{background:transparent}
-.panel-logo-mark,.logo-mark{background:var(--grad-brand);color:#fff;box-shadow:0 0 18px rgba(124,58,237,.45)}
+.panel-logo-mark,.logo-mark{background:none;box-shadow:none;object-fit:contain}
 .panel-headline em{
   background:linear-gradient(90deg,#a78bfa,#f472b6,#22d3ee);background-size:200% auto;
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
@@ -218,7 +218,7 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
   <aside class="auth-panel" aria-hidden="true">
     <div class="panel-inner">
       <div class="panel-logo">
-        <div class="panel-logo-mark">A</div>
+        <img class="panel-logo-mark" src="/static/favicon.svg" alt="Adapix logo" />
         <span class="panel-logo-text">Adapix</span>
       </div>
       <h2 class="panel-headline">Recover the revenue<br>you're <em>already losing</em></h2>
@@ -253,7 +253,7 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
   <main class="auth-column">
     <div class="card">
       <div class="logo">
-        <div class="logo-mark">A</div>
+        <img class="logo-mark" src="/static/favicon.svg" alt="Adapix logo" />
         <span class="logo-text">Adapix</span>
       </div>
       <h1>Start your free trial</h1>
