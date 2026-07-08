@@ -3,9 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Adapix — The AI teammate that follows up so you don't have to</title>
-<meta name="description" content="Adapix follows up with the customers who went quiet — the missed appointments, the “let me think about it” people, the leads that never booked — by call, text, and email from your own number and inbox. Nothing sends until you approve it. 14-day free trial, no credit card." />
-<link rel="canonical" href="https://adapixai.com/" />
+<title>How it works — Adapix</title>
+<meta name="description" content="Hour by hour: how 'I'll think about it' becomes a booked job." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://adapixai.com/" />
 <meta property="og:site_name" content="Adapix" />
@@ -472,7 +471,7 @@ a[aria-current="page"]{color:#fff !important}
     <a class="nav-logo" href="#"><img src="adapix_mark.svg" alt="Adapix logo">Adapix</a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
     <div class="nav-links" id="navLinks">
-      <a href="/how">How it works</a>
+      <a href="/how" aria-current="page">How it works</a>
       <a href="/your-business">As your business</a>
       <a href="/control">You're in control</a>
       <a href="/teach">Teach it</a>
@@ -485,64 +484,65 @@ a[aria-current="page"]{color:#fff !important}
 </nav>
 
 
-<!-- Full-page Higgsfield brand film — the whole first screen.
-     Desktop: the section pins while scrolling plays the film through,
-     then releases into the page. Touch/reduced-motion: muted loop.
-     Hidden entirely if the mp4 is missing from a deploy. -->
-<section class="film-opener" id="heroFilm">
-  <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
-  <div class="film-scroll-cue">Scroll</div>
-</section>
-
-
-<header class="hero">
+<section id="how" style="background:rgba(23,20,46,.35);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="wrap">
-    <span class="hero-badge"><span class="dot"></span>Live today &middot; 5-minute setup</span>
-    <h1>Customers go quiet. <span class="grad-text">Adapix follows up</span> so you don’t have to.</h1>
-    <p class="lede">The person who asked your price and never called back. The missed appointment nobody rebooked. The customer who said “let me think about it.” Adapix reaches out to all of them — by call, text, and email from <strong style="color:var(--ink)">your own number and your own inbox</strong>. And nothing sends until you tap OK.</p>
-    <div class="hero-ctas">
-      <a class="btn btn-primary" href="https://app.adapixai.com/signup">Start my free 14-day trial</a>
-      <a class="btn btn-ghost" href="/how">See how it works</a>
+    <div class="reveal" style="text-align:center">
+      <span class="eyebrow">one day, one job saved</span>
+      <h2>How “I’ll think about it” becomes a <span class="grad-text">booked job</span></h2>
+      <p class="lede" style="margin:0 auto">Here's what actually happens, hour by hour.</p>
     </div>
-    <span class="cta-note">No credit card. If it doesn't earn its keep in two weeks, walk away.</span>
-  </div>
-</header>
-
-
-<section id="problem">
-  <div class="wrap">
-    <div class="reveal">
-      <span class="eyebrow">the leak</span>
-      <h2>The money you already earned is <span class="grad-text">walking away</span></h2>
-      <p class="lede">Someone asked what a job would cost. You told them $4,000. While you were busy working, they talked to two other companies and went with whoever answered first. Your price wasn’t wrong — nobody followed up.</p>
+    <!-- DEMO VIDEO SLOT — when you record a 60-second screen demo
+         (draft arrives in Inbox -> tap Send -> Station updates), drop it here:
+         <video controls src="demo.mp4" poster="demo_poster.jpg"
+                style="display:block;width:100%;max-width:760px;margin:48px auto 0;border-radius:16px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,.45)"></video>
+         A real product video lifts landing-page conversion by up to 86% —
+         highest-impact single addition to this page. -->
+    <div class="timeline">
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">Tuesday · 9:14 AM</span>
+        <h3>The customer who went quiet</h3>
+        <p>Two weeks ago, Maria asked what a new fence would cost. You sent her the price. She said “looks great, let me think about it.” Then — nothing. You meant to follow up. You really did.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">9:15 AM</span>
+        <h3>Adapix drafts the message. You read it first.</h3>
+        <p>Adapix writes the follow-up and puts it in your Inbox. It waits there — it does not send. You're in line for coffee, you open your phone, the draft sounds like you. Tap Send. Done in ten seconds. Sounds off? Edit it right there, or reject it.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">9:16 AM</span>
+        <h3>It goes out as you — not some robot</h3>
+        <p>The call comes from a number dedicated to your business — the same one every time, so customers learn it. The email comes from you@yourbusiness.com. As far as Maria can tell, you just got really good at following up.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">11:40 AM</span>
+        <h3>Maria asks a question — Adapix already knows the answer</h3>
+        <p>"Do you do gate installs too, and what would that run me?" You taught Adapix your services and real prices during setup, so it answers her directly — your actual price, not a dodge. Anything it wasn't taught, it flags to you immediately instead of guessing.</p>
+      </div>
+      <div class="t-item reveal">
+        <div class="t-dot"></div>
+        <span class="t-time">6:03 PM</span>
+        <h3>Maria books</h3>
+        <p>One draft you approved from a coffee line, one question answered with a real price, one job that would have quietly disappeared — booked. You didn't hire anyone. You didn't learn new software. You read a draft and tapped Send.</p>
+      </div>
     </div>
-    <div class="grid grid-3" style="margin-top:44px">
-      <div class="card reveal">
-        <div class="card-icon">📄</div>
-        <h3>“Let me think about it”</h3>
-        <p>They sounded interested. Then nothing. Two weeks later, reaching out feels awkward — so nobody does, and the job quietly goes to someone else.</p>
-      </div>
-      <div class="card reveal">
-        <div class="card-icon rose">📅</div>
-        <h3>No-shows nobody rebooks</h3>
-        <p>Someone misses Tuesday's appointment. You mean to call and reschedule. Then a customer calls, a job runs long, payroll is due.</p>
-      </div>
-      <div class="card reveal">
-        <div class="card-icon cyan">📞</div>
-        <h3>Leads that never booked</h3>
-        <p>They filled out your form or called once and never heard back. By 7pm, the last thing you want is to write five polite chase-up emails.</p>
-      </div>
-    </div>
-    <p class="reveal" style="margin-top:36px;max-width:680px;font-size:17px">Adapix does that part. It keeps a list of everyone who's gone quiet and writes the follow-up for each of them — a call, a text, or an email, whichever fits. You just approve it.</p>
   </div>
 </section>
 
 
-<section style="padding-top:0;text-align:center">
-  <div class="wrap">
-    <a class="btn btn-ghost" href="/how">See how it works, hour by hour &rarr;</a>
+<section class="final">
+  <div class="wrap reveal">
+    <span class="eyebrow">the last word is always yours</span>
+    <h2>Stop losing jobs to <span class="grad-text">silence</span>.</h2>
+    <p class="lede">Adapix does the chasing. You keep the last word on every single message. Try it free for 14 days — if it doesn't earn its keep, walk away.</p>
+    <a class="btn btn-primary" href="https://app.adapixai.com/signup">Start my free 14-day trial</a>
+    <span class="cta-note">No credit card required · 5-minute setup · Cancel by closing the tab</span>
   </div>
 </section>
+
 
 <footer>
   <div class="wrap foot-inner">

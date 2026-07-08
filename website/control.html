@@ -3,9 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Adapix — The AI teammate that follows up so you don't have to</title>
-<meta name="description" content="Adapix follows up with the customers who went quiet — the missed appointments, the “let me think about it” people, the leads that never booked — by call, text, and email from your own number and inbox. Nothing sends until you approve it. 14-day free trial, no credit card." />
-<link rel="canonical" href="https://adapixai.com/" />
+<title>You're in control — Adapix</title>
+<meta name="description" content="Nothing sends without your OK. Every draft waits in your Inbox." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://adapixai.com/" />
 <meta property="og:site_name" content="Adapix" />
@@ -474,7 +473,7 @@ a[aria-current="page"]{color:#fff !important}
     <div class="nav-links" id="navLinks">
       <a href="/how">How it works</a>
       <a href="/your-business">As your business</a>
-      <a href="/control">You're in control</a>
+      <a href="/control" aria-current="page">You're in control</a>
       <a href="/teach">Teach it</a>
       <a href="/ai-team">AI team</a>
       <a href="/faq">FAQ</a>
@@ -485,64 +484,108 @@ a[aria-current="page"]{color:#fff !important}
 </nav>
 
 
-<!-- Full-page Higgsfield brand film — the whole first screen.
-     Desktop: the section pins while scrolling plays the film through,
-     then releases into the page. Touch/reduced-motion: muted loop.
-     Hidden entirely if the mp4 is missing from a deploy. -->
-<section class="film-opener" id="heroFilm">
-  <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
-  <div class="film-scroll-cue">Scroll</div>
-</section>
-
-
-<header class="hero">
-  <div class="wrap">
-    <span class="hero-badge"><span class="dot"></span>Live today &middot; 5-minute setup</span>
-    <h1>Customers go quiet. <span class="grad-text">Adapix follows up</span> so you don’t have to.</h1>
-    <p class="lede">The person who asked your price and never called back. The missed appointment nobody rebooked. The customer who said “let me think about it.” Adapix reaches out to all of them — by call, text, and email from <strong style="color:var(--ink)">your own number and your own inbox</strong>. And nothing sends until you tap OK.</p>
-    <div class="hero-ctas">
-      <a class="btn btn-primary" href="https://app.adapixai.com/signup">Start my free 14-day trial</a>
-      <a class="btn btn-ghost" href="/how">See how it works</a>
-    </div>
-    <span class="cta-note">No credit card. If it doesn't earn its keep in two weeks, walk away.</span>
-  </div>
-</header>
-
-
-<section id="problem">
+<section id="control" style="background:rgba(23,20,46,.35);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="wrap">
     <div class="reveal">
-      <span class="eyebrow">the leak</span>
-      <h2>The money you already earned is <span class="grad-text">walking away</span></h2>
-      <p class="lede">Someone asked what a job would cost. You told them $4,000. While you were busy working, they talked to two other companies and went with whoever answered first. Your price wasn’t wrong — nobody followed up.</p>
+      <span class="eyebrow">the part that matters</span>
+      <h2>Nothing goes out <span class="grad-text">without your OK</span></h2>
+      <p class="lede">Here's the fear with AI tools, and it's a fair one: what if it says something dumb to a customer? With Adapix, it can't — because it never sends anything on its own. Every draft waits in your Inbox. You're the last set of eyes on everything, every time.</p>
+      <button class="btn btn-ghost btn-sm" id="tourBtn" type="button" style="margin-top:20px">Take the 30-second tour →</button>
     </div>
-    <div class="grid grid-3" style="margin-top:44px">
-      <div class="card reveal">
-        <div class="card-icon">📄</div>
-        <h3>“Let me think about it”</h3>
-        <p>They sounded interested. Then nothing. Two weeks later, reaching out feels awkward — so nobody does, and the job quietly goes to someone else.</p>
+
+    <div class="control-visuals">
+      <!-- mock approval card -->
+      <div class="reveal">
+        <div class="approval-card" aria-label="Example of a draft waiting for approval">
+          <div class="ac-head">
+            <span class="ac-label">Draft · Text message</span>
+            <span class="ac-pill">Waiting for you</span>
+          </div>
+          <p class="ac-to">To: <strong>Maria G.</strong> · fence price, sent 14 days ago</p>
+          <div class="ac-msg">Hi Maria, just checking in on the fence price we sent over — happy to answer anything before you decide.</div>
+          <div class="ac-actions">
+            <span class="ac-btn ac-send">Send</span>
+            <span class="ac-btn ac-edit">Edit</span>
+            <span class="ac-btn ac-reject">Reject</span>
+          </div>
+        </div>
+        <div class="pause-strip">
+          <span class="pause-dot">⏸</span>
+          <p><strong>Master Pause.</strong> One press freezes every queued call, text, and email instantly — until you say go.</p>
+        </div>
       </div>
-      <div class="card reveal">
-        <div class="card-icon rose">📅</div>
-        <h3>No-shows nobody rebooks</h3>
-        <p>Someone misses Tuesday's appointment. You mean to call and reschedule. Then a customer calls, a job runs long, payroll is due.</p>
-      </div>
-      <div class="card reveal">
-        <div class="card-icon cyan">📞</div>
-        <h3>Leads that never booked</h3>
-        <p>They filled out your form or called once and never heard back. By 7pm, the last thing you want is to write five polite chase-up emails.</p>
+
+      <!-- mock station board -->
+      <div class="reveal">
+        <div class="station" aria-label="The Station: live board of every follow-up">
+          <div class="station-head">
+            <span class="station-title">The Station</span>
+            <span class="station-live"><span class="dot"></span>Live</span>
+          </div>
+          <div class="station-rows">
+            <div class="s-row">
+              <span class="s-icon">💬</span>
+              <span class="s-who">Maria G.<span class="s-what">Follow-up · fence price</span></span>
+              <span class="s-status st-waiting">Waiting</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">📞</span>
+              <span class="s-who">Dan R.<span class="s-what">Call · missed Tuesday appt</span></span>
+              <span class="s-status st-queued">Queued 2:00 PM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">✉️</span>
+              <span class="s-who">Priya S.<span class="s-what">Email · estimate reminder</span></span>
+              <span class="s-status st-sent">Sent 9:16 AM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">💬</span>
+              <span class="s-who">Tom W.<span class="s-what">Text · never booked</span></span>
+              <span class="s-status st-replied">Replied</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+            <div class="s-row">
+              <span class="s-icon">📞</span>
+              <span class="s-who">Lena K.<span class="s-what">Call · went quiet</span></span>
+              <span class="s-status st-queued">Queued 4:30 PM</span>
+              <span class="s-cancel" title="Cancel">✕</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <p class="reveal" style="margin-top:36px;max-width:680px;font-size:17px">Adapix does that part. It keeps a list of everyone who's gone quiet and writes the follow-up for each of them — a call, a text, or an email, whichever fits. You just approve it.</p>
+
+    <div class="grid grid-3" style="margin-top:36px">
+      <div class="card reveal">
+        <h3>See it before it happens</h3>
+        <p>You don't find out after the fact. The Station shows you what's about to happen — every call, text, and email, queued before the AI has even written it. Cancel anything with one click.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Your rules, not a template's</h3>
+        <p>You decide when the first follow-up goes, how many tries before it backs off, and the tone it writes in. If a customer replies, the counter resets — it never pesters someone who's already talking to you.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Auto-approve when you're ready</h3>
+        <p>Once you've read enough drafts to trust it, you can turn on auto-approve for the routine stuff. That's your call, on your timeline. Day one, it asks permission for everything — and plenty of owners keep it that way.</p>
+      </div>
+    </div>
   </div>
 </section>
 
 
-<section style="padding-top:0;text-align:center">
-  <div class="wrap">
-    <a class="btn btn-ghost" href="/how">See how it works, hour by hour &rarr;</a>
+<section class="final">
+  <div class="wrap reveal">
+    <span class="eyebrow">the last word is always yours</span>
+    <h2>Stop losing jobs to <span class="grad-text">silence</span>.</h2>
+    <p class="lede">Adapix does the chasing. You keep the last word on every single message. Try it free for 14 days — if it doesn't earn its keep, walk away.</p>
+    <a class="btn btn-primary" href="https://app.adapixai.com/signup">Start my free 14-day trial</a>
+    <span class="cta-note">No credit card required · 5-minute setup · Cancel by closing the tab</span>
   </div>
 </section>
+
 
 <footer>
   <div class="wrap foot-inner">
