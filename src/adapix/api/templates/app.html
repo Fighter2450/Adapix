@@ -1357,11 +1357,22 @@ body::after{
       const el = document.getElementById('home-chart');
       if (!el || state.view !== 'home') return;
       drawHomeChart(el, j.days || []);
+      if (!loadHomeChart._resizeWired){
+        loadHomeChart._resizeWired = true;
+        let rt;
+        window.addEventListener('resize', () => {
+          clearTimeout(rt);
+          rt = setTimeout(() => {
+            const el2 = document.getElementById('home-chart');
+            if (el2 && state.view === 'home') drawHomeChart(el2, j.days || []);
+          }, 150);
+        });
+      }
     }).catch(() => {});
   }
 
   function drawHomeChart(el, days){
-    const W = 640, H = 170, L = 34, R = 12, T = 12, B = 24;
+    const W = Math.max(320, el.clientWidth || 640), H = 170, L = 34, R = 12, T = 12, B = 24;
     const iw = W - L - R, ih = H - T - B;
     const n = days.length;
     if (!n) return;
@@ -1388,7 +1399,7 @@ body::after{
 
     const total = days.reduce((a,d) => a + d.sent + d.replies, 0);
     el.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="Daily follow-ups sent and replies received, last 30 days">
+      <svg viewBox="0 0 ${W} ${H}" aria-label="Daily follow-ups sent and replies received, last 30 days">
         ${grid}${labs}
         <path d="${path('sent')}" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
         <path d="${path('replies')}" fill="none" stroke="#0891b2" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
@@ -1404,7 +1415,7 @@ body::after{
     function move(ev){
       const rect = svg.getBoundingClientRect();
       const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
-      const vx = px * W / rect.width;
+      const vx = px;
       let i = Math.round((vx - L) / (iw / Math.max(1, n - 1)));
       i = Math.max(0, Math.min(n - 1, i));
       const d = days[i], cx = x(i);
