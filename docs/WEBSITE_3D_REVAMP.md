@@ -71,6 +71,33 @@ Higgsfield job ids, if you need to re-open them in the app: keyframes
 take `d94dc760`; **master (1080p Kling pro) `355679fe` + loop
 `cfb0f70b`**.
 
+## The product demo film (draft, 2026-07-08 — awaiting Rocco's okay for 4K)
+
+A second Higgsfield piece: a ~24s silent "how it works" demo in the same
+3D universe, four scenes stitched:
+
+1. **Opener** — the 3D Adapix A alone, splits open down the middle, and
+   the product's holographic interface pours out of it.
+2. **It notices** — a glass chat panel: customer says "Let me think about
+   it", 3 days of silence, the A emblem wakes and notices.
+3. **Draft → Approve → sent as you** — the Inbox: a drafted follow-up
+   ("Hi Maria — still interested? …"), the green Approve button presses,
+   message glides away, "Sent as your business".
+4. **Booked** — the Station board: Maria's card lands in Booked with a
+   green check; logo + tagline "The AI teammate that follows up".
+
+- Draft (1280×720): <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260708_170702_9f15bbbd-ec1f-4212-9bdd-43e7163ccf99.mp4>
+- Scene job ids: opener `e9d0595b`, notices `77dcad29`, approve
+  `240efcaa`, booked `0bb19454`; stitch `9f15bbbd`; keyframes `72ffa6c4`,
+  `54194e94`, `d5c0fd51`, clean-A opener reuses `4f86a1ce`.
+- 4K master: pending Rocco's approval (upscale pass on the account).
+- A discarded alternate opener exists (black device box splitting open,
+  clip `1c8693af` from device render): Rocco redirected to the A-split.
+
+This demo film is stylized product storytelling, not a screen recording —
+Ben's "Record 60-second demo video" board task (real UI capture for the
+DEMO VIDEO SLOT) is still separate and still stands.
+
 ## Where to use it
 
 - **Hero background or hero media slot** — muted, autoplay, loop,
