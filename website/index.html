@@ -1048,9 +1048,6 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   try {
     const THREE = await import('./vendor/three.module.min.js');
     const canvas = document.getElementById('bg3d');
-    // The orb + floating shapes are choreographed for the homepage's long
-    // scroll; on short pages they'd sit on top of the content.
-    const HOME = location.pathname === '/' || location.pathname === '/index.html';
     const MOBILE = window.innerWidth < 768;
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, MOBILE ? 1.25 : 1.5));
@@ -1097,11 +1094,11 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const orbInner = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 0), orbMatInner);
     orbGroup.add(orbOuter, orbInner);
     orbGroup.position.set(0, 0.5, 1.5);
-    if (HOME) scene.add(orbGroup);
+    scene.add(orbGroup);
 
     // Scroll story (Oryzo-style): the orb drifts right through the problem
     // section, crosses left through How It Works, then settles small and dim.
-    if (HOME && window.gsap && window.ScrollTrigger) {
+    if (window.gsap && window.ScrollTrigger) {
       gsap.registerPlugin(ScrollTrigger);
       const tl = gsap.timeline({ scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: 1 } });
       tl.to(orbGroup.position, { x: 2.6, y: 0, duration: 1 }, 0)
@@ -1132,7 +1129,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       m.position.set(x, y, z);
       m.userData = { baseY: y, par };
       shapes.push(m);
-      if (HOME) scene.add(m);
+      scene.add(m);
     }
 
     // Pointer: camera parallax + world-space point on the z=0 plane for repulsion
