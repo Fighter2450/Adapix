@@ -7,13 +7,12 @@ After each purchase, tell Claude — the wiring on the software side (keys, numb
 
 ---
 
-## 1. Railway Hobby plan — $5/month · URGENT
+## 1. ~~Railway Hobby plan~~ — DONE 2026-07-06 ($5/month)
 
 **What it is:** The server Adapix runs on, 24/7.
 
-**Why it matters:** The trial has ~$2 of credit left. When it runs out, everything goes
-offline at once — no follow-ups drafted, no customer replies answered, dashboard dead.
-Every other item on this list is pointless if this one lapses.
+**Status:** Upgraded 2026-07-06. 24/7 uptime + custom domains unlocked
+(app.adapixai.com runs on it).
 
 **Where:** https://railway.com/workspace/plans → **Hobby** → add a payment method.
 The $5 includes $5 of usage credits; the app currently fits inside that, so the real
@@ -23,14 +22,14 @@ cost is ~$5/month flat.
 
 ---
 
-## 2. Twilio A2P 10DLC registration — ~$4/month + ~$15 one-time
+## 2. ~~Twilio A2P 10DLC registration~~ — DONE 2026-07-06 (vetting round 2 in progress)
 
 **What it is:** Registers your business with US phone carriers as a legitimate sender
 of text messages.
 
-**Why it matters:** Unregistered SMS gets silently filtered as spam — Adapix says
-"sent," but the customer never sees it. A follow-up product whose texts don't arrive
-is invisibly broken. This is the single biggest deliverability fix available.
+**Status:** Brand APPROVED (sole prop, Dad as account holder). First campaign
+submission rejected on CTA verification; resubmitted 2026-07-07 with the public
+opt-in page (adapixai.com/sms-optin) — carrier vetting in progress.
 
 **Where:** Twilio Console → Messaging → Regulatory Compliance → US A2P 10DLC.
 You'll need: business name, address, and EIN (or sole-proprietor registration if no EIN).
@@ -109,9 +108,10 @@ No monthly cost — park this until there's a trial user worth converting.
 |---|---|---|
 | Anthropic API | ~cents per follow-up | Writes drafts, answers questions, classifies replies |
 | Vapi | ~$0.05–0.15/min of calls | AI phone calls, recordings, transcripts |
-| Twilio SMS | ~$0.008/message | Text delivery (until Blooio handles iPhones) |
+| Twilio SMS | ~$0.008/message | Text delivery for non-Apple recipients |
+| Claw Messenger | $5/mo (250 msgs) | Blue-bubble iMessage line (20-contact cap — scale decision pending) |
 | Resend | Free tier (3k emails/mo) | Backup email sending when no inbox is connected |
-| Netlify | Free tier | Hosts adapixai.com |
+| Vercel | Free tier | Hosts adapixai.com (auto-deploys on git push; replaced Netlify 2026-07-07) |
 
 ---
 
@@ -119,6 +119,6 @@ No monthly cost — park this until there's a trial user worth converting.
 
 | Spend | What you get |
 |---|---|
-| **~$10/month** (items 1–2) | Adapix is **reliable**: always on, texts actually arrive |
-| **~$50/month** (add item 3) | Adapix is **impressive**: blue-bubble iMessage follow-ups |
-| **~$52/month** (add item 4) | Adapix is **professional**: company name on caller ID |
+| **~$16/month today** (Railway $5 + Twilio ~$6 + Claw $5) | Always on, registered SMS (pending vetting), blue-bubble texts |
+| **+~$2/month** (item 4, at first customer) | Company name on caller ID |
+| **Pending decision** | iMessage at scale: Claw Agency tier vs Blooio $39/mo — awaiting Claw's reply |
