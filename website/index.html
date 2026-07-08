@@ -362,6 +362,7 @@ footer{border-top:1px solid var(--border);padding:44px 0;background:rgba(11,11,2
 
 /* ---------- film opener: full-page brand film, the first thing on screen ---------- */
 .film-opener{position:relative;height:100vh;height:100dvh;min-height:540px;overflow:hidden;background:#0b0b1c}
+@media (max-width:820px),(pointer:coarse){.film-opener{display:none}}
 /* ambient fill: heavily blurred copy of the film's frame behind the video,
    so the WHOLE frame is visible (object-fit contain) with no letterbox
    bars on any screen shape — the blur fills whatever the 16:9 frame doesn't */
@@ -502,6 +503,18 @@ a[aria-current="page"]{color:#fff !important}
   <video id="heroVideo" src="adapix_hero.mp4" poster="adapix_hero_poster.png" muted playsinline preload="auto"></video>
   <div class="film-scroll-cue">Scroll</div>
 </section>
+<script>
+// Phones skip the film entirely — straight to the hero, and the 5MB
+// scrub video never downloads over cell data.
+(function(){
+  if(window.matchMedia('(max-width:820px)').matches||window.matchMedia('(pointer: coarse)').matches){
+    var v=document.getElementById('heroVideo');
+    if(v){v.removeAttribute('src');v.load&&v.load();}
+    var f=document.getElementById('heroFilm');
+    if(f)f.parentNode.removeChild(f);
+  }
+})();
+</script>
 
 
 <header class="hero">
@@ -921,7 +934,8 @@ a[aria-current="page"]{color:#fff !important}
   var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine=window.matchMedia('(pointer: fine)').matches;
   if(reduced||!fine||!window.gsap||!window.ScrollTrigger){
-    // touch devices and reduced-motion get a simple muted loop
+    // reduced-motion (desktop) gets a simple muted loop; touch devices
+    // never reach here — the film section is removed on mobile above
     v.setAttribute('loop','');
     v.setAttribute('autoplay','');
     v.play&&v.play().catch(function(){});
