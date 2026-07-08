@@ -1033,15 +1033,17 @@ else{__init();}
 </script>
 
 <!-- 3D ambient particle field (three.js, self-hosted in vendor/).
-     Skipped on small screens, reduced-motion, or missing WebGL —
+     Phones get a lighter field (fewer particles, capped pixel ratio).
+     Skipped on reduced-motion or missing WebGL —
      the CSS orbs remain as the fallback background. -->
 <script type="module">
-if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   try {
     const THREE = await import('./vendor/three.module.min.js');
     const canvas = document.getElementById('bg3d');
+    const MOBILE = window.innerWidth < 768;
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, MOBILE ? 1.25 : 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     const scene = new THREE.Scene();
@@ -1054,7 +1056,7 @@ if (window.innerWidth >= 768 && !window.matchMedia('(prefers-reduced-motion: red
     // --- particle field (brand colors) with cursor repulsion ---
     // `home` holds each particle's rest position; the render loop pushes
     // particles away from the pointer and springs them back home.
-    const COUNT = 700;
+    const COUNT = MOBILE ? 280 : 700;
     const palette = [new THREE.Color('#7c3aed'), new THREE.Color('#a78bfa'), new THREE.Color('#22d3ee')];
     const home = new Float32Array(COUNT * 3);
     const colors = new Float32Array(COUNT * 3);
