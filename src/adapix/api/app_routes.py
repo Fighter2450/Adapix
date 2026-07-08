@@ -165,7 +165,10 @@ def app_shell(request: Request):
                 configured = s.get(OrgProfile, org_id) is not None
         except Exception:
             pass
-    if not configured:
+    if not configured and not org_id:
+        # Legacy single-tenant fallback only — a real org is judged solely
+        # by its own profile, otherwise the first business to finish setup
+        # would silence the welcome wizard for every signup after it.
         configured = CONFIGURED_FLAG.exists()
     if not configured:
         return RedirectResponse(url="/welcome", status_code=302)
