@@ -53,6 +53,63 @@ BRANDING_DIR = Path(__file__).resolve().parents[3] / "branding"
 # ---------------------------------------------------------------------------
 # PWA shell (HTML + manifest + service worker + icons)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Billing — one plan, Stripe-hosted checkout. Shown right after signup;
+# skippable so the "no card to start" promise holds.
+# ---------------------------------------------------------------------------
+@router.get("/app/billing", response_class=HTMLResponse)
+def billing_page(request: Request):
+    from fastapi.responses import RedirectResponse
+    from .auth import COOKIE_NAME
+    if not request.cookies.get(COOKIE_NAME):
+        return RedirectResponse(url="/login", status_code=302)
+    return HTMLResponse((TEMPLATE_DIR / "billing.html").read_text(encoding="utf-8"))
+
+
+@router.get("/api/v1/billing/status")
+def api_billing_status(_user: str = Depends(verify_admin)):
+    from ..billing import configured, get_billing, refresh_status
+    if not configured():
+        return {"configured": False, "status": "none"}
+    rec = get_billing(_user)
+    status = refresh_status(_user) if rec.get("subscription_id") else "none"
+    return {"configured": True, "status": status}
+
+
+@router.post("/api/v1/billing/checkout")
+def api_billing_checkout(request: Request, _user: str = Depends(verify_admin)):
+    from ..billing import configured, create_checkout_session
+    from ..config import Settings
+    from ..models import User
+    if not configured():
+        raise HTTPException(status_code=503, detail="Billing isn't set up yet — you can skip this step.")
+    with get_session() as s:
+        owner = s.query(User).filter(User.org_id == _user, User.role == "owner").first()
+        email = owner.email if owner else ""
+    base = (Settings().public_base_url or f"{request.url.scheme}://{request.url.netloc}").rstrip("/")
+    try:
+        url = create_checkout_session(_user, email, base)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Stripe error: {e}")
+    return {"url": url}
+
+
+@router.get("/app/billing/success", response_class=HTMLResponse)
+def billing_success(request: Request, session_id: str = ""):
+    from fastapi.responses import RedirectResponse
+    from .auth import COOKIE_NAME, _decode_token
+    token = request.cookies.get(COOKIE_NAME)
+    if not token or not session_id:
+        return RedirectResponse(url="/app", status_code=302)
+    try:
+        org_id = _decode_token(token).get("org")
+        from ..billing import confirm_checkout
+        confirm_checkout(org_id, session_id)
+    except Exception:
+        pass  # page still loads; status endpoint will re-poll
+    return RedirectResponse(url="/app/billing", status_code=302)
+
+
 @router.get("/app", response_class=HTMLResponse)
 def app_shell(request: Request):
     from fastapi.responses import RedirectResponse

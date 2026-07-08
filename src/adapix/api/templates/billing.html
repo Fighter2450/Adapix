@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Your plan — Adapix</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0b1c;--bg-2:#17142e;--bg-3:#211c3d;
+  --ink:#ece9ff;--ink-2:#b8b2e0;--ink-3:#827aa8;
+  --violet:#a78bfa;--violet-2:#7c3aed;--good:#34d399;
+  --border:rgba(124,58,237,.18);
+  --grad-brand:linear-gradient(135deg,#7c3aed,#a78bfa,#22d3ee);
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{width:100%;max-width:460px;background:var(--bg-2);border:1px solid var(--border);
+  border-radius:20px;padding:38px 36px;text-align:center}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:20px;margin-bottom:26px}
+.logo img{width:38px;height:30px;object-fit:contain}
+h1{font-size:24px;letter-spacing:-.02em;margin-bottom:8px}
+.sub{color:var(--ink-2);font-size:15px;line-height:1.6;margin-bottom:26px}
+.price{margin:6px 0 2px}
+.price b{font-size:52px;font-weight:900;letter-spacing:-.04em}
+.price span{color:var(--ink-2);font-size:16px}
+.trial-note{font-size:13px;color:var(--ink-3);margin-bottom:24px}
+ul{list-style:none;text-align:left;margin:0 auto 28px;display:grid;gap:9px;font-size:14.5px;color:var(--ink-2);max-width:330px}
+ul li::before{content:"\2713\00a0\00a0";color:var(--good)}
+.btn{display:block;width:100%;padding:15px;border-radius:13px;border:0;cursor:pointer;
+  font-family:inherit;font-weight:700;font-size:16px;text-decoration:none;color:#fff;
+  background:var(--grad-brand);background-size:150% 150%}
+.btn[disabled]{opacity:.6;cursor:default}
+.skip{display:inline-block;margin-top:16px;color:var(--ink-3);font-size:14px;text-decoration:none}
+.skip:hover{color:var(--ink-2)}
+.status{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px;font-size:14px;color:var(--ink-2)}
+.status b{color:var(--good)}
+.err{color:#fda4af;font-size:14px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><img src="/static/adapix_mark.svg" alt="">Adapix</div>
+
+  <div id="pay-view">
+    <h1>You're in. Here's the plan.</h1>
+    <p class="sub">One plan, everything included. Add a card now and your first charge lands only after the 14-day trial &mdash; or skip and add it later from Settings.</p>
+    <div class="price"><b>$99</b><span>/month</span></div>
+    <div class="trial-note">14-day free trial &middot; cancel anytime &middot; founding customers: use your code at checkout</div>
+    <ul>
+      <li>Follow-up texts, emails, and phone calls</li>
+      <li>The full AI team &mdash; drafting, replies, escalation</li>
+      <li>Unlimited contacts and conversations</li>
+      <li>You approve every message before it sends</li>
+      <li>Your own business number</li>
+    </ul>
+    <button class="btn" id="pay-btn">Continue to payment</button>
+    <div class="err" id="err"></div>
+    <a class="skip" href="/app">Skip for now &mdash; set up my business first &rarr;</a>
+  </div>
+
+  <div id="done-view" style="display:none">
+    <h1>Plan active</h1>
+    <div class="status">Your subscription is <b id="sub-status">active</b>. Nothing is charged until the trial ends.</div>
+    <a class="btn" href="/app" style="line-height:1.2">Go to my dashboard &rarr;</a>
+  </div>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('pay-btn'), err=document.getElementById('err');
+
+  // Already subscribed? Show the done state instead of asking again.
+  fetch('/api/v1/billing/status',{credentials:'include'}).then(function(r){return r.json()})
+    .then(function(j){
+      if(j.status==='trialing'||j.status==='active'){
+        document.getElementById('pay-view').style.display='none';
+        document.getElementById('done-view').style.display='';
+        document.getElementById('sub-status').textContent=j.status==='trialing'?'in trial':'active';
+      }
+    }).catch(function(){});
+
+  btn.addEventListener('click', function(){
+    btn.disabled=true; btn.textContent='Opening secure checkout…'; err.style.display='none';
+    fetch('/api/v1/billing/checkout',{method:'POST',credentials:'include'})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})})
+      .then(function(x){
+        if(x.ok && x.j.url){ window.location.href=x.j.url; return; }
+        throw new Error(x.j.detail||'Could not start checkout');
+      })
+      .catch(function(e){
+        btn.disabled=false; btn.textContent='Continue to payment';
+        err.textContent=e.message; err.style.display='block';
+      });
+  });
+})();
+</script>
+</body>
+</html>

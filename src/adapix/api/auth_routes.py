@@ -78,7 +78,7 @@ async def api_signup(
     if Settings().auto_provision_numbers:
         background.add_task(ensure_org_number, new_org_id)
 
-    resp = JSONResponse({"ok": True, "redirect": "/app"})
+    resp = JSONResponse({"ok": True, "redirect": "/app/billing"})
     resp.set_cookie(
         COOKIE_NAME,
         token,
