@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Troubleshooting &amp; FAQ — Adapix Help</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<style>
+  :root{--bg:#0b0b1c;--card:#17142e;--card2:#211c3d;--ink:#ece9ff;--ink2:#b8b2e0;--ink3:#827aa8;
+        --border:rgba(124,58,237,.18);--purple:#7c3aed;--violet:#a78bfa;--cyan:#22d3ee}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink2);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:16.5px;line-height:1.7;padding:0 24px 90px}
+  .wrap{max-width:760px;margin:0 auto}
+  header{padding:48px 0 8px}
+  .back{display:inline-block;margin-bottom:24px;font-size:14px;text-decoration:none;color:var(--violet)}
+  h1{color:#fff;font-size:clamp(26px,4.5vw,34px);letter-spacing:-.02em;line-height:1.2;margin-bottom:8px}
+  .time{font-size:13px;color:var(--cyan);font-family:ui-monospace,monospace;margin-bottom:18px;display:block}
+  h2{color:#fff;font-size:22px;margin:30px 0 8px}
+  h3{color:#fff;font-size:17px;margin:24px 0 8px}
+  p,li{margin-bottom:12px}
+  ol,ul{margin-left:22px}
+  a{color:var(--violet)}
+  .tip{background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.25);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:15px}
+  .tip b{color:var(--cyan)}
+  .warn{background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:15px}
+  .warn b{color:#fbbf24}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin:14px 0}
+  code{font-family:ui-monospace,monospace;font-size:14px;background:rgba(124,58,237,.12);padding:2px 7px;border-radius:6px;color:var(--violet)}
+  .pager{display:flex;justify-content:space-between;gap:14px;margin-top:44px;padding-top:24px;border-top:1px solid var(--border)}
+  .pager a{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;text-decoration:none;font-size:14.5px}
+  .pager a span{display:block;font-size:12px;color:var(--ink3);margin-bottom:3px}
+  .pager a.next{text-align:right}
+  .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:30px}
+  @media(max-width:640px){.hub-grid{grid-template-columns:1fr}}
+  .hub-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;text-decoration:none;display:block;transition:border-color .15s}
+  .hub-card:hover{border-color:var(--violet)}
+  .hub-card b{color:#fff;display:block;font-size:16px;margin-bottom:4px}
+  .hub-card span{color:var(--cyan);font-family:ui-monospace,monospace;font-size:12px;margin-right:8px}
+  .hub-card p{color:var(--ink3);font-size:14px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="/help">&larr; All help guides</a>
+    <h1>Troubleshooting &amp; FAQ</h1>
+  </header>
+  <div class="card"><b style="color:#fff">"No messages due right now" when I hit Send follow-ups</b><br>
+    Adapix paces follow-ups on a schedule (day 1, 3, 7, 14…). If everyone's been contacted recently, there's genuinely nothing due — that's the anti-pestering design working. Add a new contact and you'll see a draft within a minute.</div>
+    <div class="card"><b style="color:#fff">My email connect failed</b><br>
+    Gmail/Outlook: make sure you complete the provider's consent screen without closing the popup. Other inboxes: double-check the app password (it's not your normal password — your provider generates it in their security settings; the connect form links to instructions per provider).</div>
+    <div class="card"><b style="color:#fff">A customer says they didn't get the text</b><br>
+    Check the Station's Departures for the message status. "Failed" shows the reason (bad number is most common). Adapix automatically falls back between iMessage and SMS, so a delivery failure usually means the number itself.</div>
+    <div class="card"><b style="color:#fff">How do I stop follow-ups to one customer?</b><br>
+    Open their campaign in the Station and hit cancel — or if they replied STOP to a text, it's already done automatically.</div>
+    <div class="card"><b style="color:#fff">Is my data shared?</b><br>
+    No — never sold, never shared for marketing. <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a>.</div>
+    <div class="card"><b style="color:#fff">Something else?</b><br>
+    Email <a href="mailto:roccochenet95@gmail.com">support</a> — a human reads it.</div>
+  
+  <nav class="pager"><a href="/help/ai-team"><span>&larr; Previous</span>Your AI team</a><span></span></nav>
+</div>
+</body>
+</html>
