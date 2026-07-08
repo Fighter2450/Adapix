@@ -3731,6 +3731,7 @@ body::after{
       { icon:'user',         key:'profile',  title:'Practice profile',       sub:'Name, address, hours, specialty' },
       { icon:'mail',         key:'channels', title:'Messaging & channels',   sub:'Connected email, SMS, notification preferences' },
       { icon:'list-checks',  key:'rules',    title:'Follow-up rules',        sub:'Timing, tone, auto-approve thresholds' },
+      { icon:'bell',         key:'notifications', title:'Notifications',     sub:'Pings on this device when a draft or customer needs you' },
       { icon:'credit-card',  key:'account',  title:'Account & billing',      sub:'Plan, usage, team members' },
     ];
     main.innerHTML =
@@ -3753,6 +3754,57 @@ body::after{
     main.querySelectorAll('[data-settings-view]').forEach(el => {
       el.addEventListener('click', () => goSettingsView(el.dataset.settingsView));
     });
+  }
+
+  // Settings -> Notifications page wiring (elements exist only on that page)
+  async function initNotifPage(){
+    const status = document.getElementById('notif-status');
+    const enable = document.getElementById('notif-enable');
+    const test = document.getElementById('notif-test');
+    if (!status || !enable) return;
+    const supported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+    async function refresh(){
+      if (!supported){
+        status.innerHTML = 'This browser cannot do push notifications. On iPhone: open this site in Safari, tap Share &rarr; <b style="color:var(--ink)">Add to Home Screen</b>, then open Adapix from the new icon and come back here.';
+        enable.style.display = 'none';
+        return;
+      }
+      if (Notification.permission === 'denied'){
+        status.innerHTML = '<b style="color:#fbbf24">Blocked by the browser.</b> Click the icon next to the address bar &rarr; Notifications &rarr; Allow, then refresh this page.';
+        enable.style.display = 'none';
+        return;
+      }
+      let sub = null;
+      try { const reg = await navigator.serviceWorker.ready; sub = await reg.pushManager.getSubscription(); } catch(_){}
+      if (sub){
+        status.innerHTML = '<b style="color:#34d399">Notifications are ON for this device.</b>';
+        enable.style.display = 'none';
+        test.style.display = '';
+      } else {
+        status.textContent = 'Notifications are off on this device.';
+        enable.style.display = '';
+        test.style.display = 'none';
+      }
+    }
+    enable.addEventListener('click', async () => {
+      enable.disabled = true; enable.textContent = 'Enabling…';
+      try {
+        if (Notification.permission !== 'granted'){
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted'){ enable.disabled = false; enable.textContent = 'Turn on notifications'; refresh(); return; }
+        }
+        await window.adapixSubscribePush();
+        toast('Notifications on — this device will ping when something needs you');
+      } catch(e){ toast('Could not enable: ' + (e.message || e), true); enable.disabled = false; enable.textContent = 'Turn on notifications'; }
+      refresh();
+    });
+    test.addEventListener('click', async () => {
+      test.disabled = true;
+      try { await api('/api/v1/notify/test', {method:'POST', body: JSON.stringify({})}); toast('Test sent — check your notifications'); }
+      catch(e){ toast('Test failed — is this device subscribed?', true); }
+      test.disabled = false;
+    });
+    refresh();
   }
 
   // Settings → Your email connection card
@@ -3976,11 +4028,24 @@ body::after{
       channels: { title:'Messaging & channels', sub:'Where Adapix sends messages and how you get notified.' },
       rules:    { title:'Follow-up rules',      sub:'Control how and when Adapix reaches out to customers.' },
       account:  { title:'Account & billing',    sub:'Your plan, usage, and team.' },
+      notifications: { title:'Notifications',   sub:'Get a ping the moment a draft is waiting or a customer needs you.' },
     };
     const meta = pages[page] || { title:page, sub:'' };
 
     let body = '';
-    if (page === 'profile'){
+    if (page === 'notifications'){
+      body = `
+        <div class="scard">
+          <div class="scard-title">This device</div>
+          <div id="notif-status" style="font-size:14px;color:var(--ink-2);margin-bottom:14px">Checking&hellip;</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="sform-save" id="notif-enable">Turn on notifications</button>
+            <button class="sch-connect" id="notif-test" style="display:none">Send test notification</button>
+          </div>
+          <div class="sform-hint" style="margin-top:12px">You get a notification when Adapix drafts a follow-up that needs your OK, and when a customer is flagged for you &mdash; even with this tab closed.</div>
+        </div>`;
+    }
+    else if (page === 'profile'){
       body = `
         <div class="scard">
           <div class="scard-title">Business info</div>
@@ -4318,6 +4383,7 @@ body::after{
   function goSettingsView(page){
     state.settingsPage = page;
     renderSettingsLink();
+    if (page === 'notifications') setTimeout(initNotifPage, 50);
   }
 
   function bindNav(){
@@ -4407,6 +4473,7 @@ body::after{
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({endpoint:j.endpoint, keys:j.keys, user_agent:navigator.userAgent})});
   }
+  window.adapixSubscribePush = subscribe;
 
   async function maybePrompt(){
     if (await alreadySubscribed()) return;
