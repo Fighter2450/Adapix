@@ -57,6 +57,39 @@ BRANDING_DIR = Path(__file__).resolve().parents[3] / "branding"
 # Billing — one plan, Stripe-hosted checkout. Shown right after signup;
 # skippable so the "no card to start" promise holds.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Home dashboard chart: daily activity counts for the last N days
+# ---------------------------------------------------------------------------
+@router.get("/api/v1/stats/daily")
+def api_stats_daily(days: int = 30, _user: str = Depends(verify_admin)):
+    from collections import defaultdict
+    from datetime import datetime, timedelta
+    days = max(7, min(90, days))
+    cutoff = datetime.utcnow() - timedelta(days=days - 1)
+    cutoff = datetime(cutoff.year, cutoff.month, cutoff.day)
+    with get_session() as s:
+        rows = (
+            s.query(Message.created_at, Message.direction, Message.status)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user, Message.created_at >= cutoff)
+            .all()
+        )
+    sent: dict[str, int] = defaultdict(int)
+    replies: dict[str, int] = defaultdict(int)
+    for created, direction, status in rows:
+        day = created.date().isoformat()
+        if direction == "outbound" and status in ("sent", "delivered", "replied"):
+            sent[day] += 1
+        elif direction == "inbound":
+            replies[day] += 1
+    today = datetime.utcnow().date()
+    out = []
+    for i in range(days - 1, -1, -1):
+        day = (today - timedelta(days=i)).isoformat()
+        out.append({"date": day, "sent": sent.get(day, 0), "replies": replies.get(day, 0)})
+    return {"days": out}
+
+
 @router.get("/app/billing", response_class=HTMLResponse)
 def billing_page(request: Request):
     from fastapi.responses import RedirectResponse

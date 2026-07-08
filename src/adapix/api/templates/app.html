@@ -269,6 +269,18 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',
 .home-stat-val.cyan{color:#7c6aff}
 .home-stat-val.green{color:#4ade80}
 .home-stat-sub{font-size:12px;color:var(--ink-3)}
+.home-chart-card{background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:18px 20px 12px;margin:14px 0 22px}
+.home-chart-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.home-chart-title{font-size:13px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
+.home-chart-legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2)}
+.home-chart-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.home-chart{position:relative}
+.home-chart svg{display:block;width:100%;height:170px}
+.home-chart .grid{stroke:rgba(124,58,237,.12);stroke-width:1}
+.home-chart .axis-lab{fill:var(--ink-3);font-size:10.5px}
+.home-chart-tip{position:absolute;pointer-events:none;background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:12.5px;color:var(--ink-2);display:none;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.home-chart-tip b{color:var(--ink)}
+.home-chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-3)}
 .activity-meta{font-size:11px;color:var(--ink-3)}
 .activity-feed{display:flex;flex-direction:column;gap:4px;margin-bottom:24px}
 .activity-empty{padding:32px 24px;text-align:center;color:var(--ink-3);font-size:13px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px}
@@ -1339,6 +1351,82 @@ body::after{
 
   // -------- INBOX view (new nav entry = queue + hero alert) --------
   // -------- HOME view — the morning glance: stats + what needs you --------
+  // Home activity chart: two thin lines, recessive grid, crosshair tooltip.
+  function loadHomeChart(){
+    api('/api/v1/stats/daily?days=30').then(j => {
+      const el = document.getElementById('home-chart');
+      if (!el || state.view !== 'home') return;
+      drawHomeChart(el, j.days || []);
+    }).catch(() => {});
+  }
+
+  function drawHomeChart(el, days){
+    const W = 640, H = 170, L = 34, R = 12, T = 12, B = 24;
+    const iw = W - L - R, ih = H - T - B;
+    const n = days.length;
+    if (!n) return;
+    const maxRaw = Math.max(1, ...days.map(d => Math.max(d.sent, d.replies)));
+    const step = Math.max(1, Math.ceil(maxRaw / 3));
+    const yMax = step * 3;
+    const x = i => L + (n <= 1 ? iw / 2 : i * iw / (n - 1));
+    const y = v => T + ih - (v / yMax) * ih;
+    const path = key => days.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(d[key]).toFixed(1)).join('');
+
+    let grid = '', labs = '';
+    for (let g = 0; g <= 3; g++){
+      const gy = y(g * step);
+      grid += `<line class="grid" x1="${L}" y1="${gy}" x2="${W-R}" y2="${gy}"></line>`;
+      labs += `<text class="axis-lab" x="${L-7}" y="${gy+3.5}" text-anchor="end">${g*step}</text>`;
+    }
+    [0, Math.floor((n-1)/2), n-1].forEach(i => {
+      if (i < 0 || !days[i]) return;
+      const d = new Date(days[i].date + 'T00:00:00');
+      const lab = (d.getMonth()+1) + '/' + d.getDate();
+      const anchor = i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle');
+      labs += `<text class="axis-lab" x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="${anchor}">${lab}</text>`;
+    });
+
+    const total = days.reduce((a,d) => a + d.sent + d.replies, 0);
+    el.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="Daily follow-ups sent and replies received, last 30 days">
+        ${grid}${labs}
+        <path d="${path('sent')}" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+        <path d="${path('replies')}" fill="none" stroke="#0891b2" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+        <line id="hc-cross" x1="0" y1="${T}" x2="0" y2="${T+ih}" stroke="rgba(236,233,255,.35)" stroke-width="1" style="display:none"></line>
+        <circle id="hc-dot-s" r="4" fill="#8b5cf6" stroke="var(--bg-2)" stroke-width="2" style="display:none"></circle>
+        <circle id="hc-dot-r" r="4" fill="#0891b2" stroke="var(--bg-2)" stroke-width="2" style="display:none"></circle>
+      </svg>
+      <div class="home-chart-tip" id="hc-tip"></div>
+      ${total === 0 ? '<div class="home-chart-empty">No activity yet - this fills in as Adapix works</div>' : ''}`;
+
+    const svg = el.querySelector('svg'), tip = el.querySelector('#hc-tip');
+    const cross = el.querySelector('#hc-cross'), dotS = el.querySelector('#hc-dot-s'), dotR = el.querySelector('#hc-dot-r');
+    function move(ev){
+      const rect = svg.getBoundingClientRect();
+      const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      const vx = px * W / rect.width;
+      let i = Math.round((vx - L) / (iw / Math.max(1, n - 1)));
+      i = Math.max(0, Math.min(n - 1, i));
+      const d = days[i], cx = x(i);
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.style.display = '';
+      dotS.setAttribute('cx', cx); dotS.setAttribute('cy', y(d.sent)); dotS.style.display = '';
+      dotR.setAttribute('cx', cx); dotR.setAttribute('cy', y(d.replies)); dotR.style.display = '';
+      const dt = new Date(d.date + 'T00:00:00');
+      tip.innerHTML = `<b>${dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</b><br>` +
+        `<span style="color:#a78bfa">&#9679;</span> Sent: <b>${d.sent}</b> &nbsp; <span style="color:#22d3ee">&#9679;</span> Replies: <b>${d.replies}</b>`;
+      tip.style.display = 'block';
+      const tipX = Math.min(rect.width - tip.offsetWidth - 6, Math.max(6, px + 14));
+      tip.style.left = tipX + 'px';
+      tip.style.top = '8px';
+    }
+    function leave(){ tip.style.display='none'; cross.style.display='none'; dotS.style.display='none'; dotR.style.display='none'; }
+    svg.addEventListener('mousemove', move);
+    svg.addEventListener('touchstart', move, {passive:true});
+    svg.addEventListener('touchmove', move, {passive:true});
+    svg.addEventListener('mouseleave', leave);
+    svg.addEventListener('touchend', leave);
+  }
+
   function renderHomeView(){
     const feed  = state.feed || {};
     const d     = feed.digest || {};
@@ -1436,6 +1524,17 @@ body::after{
         </div>
       </div>
 
+      <div class="home-chart-card">
+        <div class="home-chart-head">
+          <span class="home-chart-title">Last 30 days</span>
+          <span class="home-chart-legend">
+            <span><i style="background:#8b5cf6"></i>Follow-ups sent</span>
+            <span><i style="background:#0891b2"></i>Replies received</span>
+          </span>
+        </div>
+        <div class="home-chart" id="home-chart"></div>
+      </div>
+
       <div class="home-section-head">
         <span class="section-eyebrow" style="margin:0">Needs you first · ${needsYou}</span>
         ${needsYou ? '<button class="home-see-all" onclick="goView(\'inbox\')">Open inbox ›</button>' : ''}
@@ -1529,6 +1628,8 @@ body::after{
         paintGaps();
       });
     }).catch(() => {});
+
+    loadHomeChart();
 
     // Fill in the contacts count if it wasn't loaded yet
     if (!state.patients) {
