@@ -74,6 +74,18 @@ def get_vapid_keys() -> dict[str, str]:
     The public key gets sent to the PWA. The private key is used here to
     sign push payloads. If no keypair exists yet we generate one.
     """
+    # Env-var keys win: on ephemeral hosts (Railway) the data dir is wiped
+    # every deploy, which would rotate the keypair and orphan every push
+    # subscription. Set VAPID_PRIVATE_KEY / VAPID_PUBLIC_KEY in the host env.
+    env_priv = os.environ.get("VAPID_PRIVATE_KEY", "").strip()
+    env_pub = os.environ.get("VAPID_PUBLIC_KEY", "").strip()
+    if env_priv and env_pub:
+        return {
+            "public_key": env_pub,
+            "private_key": env_priv,
+            "subject": os.environ.get("ADAPIX_VAPID_SUBJECT", "mailto:hello@adapixai.com"),
+        }
+
     p = _vapid_path()
     if p.exists():
         try:
