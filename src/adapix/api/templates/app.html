@@ -2311,7 +2311,7 @@ body::after{
             <div class="text" style="flex:1;min-width:200px">
               <b>${escapeHTML(m.patient)}</b>
               ${m.subject ? `<span style="color:var(--ink);font-weight:600">${escapeHTML(m.subject)}</span>` : ''}
-              <span data-draft-preview>${escapeHTML((m.body||'').slice(0,220))}</span>
+              <span data-draft-preview data-action="draft-edit" data-id="${m.id}" style="cursor:text" title="Click to edit before sending">${escapeHTML((m.body||'').slice(0,220))}</span>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
               <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="draft-approve" data-id="${m.id}">Send</button>
