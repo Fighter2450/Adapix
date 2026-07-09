@@ -1340,7 +1340,7 @@ def service_worker():
     We do NOT cache the JSON API — escalations must always be fresh.
     """
     sw = """
-const CACHE = 'adapix-shell-v3';
+const CACHE = 'adapix-shell-v4';
 const SHELL = ['/app', '/app/manifest.json', '/app/icon-192.png', '/app/icon-512.png'];
 
 self.addEventListener('install', (e) => {
