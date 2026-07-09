@@ -1626,6 +1626,24 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
         for m in pending:
             campaign = s.get(Campaign, m.campaign_id)
             patient = s.get(Patient, campaign.patient_id) if campaign else None
+            # Touch context: which follow-up this is and whether they've replied,
+            # so a legitimate 2nd/3rd touch doesn't read as a duplicate.
+            prior = (
+                s.query(Message)
+                .filter(Message.campaign_id == m.campaign_id, Message.id != m.id)
+                .order_by(Message.created_at.asc())
+                .all()
+            )
+            sent_before = [x for x in prior if x.direction == "outbound" and x.status in ("sent", "delivered", "replied")]
+            last_reply = next((x for x in reversed(prior) if x.direction == "inbound"), None)
+            touch_n = len(sent_before) + 1
+            if last_reply is not None:
+                reply_note = f"they replied {_ago(last_reply.created_at)}"
+            elif sent_before:
+                reply_note = f"no reply since the last one {_ago(sent_before[-1].created_at)}"
+            else:
+                reply_note = "first message to them"
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd"}.get(touch_n, f"{touch_n}th")
             appr_payload.append(
                 {
                     "id": m.id,
@@ -1636,6 +1654,8 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
                     "subject": m.subject,
                     "ago": _ago(m.created_at),
                     "created_at": m.created_at.isoformat() if m.created_at else None,
+                    "touch": touch_n,
+                    "touch_label": f"{ordinal} follow-up" + (f" · {reply_note}" if touch_n > 1 or last_reply else ""),
                 }
             )
 
