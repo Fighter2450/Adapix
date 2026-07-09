@@ -1718,7 +1718,7 @@ body::after{
           <div class="scard-title">What you do</div>
           <div class="sform-hint" style="margin-bottom:10px">The general context Adapix uses to understand your business — separate from specific Q&A below. Write it like you're briefing a new hire.</div>
           <div class="sform-row">
-            <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run orthodontic practice specializing in Invisalign and traditional braces for kids and adults. Most patients come to us after a referral from their general dentist.">${escapeHTML(d.description)}</textarea>
+            <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run plumbing company handling repairs, water heaters, and emergency calls for homes and small businesses. Most patients come to us after a referral from their general dentist.">${escapeHTML(d.description)}</textarea>
           </div>
           <button class="sform-save" id="db-save-description">Save changes</button>
         </div>
@@ -3888,7 +3888,7 @@ body::after{
 
   function renderSettingsHub(){
     const cats = [
-      { icon:'user',         key:'profile',  title:'Practice profile',       sub:'Name, address, hours, specialty' },
+      { icon:'user',         key:'profile',  title:'Business profile',       sub:'Name, address, hours, what you do' },
       { icon:'mail',         key:'channels', title:'Messaging & channels',   sub:'Connected email, SMS, notification preferences' },
       { icon:'list-checks',  key:'rules',    title:'Follow-up rules',        sub:'Timing, tone, auto-approve thresholds' },
       { icon:'bell',         key:'notifications', title:'Notifications',     sub:'Pings on this device when a draft or customer needs you' },
@@ -4234,7 +4234,7 @@ body::after{
 
   function renderSettingsPage(page){
     const pages = {
-      profile:  { title:'Practice profile',     sub:'How Adapix represents your business when writing to customers.' },
+      profile:  { title:'Business profile',     sub:'How Adapix represents your business when writing to customers.' },
       channels: { title:'Messaging & channels', sub:'Where Adapix sends messages and how you get notified.' },
       rules:    { title:'Follow-up rules',      sub:'Control how and when Adapix reaches out to customers.' },
       account:  { title:'Account & billing',    sub:'Your plan, usage, and team.' },
@@ -4259,7 +4259,7 @@ body::after{
       body = `
         <div class="scard">
           <div class="scard-title">Business info</div>
-          <div class="sform-row"><label class="sform-label">Practice name</label><input class="sform-input" placeholder="e.g. Bright Smile Orthodontics" /></div>
+          <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" placeholder="e.g. Bright Smile Orthodontics" /></div>
           <div class="sform-row">
             <label class="sform-label">Specialty / type</label>
             <div class="stype-wrap">
@@ -4273,7 +4273,7 @@ body::after{
           </div>
           <div class="sform-2col">
             <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" placeholder="(555) 000-0000" /></div>
-            <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" placeholder="yourpractice.com" /></div>
+            <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" placeholder="yourbusiness.com" /></div>
           </div>
           <div class="sform-row"><label class="sform-label">Address</label><textarea class="sform-input" rows="2" placeholder="123 Main St, Suite 1, City, State 00000" style="resize:vertical"></textarea></div>
         </div>
@@ -4404,7 +4404,7 @@ body::after{
         <div class="scard">
           <div class="scard-title" style="color:#F85149">Danger zone</div>
           <div style="font-size:13px;color:var(--slate-2);margin-bottom:14px;line-height:1.55">Deactivating pauses all automations and prevents Adapix from sending messages. You can reactivate at any time.</div>
-          <button class="sdanger-btn" data-action="deactivate">Deactivate practice</button>
+          <button class="sdanger-btn" data-action="deactivate">Deactivate account</button>
         </div>`;
     }
 
