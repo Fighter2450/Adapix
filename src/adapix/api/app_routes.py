@@ -217,7 +217,10 @@ def calculator_page():
 # ---------------------------------------------------------------------------
 @router.get("/chat", response_class=HTMLResponse)
 def chat_page():
-    return HTMLResponse((TEMPLATE_DIR / "chat.html").read_text(encoding="utf-8"))
+    # Legacy standalone teaching chat — superseded by the Workshop tab
+    # inside the dashboard. Old links land in the app instead of a stale page.
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/app", status_code=302)
 
 
 @router.get("/api/v1/chat/history")
