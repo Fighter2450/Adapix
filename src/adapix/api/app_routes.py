@@ -125,6 +125,20 @@ def api_billing_checkout(request: Request, _user: str = Depends(verify_admin)):
     return {"url": url}
 
 
+@router.post("/api/v1/billing/cancel")
+def api_billing_cancel(_user: str = Depends(verify_admin)):
+    from ..billing import cancel_subscription, configured
+    if not configured():
+        raise HTTPException(status_code=503, detail="Billing isn't set up")
+    try:
+        status = cancel_subscription(_user)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Stripe error: {e}")
+    return {"ok": True, "status": status, "cancel_at_period_end": True}
+
+
 @router.get("/app/billing/success", response_class=HTMLResponse)
 def billing_success(request: Request, session_id: str = ""):
     from fastapi.responses import RedirectResponse

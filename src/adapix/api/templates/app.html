@@ -3916,6 +3916,59 @@ body::after{
     });
   }
 
+  // Settings -> Account: live plan status + add-card + cancel
+  async function initAccountBilling(){
+    const box = document.getElementById('acct-plan');
+    const pay = document.getElementById('acct-pay');
+    const cancel = document.getElementById('acct-cancel');
+    if (!box) return;
+    async function refresh(){
+      try {
+        const j = await api('/api/v1/billing/status');
+        if (!j.configured){
+          box.innerHTML = 'Billing isn\'t live yet &mdash; you\'re on the free trial and nothing is owed.';
+          return;
+        }
+        if (j.status === 'trialing'){
+          box.innerHTML = '<b style="color:#34d399">Free trial active.</b> Your card is on file; the first $99 charge lands when the trial ends.';
+          cancel.style.display = '';
+        } else if (j.status === 'active'){
+          box.innerHTML = '<b style="color:#34d399">Subscription active</b> &mdash; $99/month.';
+          cancel.style.display = '';
+        } else if (j.status === 'past_due'){
+          box.innerHTML = '<b style="color:#fbbf24">Payment problem</b> &mdash; the last charge failed. Update your card to keep Adapix running.';
+          pay.style.display = '';
+        } else if (j.status === 'canceled'){
+          box.innerHTML = 'Subscription canceled. You can restart anytime.';
+          pay.textContent = 'Restart subscription';
+          pay.style.display = '';
+        } else {
+          box.innerHTML = 'You\'re on the <b style="color:var(--ink)">free trial</b> with no card on file. Add one so Adapix keeps working when the trial ends.';
+          pay.style.display = '';
+        }
+      } catch(_){ box.textContent = 'Could not load billing status.'; }
+    }
+    pay.addEventListener('click', async () => {
+      pay.disabled = true; pay.textContent = 'Opening secure checkout\u2026';
+      try {
+        const j = await api('/api/v1/billing/checkout', {method:'POST'});
+        if (j.url){ window.location.href = j.url; return; }
+        throw new Error('no url');
+      } catch(e){ toast('Could not open checkout', true); pay.disabled = false; pay.textContent = 'Add payment method'; }
+    });
+    cancel.addEventListener('click', async () => {
+      if (!confirm('Cancel your subscription? Adapix keeps working until the end of the period you already paid for.')) return;
+      cancel.disabled = true;
+      try {
+        await api('/api/v1/billing/cancel', {method:'POST'});
+        toast('Subscription set to cancel at the end of the period');
+        refresh();
+      } catch(e){ toast('Could not cancel — email us and we\'ll do it by hand', true); }
+      cancel.disabled = false;
+    });
+    refresh();
+  }
+
   // Settings -> Notifications page wiring (elements exist only on that page)
   async function initNotifPage(){
     const status = document.getElementById('notif-status');
@@ -4333,18 +4386,13 @@ body::after{
     } else if (page === 'account'){
       body = `
         <div class="scard">
-          <div class="scard-title">Current plan</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <div>
-              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">Starter &nbsp;<span class="splan-badge">Active</span></div>
-              <div style="font-size:13px;color:var(--slate-2)">Up to 200 contacts &middot; 500 messages/mo</div>
-            </div>
+          <div class="scard-title">Your plan</div>
+          <div id="acct-plan" style="font-size:14px;color:var(--ink-2);margin-bottom:16px">Checking&hellip;</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="sform-save" id="acct-pay" style="display:none">Add payment method</button>
+            <button class="sch-connect" id="acct-cancel" style="display:none;border-color:rgba(244,63,94,.4);color:#fda4af">Cancel subscription</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Messages</div><div style="font-size:22px;font-weight:700;color:#00D4FF">0</div><div style="font-size:11px;color:var(--slate-3)">of 500 this month</div></div>
-            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Contacts</div><div style="font-size:22px;font-weight:700;color:#E6EDF3">0</div><div style="font-size:11px;color:var(--slate-3)">of 200 max</div></div>
-            <div style="background:rgba(255,255,255,.04);border-radius:9px;padding:13px 14px"><div style="font-size:11px;color:var(--slate-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Renews</div><div style="font-size:22px;font-weight:700;color:#3FB950">&mdash;</div><div style="font-size:11px;color:var(--slate-3)">billing not set up</div></div>
-          </div>
+          <div class="sform-hint" style="margin-top:12px">One plan: $99/month, everything included, after a 14-day free trial. Cancel anytime &mdash; you keep access through the end of the period you paid for.</div>
         </div>
         <div class="scard">
           <div class="scard-title">Team members</div>
@@ -4544,6 +4592,7 @@ body::after{
     state.settingsPage = page;
     renderSettingsLink();
     if (page === 'notifications') setTimeout(initNotifPage, 50);
+    if (page === 'account') setTimeout(initAccountBilling, 50);
   }
 
   function bindNav(){

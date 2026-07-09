@@ -147,6 +147,22 @@ def find_subscription_by_org(org_id: str) -> dict | None:
     return None
 
 
+def cancel_subscription(org_id: str) -> str:
+    """Set the org's subscription to cancel at period end (the honest
+    'cancel anytime' — access continues through what's already paid)."""
+    rec = get_billing(org_id)
+    sub_id = rec.get("subscription_id")
+    if not sub_id:
+        sub = find_subscription_by_org(org_id)
+        sub_id = sub.get("id") if sub else None
+    if not sub_id:
+        raise ValueError("no subscription on file")
+    sub = _call("POST", f"/subscriptions/{sub_id}", {"cancel_at_period_end": "true"})
+    status = sub.get("status", "unknown")
+    set_billing(org_id, {"status": status, "cancel_at_period_end": True})
+    return status
+
+
 def refresh_status(org_id: str) -> str:
     """Re-pull the subscription status from Stripe (cheap poll used by the
     billing page; a webhook can replace this later)."""
