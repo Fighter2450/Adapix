@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from typing import List
 from fastapi.responses import (
     FileResponse,
@@ -852,6 +852,65 @@ def _save_org_profile_data(s, org_id: str, data: dict) -> None:
         row.data = data
     else:
         s.add(OrgProfile(org_id=org_id, data=data))
+
+
+# ---------------------------------------------------------------------------
+# Website import — paste your site URL, Adapix reads it and stages the
+# business facts for review. A Home reminder stays up until it's applied.
+# ---------------------------------------------------------------------------
+class WebsiteImportBody(BaseModel):
+    url: str
+
+
+@router.post("/api/v1/website-import")
+def api_website_import_start(body: WebsiteImportBody, background: BackgroundTasks, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from ..website_import import run_import
+    from sqlalchemy.orm import Session
+    url = body.url.strip()
+    if not url or " " in url or "." not in url:
+        raise HTTPException(status_code=400, detail="Enter your website address, like yourbusiness.com")
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        data["website_import"] = {"url": url, "status": "running", "error": "",
+                                  "at": datetime.utcnow().isoformat() + "Z"}
+        practice = dict(data.get("practice") or {})
+        practice["website"] = url
+        data["practice"] = practice
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    background.add_task(run_import, org_id, url)
+    return {"ok": True, "status": "running"}
+
+
+@router.get("/api/v1/website-import")
+def api_website_import_status(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        imp = (_load_org_profile_data(s, org_id).get("website_import")) or {}
+    out = {"status": imp.get("status") or "none", "url": imp.get("url") or "", "error": imp.get("error") or ""}
+    if imp.get("status") == "ready":
+        info = imp.get("data") or {}
+        out["preview"] = {
+            "business_name": info.get("business_name") or "",
+            "phone": info.get("phone") or "",
+            "hours": info.get("hours") or "",
+            "description": (info.get("description") or "")[:200],
+            "services": len(info.get("services") or []),
+            "knowledge": len(info.get("knowledge") or []),
+        }
+    return out
+
+
+@router.post("/api/v1/website-import/apply")
+def api_website_import_apply(org_id: str = Depends(verify_admin)):
+    from ..website_import import apply_import
+    try:
+        result = apply_import(org_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, **result}
 
 
 @router.get("/api/v1/knowledge")

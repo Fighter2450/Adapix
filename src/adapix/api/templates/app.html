@@ -1627,6 +1627,7 @@ body::after{
           btn.addEventListener('click', () => {
             const g = gaps[Number(btn.dataset.gapIdx)];
             if (g.notifications) { goView('settings'); goSettingsView('notifications'); }
+            else if (g.website_import) { goView('settings'); goSettingsView('profile'); }
             else if (g.channels) { goView('settings'); goSettingsView('channels'); }
             else { state.focusDbField = g.focus; goView('database'); }
           });
@@ -1638,6 +1639,14 @@ body::after{
         gaps.push({label: 'Turn on notifications', notifications: true});
         paintGaps();
       });
+      // Website import staged and waiting for review -> yellow reminder
+      api('/api/v1/website-import').then(j => {
+        if (state.view !== 'home') return;
+        if (j.status === 'ready'){
+          gaps.push({label: 'Review what Adapix read from your website', website_import: true});
+          paintGaps();
+        }
+      }).catch(() => {});
     }).catch(() => {});
 
     loadHomeChart();
@@ -3913,6 +3922,71 @@ body::after{
     });
   }
 
+  // Settings -> Business profile: website import (read site -> review -> apply)
+  async function initWebsiteImport(){
+    const urlIn = document.getElementById('wi-url');
+    const start = document.getElementById('wi-start');
+    const status = document.getElementById('wi-status');
+    const review = document.getElementById('wi-review');
+    const preview = document.getElementById('wi-preview');
+    const apply = document.getElementById('wi-apply');
+    if (!urlIn || !start) return;
+    let pollTimer = null;
+
+    function paint(j){
+      review.style.display = 'none';
+      if (j.url && !urlIn.value) urlIn.value = j.url;
+      if (j.status === 'running'){
+        status.innerHTML = '<b style="color:var(--violet, #a78bfa)">Reading your website\u2026</b> this usually takes under a minute.';
+        if (!pollTimer) pollTimer = setInterval(refresh, 5000);
+        return;
+      }
+      if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+      if (j.status === 'failed'){
+        status.innerHTML = '<b style="color:#fbbf24">Couldn\u2019t read the site.</b> ' + escapeHTML(j.error || '') + ' \u2014 check the address and try again.';
+      } else if (j.status === 'ready'){
+        const pv = j.preview || {};
+        status.textContent = '';
+        preview.innerHTML = '<b style="color:var(--ink)">Here\u2019s what Adapix found:</b><br>' +
+          (pv.business_name ? 'Business: <b style="color:var(--ink)">' + escapeHTML(pv.business_name) + '</b><br>' : '') +
+          (pv.phone ? 'Phone: ' + escapeHTML(pv.phone) + '<br>' : '') +
+          (pv.hours ? 'Hours: ' + escapeHTML(pv.hours) + '<br>' : '') +
+          (pv.description ? escapeHTML(pv.description) + '<br>' : '') +
+          pv.services + ' services with pricing \u00b7 ' + pv.knowledge + ' FAQ answers' +
+          '<br><span style="color:var(--ink-3)">Applying only fills blanks and adds new items \u2014 anything you\u2019ve already taught stays as-is. You can edit everything in the Database tab after.</span>';
+        review.style.display = '';
+      } else if (j.status === 'applied'){
+        status.innerHTML = '<b style="color:#34d399">Imported.</b> Review or edit it anytime in the Database tab.';
+      } else {
+        status.textContent = '';
+      }
+    }
+    async function refresh(){
+      try { paint(await api('/api/v1/website-import')); } catch(_){}
+    }
+    start.addEventListener('click', async () => {
+      const url = urlIn.value.trim();
+      if (!url){ toast('Enter your website address', true); return; }
+      start.disabled = true; start.textContent = 'Starting\u2026';
+      try {
+        await api('/api/v1/website-import', {method:'POST', body: JSON.stringify({url})});
+        toast('Adapix is reading your website');
+        refresh();
+      } catch(e){ toast(e.message || 'Could not start the import', true); }
+      start.disabled = false; start.textContent = 'Read my website';
+    });
+    apply.addEventListener('click', async () => {
+      apply.disabled = true; apply.textContent = 'Adding\u2026';
+      try {
+        const r = await api('/api/v1/website-import/apply', {method:'POST'});
+        toast('Added ' + (r.services_added||0) + ' services and ' + (r.knowledge_added||0) + ' answers from your site');
+        refresh();
+      } catch(e){ toast('Could not apply the import', true); }
+      apply.disabled = false; apply.textContent = 'Add this to my business info';
+    });
+    refresh();
+  }
+
   // Settings -> Account: live plan status + add-card + cancel
   async function initAccountBilling(){
     const box = document.getElementById('acct-plan');
@@ -4258,6 +4332,19 @@ body::after{
     else if (page === 'profile'){
       body = `
         <div class="scard">
+          <div class="scard-title">Import from your website</div>
+          <div class="sform-hint" style="margin-bottom:12px">Paste your site and Adapix reads it for you — name, phone, hours, services, prices, FAQs. You review everything before it's saved, and it never overwrites what you've already taught.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="sform-input" id="wi-url" placeholder="yourbusiness.com" style="flex:1;min-width:200px" />
+            <button class="sform-save" id="wi-start" style="flex-shrink:0">Read my website</button>
+          </div>
+          <div id="wi-status" style="font-size:13.5px;color:var(--ink-2);margin-top:12px"></div>
+          <div id="wi-review" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+            <div id="wi-preview" style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px"></div>
+            <button class="sform-save" id="wi-apply">Add this to my business info</button>
+          </div>
+        </div>
+        <div class="scard">
           <div class="scard-title">Business info</div>
           <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" placeholder="e.g. Bright Smile Orthodontics" /></div>
           <div class="sform-row">
@@ -4590,6 +4677,7 @@ body::after{
     renderSettingsLink();
     if (page === 'notifications') setTimeout(initNotifPage, 50);
     if (page === 'account') setTimeout(initAccountBilling, 50);
+    if (page === 'profile') setTimeout(initWebsiteImport, 50);
   }
 
   function bindNav(){
