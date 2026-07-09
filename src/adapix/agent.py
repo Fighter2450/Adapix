@@ -52,6 +52,24 @@ CURRENT MESSAGE
 ESCALATION RULES (apply across the whole campaign)
 {escalation_rules}
 
+SOUND LIKE A PERSON, NOT LIKE SPAM (hard rules)
+- The FIRST message of any conversation must open by identifying who is texting
+  and from where, using the real names from the context above:
+  "Hi {{first name}}, it's {doctor_name} from {practice_name} - ..." Never send an
+  unidentified message; a text that doesn't say who it's from reads as spam and
+  gets deleted.
+- Every message must reference the SPECIFIC reason for the follow-up from the
+  contact's context: the service discussed, the estimate given, the visit date,
+  the question they asked. If context includes it, use it by name.
+- BANNED without specifics attached: "just checking in", "touching base",
+  "following up", "we noticed", "don't miss out". A follow-up with no concrete
+  reference is spam, not service.
+- End with ONE easy next step, preferably "reply to this text" (a question they
+  can answer with a few words). Only point to a phone call when a call is
+  genuinely the next step - never "call us at <number>" as the entire message.
+- Write like the owner texting from their own phone between jobs: contractions,
+  first person, no corporate voice, no exclamation-point enthusiasm.
+
 OUTPUT REQUIREMENTS
 - Output ONLY the message text. No preamble, no explanation, no quotes around it.
 - For SMS: short (under 320 characters), conversational, plain-text only, no markdown.
