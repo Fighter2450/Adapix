@@ -2675,7 +2675,15 @@ body::after{
         </div>
         <div class="sform-row">
           <label class="sform-label">What should the call accomplish?</label>
-          <textarea class="sform-input" id="cv-goal" rows="2" placeholder="e.g. Follow up on their quote, answer questions, and offer to book a time."></textarea>
+          <div class="stone-opts" id="cv-goal-presets">
+            <button type="button" class="stone-opt" data-goal="quote">Follow up on a quote</button>
+            <button type="button" class="stone-opt" data-goal="close">Try to close the sale</button>
+            <button type="button" class="stone-opt" data-goal="book">Book an appointment</button>
+            <button type="button" class="stone-opt" data-goal="checkin">Check in after a job</button>
+            <button type="button" class="stone-opt" data-goal="winback">Win back a quiet contact</button>
+            <button type="button" class="stone-opt" data-goal="custom">Describe your own</button>
+          </div>
+          <textarea class="sform-input" id="cv-goal" rows="2" style="margin-top:10px" placeholder="e.g. Follow up on their quote, answer questions, and offer to book a time." hidden></textarea>
           <div class="sform-hint">This is the plan you're approving — Adapix can't have a live call approved word-by-word, so you approve the goal up front and review what happened afterward.</div>
         </div>
         <div class="sform-row">
@@ -2701,6 +2709,30 @@ body::after{
       <div class="activity-feed" id="cv-history">${historyRows}</div>
     `;
     renderLucide(main);
+
+    const CALL_GOAL_PRESETS = {
+      quote: 'Follow up on the quote/estimate we gave them, answer any questions, and offer to book a time to move forward.',
+      close: "Check where they're at on deciding, address any hesitation or objections, and try to get them to say yes and book the job.",
+      book: 'Find a time that works for them and get the appointment booked.',
+      checkin: "Make sure everything went well with the recent job, ask if they have any questions, and see if they'd be open to leaving a review.",
+      winback: "They've gone quiet — reconnect, see if they're still interested, and find out what's holding them back.",
+    };
+    const goalTextarea = main.querySelector('#cv-goal');
+    main.querySelectorAll('#cv-goal-presets .stone-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        main.querySelectorAll('#cv-goal-presets .stone-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const key = btn.dataset.goal;
+        if (key === 'custom'){
+          goalTextarea.hidden = false;
+          goalTextarea.value = '';
+          goalTextarea.focus();
+        } else {
+          goalTextarea.hidden = true;
+          goalTextarea.value = CALL_GOAL_PRESETS[key];
+        }
+      });
+    });
 
     main.querySelector('#cv-queue').addEventListener('click', async () => {
       const patientId = main.querySelector('#cv-contact').value;
