@@ -1611,7 +1611,7 @@ body::after{
       const gaps = [];
       if (!(d.business_name || '').trim()) gaps.push({label: 'Add your business name', focus: 'db-name'});
       if (!(d.owner_name || '').trim()) gaps.push({label: 'Tell Adapix what to call you', focus: 'db-owner'});
-      if (!(d.phone || '').trim()) gaps.push({label: 'Add a contact number', focus: 'db-phone'});
+      if (!(d.phone || '').trim()) gaps.push({label: 'Add your business phone number', focus: 'db-phone'});
       if (!(d.description || '').trim()) gaps.push({label: 'Describe what your business does', focus: 'db-description'});
       if (!(d.services || []).length) gaps.push({label: 'Add your pricing', focus: 'db-svc-name'});
       if (!d.calling_number) gaps.push({label: 'Set up your calling number', channels: true});
