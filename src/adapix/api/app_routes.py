@@ -844,8 +844,18 @@ class KnowledgeEntryBody(BaseModel):
 
 
 def _load_org_profile_data(s, org_id: str) -> dict:
+    """Read-modify-write guard: every save handler on the Business Knowledge
+    / Business Profile / rules / notify-prefs pages follows the same
+    load -> mutate one key -> save-the-whole-blob pattern, sharing one JSON
+    column per org. Without a lock, two overlapping saves (e.g. adding a
+    service right as another card's Save button fires) race: the second
+    request reads a copy that predates the first request's write, then
+    writes its own copy back — silently erasing the first save. FOR UPDATE
+    holds a row lock for the rest of this transaction, so a second request
+    against the same org blocks here until the first one commits, then
+    reads the already-updated row instead of a stale one."""
     from ..models import OrgProfile
-    row = s.get(OrgProfile, org_id)
+    row = s.query(OrgProfile).filter(OrgProfile.org_id == org_id).with_for_update().first()
     return dict(row.data) if row and row.data else {}
 
 
