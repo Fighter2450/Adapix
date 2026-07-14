@@ -1469,7 +1469,7 @@ body::after{
             const pIcon = fromCall ? 'phone-incoming' : (it.e.channel === 'email' ? 'mail' : 'message-square');
             const pColor = fromCall ? 'var(--cyan)' : (it.e.channel === 'email' ? '#a78bfa' : '#22d3ee');
             return `
-            <div class="row-card hot" style="cursor:pointer" onclick="goView('inbox')">
+            <div class="row-card hot" style="cursor:pointer" data-goto-view="inbox">
               <div class="text"><b style="display:inline-flex;align-items:center;gap:6px">${escapeHTML(it.e.patient)}<i data-lucide="${pIcon}" style="width:12px;height:12px;color:${pColor}"></i></b><span>${escapeHTML(escLabel(it.e.category) + (detail ? ' · ' + detail : ''))}</span></div>
               <span class="pill hot">${escapeHTML(escLabel(it.e.category))}</span>
               <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
@@ -1479,14 +1479,14 @@ body::after{
             const dIcon = it.m.channel === 'email' ? 'mail' : 'message-square';
             const dColor = it.m.channel === 'email' ? '#a78bfa' : '#22d3ee';
             return `
-            <div class="row-card" style="cursor:pointer" onclick="goView('inbox')">
+            <div class="row-card" style="cursor:pointer" data-goto-view="inbox">
               <div class="text"><b style="display:inline-flex;align-items:center;gap:6px">${escapeHTML(it.m.patient)}<i data-lucide="${dIcon}" style="width:12px;height:12px;color:${dColor}"></i></b><span>${escapeHTML((it.m.body||'').slice(0,140))}</span></div>
               <span class="pill">draft to review</span>
               <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
             </div>`;
           }
           return `
-          <div class="row-card" style="cursor:pointer" onclick="goView('calls')">
+          <div class="row-card" style="cursor:pointer" data-goto-view="calls">
             <div class="text"><b>${escapeHTML(it.c.patient)}</b><span>Goal: ${escapeHTML((it.c.goal||'').slice(0,140))}</span></div>
             <span class="pill" style="display:inline-flex;align-items:center;gap:4px;color:var(--cyan)"><i data-lucide="phone" style="width:12px;height:12px"></i> call plan</span>
             <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
@@ -1518,7 +1518,7 @@ body::after{
       <div id="home-setup-gaps"></div>
 
       <div class="home-stat-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-        <div class="home-stat-card" style="cursor:pointer" onclick="goView('contacts')">
+        <div class="home-stat-card" style="cursor:pointer" data-goto-view="contacts">
           <div class="home-stat-label">Won back this month</div>
           <div class="home-stat-val green" id="home-won">$0</div>
           <div class="home-stat-sub" id="home-won-sub">Mark wins on the Contacts tab</div>
@@ -1528,17 +1528,17 @@ body::after{
           <div class="home-stat-val cyan">${d.sent_today || 0}</div>
           <div class="home-stat-sub">Follow-ups Adapix sent for you</div>
         </div>
-        <div class="home-stat-card" style="cursor:pointer" onclick="goView('inbox')">
+        <div class="home-stat-card" style="cursor:pointer" data-goto-view="inbox">
           <div class="home-stat-label">Waiting on you</div>
           <div class="home-stat-val" style="${needsYou ? 'background:linear-gradient(135deg,#fda4af,#f43f5e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent' : ''}">${needsYou}</div>
           <div class="home-stat-sub">${needsYou ? 'Replies, drafts & call plans' : 'All caught up'}</div>
         </div>
-        <div class="home-stat-card" style="cursor:pointer" onclick="goView('calls')">
+        <div class="home-stat-card" style="cursor:pointer" data-goto-view="calls">
           <div class="home-stat-label">Successful calls</div>
           <div class="home-stat-val green" id="home-calls">${successfulCalls}</div>
           <div class="home-stat-sub">Conversations completed</div>
         </div>
-        <div class="home-stat-card" style="cursor:pointer" onclick="goView('contacts')">
+        <div class="home-stat-card" style="cursor:pointer" data-goto-view="contacts">
           <div class="home-stat-label">Following up</div>
           <div class="home-stat-val" id="home-watch">${(state.patients || []).length || 0}</div>
           <div class="home-stat-sub">People Adapix is keeping warm</div>
@@ -1558,19 +1558,22 @@ body::after{
 
       <div class="home-section-head">
         <span class="section-eyebrow" style="margin:0">Needs you first · ${needsYou}</span>
-        ${needsYou ? '<button class="home-see-all" onclick="goView(\'inbox\')">Open inbox ›</button>' : ''}
+        ${needsYou ? '<button class="home-see-all" data-goto-view="inbox">Open inbox ›</button>' : ''}
       </div>
       ${previewHtml}
 
       <div class="home-section-head" style="margin-top:26px">
         <span class="section-eyebrow" style="margin:0">Latest activity</span>
-        <button class="home-see-all" onclick="goView('station')">Open the Station ›</button>
+        <button class="home-see-all" data-goto-view="station">Open the Station ›</button>
       </div>
       <div class="activity-feed" id="home-activity">
         <div class="activity-empty">Loading what Adapix has been up to…</div>
       </div>
     `;
     renderLucide(main);
+    main.querySelectorAll('[data-goto-view]').forEach(el => {
+      el.addEventListener('click', () => goView(el.dataset.gotoView));
+    });
 
     // "Still needs your input" bubbles — checks the Database tab's fields
     // (identity, description, pricing) plus the calling-number/email
