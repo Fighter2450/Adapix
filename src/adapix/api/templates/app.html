@@ -2641,17 +2641,19 @@ body::after{
     if (state.contactsPage === 'import') { renderContactsImport(); return; }
     if (state.contactsPage === 'add')    { renderContactAdd(); return; }
 
-    main.innerHTML = '<div class="loader">loading…</div>';
+    if (!state.contactsSearch) main.innerHTML = '<div class="loader">loading…</div>';
     try {
-      const j = await fetch('/api/v1/patients', {credentials:'include'}).then(r=>r.json());
+      const qs = state.contactsSearch ? ('?q=' + encodeURIComponent(state.contactsSearch)) : '';
+      const j = await fetch('/api/v1/patients' + qs, {credentials:'include'}).then(r=>r.json());
       state.patients = j.patients || [];
     } catch(_){ state.patients = []; }
 
     const addBtn = `<button id="go-add" class="btn btn-primary" style="padding:8px 16px;font-size:13px"><i data-lucide="user-plus" style="width:15px;height:15px"></i>Add contact</button>`;
     const importBtn = `<button id="go-import" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer"><i data-lucide="upload" style="width:15px;height:15px"></i>Import CSV</button>`;
     const actionBtns = `<div style="display:flex;gap:8px">${addBtn}${importBtn}</div>`;
+    const searchBox = `<input id="contacts-search" value="${escapeHTML(state.contactsSearch||'')}" placeholder="Search name, phone, email…" style="width:100%;max-width:340px;background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:9px 13px;color:var(--ink);font-family:inherit;font-size:13.5px;margin-bottom:16px" />`;
 
-    if (!state.patients.length){
+    if (!state.patients.length && !state.contactsSearch){
       main.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
           <div class="section-eyebrow" style="margin:0">Contacts</div>
@@ -2666,14 +2668,16 @@ body::after{
     } else {
       const statusColors = {consulted_not_started:'var(--warn)',treatment_started:'var(--good)',explicitly_declined:'var(--hot)',paused:'var(--ink-3)'};
       main.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
           <div class="section-eyebrow" style="margin:0">Contacts · ${state.patients.length}</div>
           ${actionBtns}
         </div>
+        ${searchBox}
+        ${!state.patients.length ? `<div style="text-align:center;padding:32px 20px;color:var(--ink-2);font-size:13.5px">No contacts match "${escapeHTML(state.contactsSearch)}"</div>` : ''}
         <div class="rows">${state.patients.slice(0,200).map(p => `
           <div class="row-card" style="cursor:default">
             <div class="text">
-              <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>
+              <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>${p.needs_attention ? ` <span title="No reply in ${p.silent_days} days" style="font-size:11px;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">Quiet ${p.silent_days}d</span>` : ''}
               <span>${escapeHTML(p.preferred_channel||'sms')}${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
@@ -2697,6 +2701,24 @@ body::after{
         } catch(_){ toast('Could not log the win', true); btn.disabled = false; }
       });
     });
+    const searchInput = main.querySelector('#contacts-search');
+    if (searchInput){
+      let searchTimer = null;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        const val = searchInput.value;
+        searchTimer = setTimeout(() => { state.contactsSearch = val; renderPatientsView(); }, 300);
+      });
+      // Every render replaces this input node, which drops focus mid-typing —
+      // restore it and put the cursor back at the end.
+      if (state.contactsSearchFocused){
+        searchInput.focus();
+        const len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+      }
+      searchInput.addEventListener('focus', () => { state.contactsSearchFocused = true; });
+      searchInput.addEventListener('blur', () => { state.contactsSearchFocused = false; });
+    }
     wire('go-import',    () => goContactsView('import'));
     wire('go-add',       () => goContactsView('add'));
     wire('go-add-empty', () => goContactsView('add'));

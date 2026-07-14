@@ -2594,32 +2594,66 @@ def api_agent_clear(slug: str, _user: str = Depends(verify_admin)):
 
 
 @router.get("/api/v1/patients")
-def api_patients_list(_user: str = Depends(verify_admin)):
-    """Return all patients/contacts for the authenticated org."""
+def api_patients_list(q: str = "", _user: str = Depends(verify_admin)):
+    """All contacts for the org, with enough signal to sort by who needs
+    attention — a 150-row list is useless as pure eyeball-scroll."""
+    from sqlalchemy import func as _func
     with get_session() as s:
-        rows = (s.query(Patient)
-                .filter(Patient.practice_id == _user)
-                .order_by(Patient.created_at.desc())
-                .limit(500)
-                .all())
-        return {
-            "total": len(rows),
-            "patients": [
-                {
-                    "id": p.id,
-                    "first_name": p.first_name,
-                    "last_name": p.last_name,
-                    "phone": p.phone,
-                    "email": p.email,
-                    "preferred_channel": p.preferred_channel,
-                    "status": p.status,
-                    "treatment_type": p.treatment_type,
-                    "treatment_plan_amount": p.treatment_plan_amount,
-                    "consult_date": p.consult_date.isoformat() if p.consult_date else None,
-                }
-                for p in rows
-            ],
-        }
+        query = s.query(Patient).filter(Patient.practice_id == _user)
+        needle = q.strip().lower()
+        if needle:
+            like = f"%{needle}%"
+            query = query.filter(
+                _func.lower(Patient.first_name + " " + Patient.last_name).like(like)
+                | _func.lower(Patient.phone).like(like)
+                | _func.lower(Patient.email).like(like)
+                | _func.lower(Patient.treatment_type).like(like)
+            )
+        rows = query.limit(500).all()
+
+        # Last outbound / inbound timestamp per patient, across all their
+        # campaigns — cheap enough at this scale, and it's the one thing
+        # that turns a flat list into "who's actually gone quiet."
+        last_out = dict(
+            s.query(Campaign.patient_id, _func.max(Message.created_at))
+            .join(Message, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user, Message.direction == "outbound")
+            .group_by(Campaign.patient_id).all()
+        )
+        last_in = dict(
+            s.query(Campaign.patient_id, _func.max(Message.created_at))
+            .join(Message, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user, Message.direction == "inbound")
+            .group_by(Campaign.patient_id).all()
+        )
+
+        now = datetime.utcnow()
+        out = []
+        for p in rows:
+            lo, li = last_out.get(p.id), last_in.get(p.id)
+            silent_since = li or lo
+            silent_days = (now - silent_since).days if silent_since else None
+            active = p.status not in ("treatment_started", "explicitly_declined") and not p.opted_out
+            needs_attention = bool(active and lo and silent_days is not None and silent_days >= 9 and (not li or li < lo))
+            out.append({
+                "id": p.id,
+                "first_name": p.first_name,
+                "last_name": p.last_name,
+                "phone": p.phone,
+                "email": p.email,
+                "preferred_channel": p.preferred_channel,
+                "status": p.status,
+                "opted_out": bool(p.opted_out),
+                "treatment_type": p.treatment_type,
+                "treatment_plan_amount": p.treatment_plan_amount,
+                "consult_date": p.consult_date.isoformat() if p.consult_date else None,
+                "silent_days": silent_days,
+                "needs_attention": needs_attention,
+            })
+        # Needs-attention first, then longest-silent, so the top of the list
+        # is always "who should I actually think about today."
+        out.sort(key=lambda x: (not x["needs_attention"], -(x["silent_days"] or -1)))
+        return {"total": len(out), "patients": out}
 
 
 @router.get("/api/v1/phone")
