@@ -268,7 +268,13 @@ class CampaignRunner:
             extra: dict[str, Any] = {"intent": step.intent}
         elif step.channel == "email":
             subject = plan.subject or f"A note from {self.practice.name}"
-            result = self.email.send(patient.email or "", subject, plan.body)
+            from .oauth import send_email_for_org
+            r = send_email_for_org(campaign.practice_id, patient.email or "", subject,
+                                   plan.body, self.practice.name, self.settings)
+            from .channels import EmailResult
+            result = EmailResult(provider_id=r.get("provider_id"),
+                                 status="sent" if r.get("ok") else "failed",
+                                 error=r.get("error"))
             extra = {"intent": step.intent, "subject_planned": plan.subject}
         else:
             raise ValueError(f"Unsupported channel: {step.channel}")

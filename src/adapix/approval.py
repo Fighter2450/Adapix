@@ -291,22 +291,14 @@ class ApprovalManager:
             subject = message.subject or "A note from your practice"
             # If the org connected their own Gmail/Outlook, send AS them.
             # Otherwise fall back to the shared Resend sender.
-            oauth_result = None
-            if org_id:
-                from . import oauth
-                if oauth.is_connected(org_id):
-                    oauth_result = oauth.send_email(
-                        org_id, patient.email or "", subject, message.body,
-                        from_name=org_business_name,
-                    )
-            if oauth_result is not None:
-                result = EmailResult(
-                    provider_id=oauth_result.get("provider_id"),
-                    status="sent" if oauth_result.get("ok") else "failed",
-                    error=oauth_result.get("error"),
-                )
-            else:
-                result = email.send(patient.email or "", subject, message.body)
+            from . import oauth
+            r = oauth.send_email_for_org(org_id, patient.email or "", subject,
+                                        message.body, org_business_name, self.settings) if org_id else {"ok": False, "error": "no org"}
+            result = EmailResult(
+                provider_id=r.get("provider_id"),
+                status="sent" if r.get("ok") else "failed",
+                error=r.get("error"),
+            )
         elif message.channel == "call":
             # message.body is the human-approved CALL PLAN (goal + talking points).
             # It becomes the assistant's instructions; the opening line auto-discloses AI.

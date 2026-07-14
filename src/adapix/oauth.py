@@ -256,6 +256,7 @@ def google_complete_connection(org_id: str, code: str, redirect_uri: str) -> dic
         "connected_at": int(time.time()),
         "scope": tk.get("scope", ""),
     }
+    data["needs_reauth"] = False
     save_tokens(org_id, "google", data)
     return {"email": data["email"], "name": data["name"]}
 
@@ -270,6 +271,11 @@ def google_access_token(org_id: str) -> str | None:
         new = google_refresh(g["refresh_token"])
     except Exception as e:
         print(f"[oauth] google refresh failed: {e}")
+        # Permanent revoke (password change, app un-verified, consent pulled)
+        # returns invalid_grant — flag it so the UI shows "reconnect" instead
+        # of silently failing every send forever, and ping the owner once.
+        if "invalid_grant" in str(e):
+            _flag_needs_reauth(org_id, "google")
         return None
     g["access_token"] = new["access_token"]
     g["expires_at"] = int(time.time()) + int(new.get("expires_in", 3600))
@@ -557,6 +563,7 @@ def status(org_id: str) -> dict[str, Any]:
         if _provider_connected(prov, t):
             out[prov] = {
                 "connected": True,
+                "needs_reauth": bool(t.get("needs_reauth")),
                 "email": t.get("email", ""),
                 "name": t.get("name", ""),
                 "connected_at": t.get("connected_at", 0),
@@ -565,6 +572,47 @@ def status(org_id: str) -> dict[str, Any]:
         else:
             out[prov] = {"connected": False}
     return out
+
+
+def _flag_needs_reauth(org_id: str, provider: str) -> None:
+    tk = load_tokens(org_id)
+    rec = tk.get(provider) or {}
+    if rec.get("needs_reauth"):
+        return  # already flagged; don't spam
+    rec["needs_reauth"] = True
+    save_tokens(org_id, provider, rec)
+    try:
+        from .notifications import push_notification
+        push_notification(
+            title="Reconnect your email",
+            body="Adapix lost access to your inbox — reconnect it in Settings so follow-up emails keep sending.",
+            url="/app", tag="adapix-reauth", org_id=org_id,
+        )
+    except Exception:
+        pass
+
+
+def owner_email(org_id: str) -> str | None:
+    """The business owner's real email — the reply-to for fallback sends."""
+    tk = load_tokens(org_id)
+    for prov in ("google", "microsoft"):
+        e = (tk.get(prov) or {}).get("email")
+        if e:
+            return e
+    return (tk.get("smtp") or {}).get("username") or None
+
+
+def send_email_for_org(org_id: str, to: str, subject: str, body: str,
+                       org_name, settings):
+    """THE one place org email goes out. Connected Gmail/Outlook sends AS the
+    owner; otherwise Resend sends with friendly-from + reply-to at the owner's
+    real inbox so replies don't land with us."""
+    if is_connected(org_id):
+        return send_email(org_id, to, subject, body, from_name=org_name)
+    from .channels import EmailChannel
+    r = EmailChannel(settings).send(to, subject, body,
+                                    reply_to=owner_email(org_id), from_name=org_name)
+    return {"ok": r.status == "sent", "provider_id": r.provider_id, "error": r.error}
 
 
 def is_connected(org_id: str) -> bool:
