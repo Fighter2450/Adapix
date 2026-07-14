@@ -4232,6 +4232,36 @@ body::after{
     });
   }
 
+  // Settings -> Messaging & channels: the 3 "Notify me when" toggles — were
+  // 100% decorative (no load, no save, no backend effect). Now real.
+  async function initNotifyPrefs(){
+    const save = document.getElementById('channels-notify-save');
+    if (!save) return;
+    try {
+      const p = await api('/api/v1/notify-prefs');
+      const esc = document.getElementById('np-escalation');
+      const draft = document.getElementById('np-draft');
+      const digest = document.getElementById('np-digest');
+      if (esc) esc.checked = p.notify_on_escalation !== false;
+      if (draft) draft.checked = p.notify_on_draft !== false;
+      if (digest) digest.checked = p.notify_digest !== false;
+    } catch(_){}
+
+    save.addEventListener('click', async () => {
+      save.disabled = true; const orig = save.textContent; save.textContent = 'Saving…';
+      const checked = (id) => { const el = document.getElementById(id); return el ? el.checked : true; };
+      try {
+        await api('/api/v1/notify-prefs', {method:'POST', body: JSON.stringify({
+          notify_on_escalation: checked('np-escalation'),
+          notify_on_draft: checked('np-draft'),
+          notify_digest: checked('np-digest'),
+        })});
+        toast('Notification preferences saved');
+      } catch(e){ toast('Could not save', true); }
+      save.disabled = false; save.textContent = orig;
+    });
+  }
+
   // Settings -> Business profile: website import (read site -> review -> apply)
   async function initWebsiteImport(){
     const urlIn = document.getElementById('wi-url');
@@ -4717,18 +4747,18 @@ body::after{
           <div class="scard-title">Notify me when</div>
           <div class="stoggle-row">
             <div class="stoggle-body"><div class="stoggle-label">Customer needs a human reply</div><div class="stoggle-hint">Escalations &mdash; Adapix could not handle it automatically</div></div>
-            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+            <label class="stoggle"><input type="checkbox" id="np-escalation" checked /><span class="stoggle-track"></span></label>
           </div>
           <div class="stoggle-row">
             <div class="stoggle-body"><div class="stoggle-label">Drafts are ready to review</div><div class="stoggle-hint">When Adapix writes messages waiting for your approval</div></div>
-            <label class="stoggle"><input type="checkbox" checked /><span class="stoggle-track"></span></label>
+            <label class="stoggle"><input type="checkbox" id="np-draft" checked /><span class="stoggle-track"></span></label>
           </div>
           <div class="stoggle-row">
-            <div class="stoggle-body"><div class="stoggle-label">Campaign pass completes</div><div class="stoggle-hint">Summary after each automated send cycle</div></div>
-            <label class="stoggle"><input type="checkbox" /><span class="stoggle-track"></span></label>
+            <div class="stoggle-body"><div class="stoggle-label">Daily digest</div><div class="stoggle-hint">Once a day: what's waiting and what you've won back</div></div>
+            <label class="stoggle"><input type="checkbox" id="np-digest" checked /><span class="stoggle-track"></span></label>
           </div>
         </div>
-        <button class="sform-save" data-action="save">Save changes</button>`;
+        <button class="sform-save" id="channels-notify-save">Save changes</button>`;
 
     } else if (page === 'rules'){
       body = `
@@ -4824,7 +4854,7 @@ body::after{
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 
     main.querySelectorAll('.sform-save, [data-action="save"]').forEach(btn => {
-      if (btn.id === 'rules-save' || btn.id === 'bp-save') return; // has its own real handler
+      if (btn.id === 'rules-save' || btn.id === 'bp-save' || btn.id === 'channels-notify-save') return; // has its own real handler
       btn.addEventListener('click', () => toast('Changes saved'));
     });
     const inv = main.querySelector('[data-action="invite"]');
@@ -5003,6 +5033,7 @@ body::after{
     if (page === 'account') setTimeout(initAccountBilling, 50);
     if (page === 'profile') setTimeout(initWebsiteImport, 50);
     if (page === 'profile') setTimeout(initBusinessProfile, 50);
+    if (page === 'channels') setTimeout(initNotifyPrefs, 50);
   }
 
   function bindNav(){

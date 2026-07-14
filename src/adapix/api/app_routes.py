@@ -2801,6 +2801,39 @@ def api_wins_summary(org_id: str = Depends(verify_admin)):
     }
 
 
+class NotifyPrefsBody(BaseModel):
+    notify_on_escalation: bool = True
+    notify_on_draft: bool = True
+    notify_digest: bool = True
+
+
+@router.get("/api/v1/notify-prefs")
+def api_notify_prefs_get(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+    return {
+        "notify_on_escalation": bool(data.get("notify_on_escalation", True)),
+        "notify_on_draft": bool(data.get("notify_on_draft", True)),
+        "notify_digest": bool(data.get("notify_digest", True)),
+    }
+
+
+@router.post("/api/v1/notify-prefs")
+def api_notify_prefs_set(body: NotifyPrefsBody, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        data["notify_on_escalation"] = body.notify_on_escalation
+        data["notify_on_draft"] = body.notify_on_draft
+        data["notify_digest"] = body.notify_digest
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
 @router.get("/api/v1/contacts/template.csv", response_class=PlainTextResponse)
 def api_contacts_template(_user: str = Depends(verify_admin)):
     """Download a blank CSV template pre-filled with one example row."""

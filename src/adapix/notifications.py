@@ -194,6 +194,34 @@ def list_subscriptions(org_id: str | None = None) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Push sending
 # ---------------------------------------------------------------------------
+# tag -> the org-profile preference key that can turn this notification
+# type off. Any tag not listed here always sends (no opt-out exists for it).
+_PREF_BY_TAG = {
+    "adapix-escalation": "notify_on_escalation",
+    "adapix-draft": "notify_on_draft",
+    "adapix-digest": "notify_digest",
+}
+
+
+def _notification_allowed(org_id: str | None, tag: str | None) -> bool:
+    """Checks Settings -> Messaging & channels -> 'Notify me when' prefs.
+    Defaults to allowed — an org that never touched these toggles keeps
+    getting notified, matching behavior before the toggles did anything."""
+    pref_key = _PREF_BY_TAG.get(tag or "")
+    if not pref_key or not org_id:
+        return True
+    try:
+        from sqlalchemy.orm import Session
+        from .db import get_engine
+        from .models import OrgProfile
+        with Session(get_engine()) as s:
+            row = s.get(OrgProfile, org_id)
+            data = (row.data or {}) if row else {}
+            return bool(data.get(pref_key, True))
+    except Exception:
+        return True  # never let a broken preference lookup swallow a real alert
+
+
 def push_notification(
     title: str,
     body: str,
@@ -210,6 +238,9 @@ def push_notification(
     Failed / stale subscriptions (HTTP 404 or 410 from the push gateway)
     are auto-removed so they don't keep failing forever.
     """
+    if not _notification_allowed(org_id, tag):
+        return {"ok": True, "sent": 0, "failed": 0, "skipped": "preference off"}
+
     if not _PUSH_AVAILABLE:
         return {"ok": False, "error": "pywebpush not installed", "sent": 0, "failed": 0}
 
