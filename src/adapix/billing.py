@@ -84,17 +84,16 @@ def set_billing(org_id: str, record: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 # Checkout
 # ---------------------------------------------------------------------------
-def create_checkout_session(org_id: str, email: str, base_url: str) -> str:
+def create_checkout_session(org_id: str, email: str, base_url: str, trial_days: int = 14) -> str:
     """Create a subscription Checkout Session and return its hosted URL.
 
-    The 14-day trial lives on the subscription, so the card is saved now
-    but nothing is charged until the trial ends.
+    trial_days is the REMAINDER of the org's 14-day app trial — adding a card
+    on day 10 gives 4 more free days, not a fresh 14 (no trial stacking).
     """
     params = {
         "mode": "subscription",
         "line_items[0][price]": price_id(),
         "line_items[0][quantity]": "1",
-        "subscription_data[trial_period_days]": "14",
         "customer_email": email,
         "client_reference_id": org_id,
         "allow_promotion_codes": "true",
@@ -103,6 +102,8 @@ def create_checkout_session(org_id: str, email: str, base_url: str) -> str:
         "metadata[org_id]": org_id,
         "subscription_data[metadata][org_id]": org_id,
     }
+    if trial_days > 0:
+        params["subscription_data[trial_period_days]"] = str(trial_days)
     session = _call("POST", "/checkout/sessions", params)
     return session["url"]
 
@@ -182,3 +183,29 @@ def refresh_status(org_id: str) -> str:
         return status
     except Exception:
         return rec.get("status") or "none"
+
+
+def engine_allowed(org_id: str, org_created_at=None) -> tuple[bool, str]:
+    """May the engine spend money (Claude/Twilio/Vapi) for this org?
+
+    - Billing not configured (pre-launch): always yes.
+    - Subscription trialing/active: yes.
+    - Subscription past_due/canceled/unpaid/incomplete: NO — a failed card
+      must not keep consuming paid APIs for free.
+    - No subscription: yes during the 14-day app trial (+3 grace days from
+      org creation), no after that.
+    """
+    if not configured():
+        return True, "billing not configured"
+    rec = get_billing(org_id)
+    status = rec.get("status") or ""
+    if status in ("trialing", "active"):
+        return True, status
+    if status in ("past_due", "canceled", "unpaid", "incomplete", "incomplete_expired"):
+        return False, status
+    if org_created_at is not None:
+        from datetime import datetime, timedelta
+        if datetime.utcnow() - org_created_at <= timedelta(days=17):
+            return True, "app trial"
+        return False, "trial over, no subscription"
+    return True, "unknown"

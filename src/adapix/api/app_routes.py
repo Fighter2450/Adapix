@@ -114,12 +114,16 @@ def api_billing_checkout(request: Request, _user: str = Depends(verify_admin)):
     from ..models import User
     if not configured():
         raise HTTPException(status_code=503, detail="Billing isn't set up yet — you can skip this step.")
+    from ..models import Organization
     with get_session() as s:
         owner = s.query(User).filter(User.org_id == _user, User.role == "owner").first()
         email = owner.email if owner else ""
+        org = s.get(Organization, _user)
+        used = (datetime.utcnow() - org.created_at).days if org and org.created_at else 14
+        trial_days = max(0, 14 - used)
     base = (Settings().public_base_url or f"{request.url.scheme}://{request.url.netloc}").rstrip("/")
     try:
-        url = create_checkout_session(_user, email, base)
+        url = create_checkout_session(_user, email, base, trial_days=trial_days)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {e}")
     return {"url": url}
@@ -2185,6 +2189,18 @@ def run_all_campaigns(only_org: str | None = None) -> dict[str, Any]:
                 .all()
             )
             org_ids = [o.id for o, prof in rows if not (prof.data or {}).get("paused")]
+            # Billing gate: don't spend API money for orgs whose card failed
+            # or whose trial lapsed without a subscription.
+            from ..billing import engine_allowed
+            created_by_org = {o.id: o.created_at for o, _ in rows}
+            blocked = []
+            for oid in list(org_ids):
+                ok, why = engine_allowed(oid, created_by_org.get(oid))
+                if not ok:
+                    blocked.append(f"{oid}: {why}")
+                    org_ids.remove(oid)
+            if blocked:
+                errors.append("billing-gated (no drafting): " + "; ".join(blocked))
             if only_org is not None:
                 org_ids = [oid for oid in org_ids if oid == only_org]
     except Exception as exc:

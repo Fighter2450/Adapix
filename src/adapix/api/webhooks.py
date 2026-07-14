@@ -181,3 +181,62 @@ async def dev_inbound_sms(payload: dict):
             else None
         ),
     }
+
+
+@router.post("/stripe")
+async def stripe_webhook(request: Request):
+    """Stripe events that change what a customer may do:
+    subscription created/updated/deleted and failed payments. Signature-
+    verified with the endpoint's signing secret; updates the org's billing
+    record, which the engine gate reads before spending anything."""
+    import hashlib
+    import hmac as hmac_mod
+    import json
+    import os
+    import time
+
+    payload = await request.body()
+    secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+    sig_header = request.headers.get("Stripe-Signature", "")
+    if not secret:
+        raise HTTPException(status_code=503, detail="webhook secret not configured")
+
+    try:
+        parts = dict(kv.split("=", 1) for kv in sig_header.split(","))
+        ts, v1 = parts["t"], parts["v1"]
+        expected = hmac_mod.new(secret.encode(), f"{ts}.".encode() + payload, hashlib.sha256).hexdigest()
+        if not hmac_mod.compare_digest(expected, v1):
+            raise ValueError("signature mismatch")
+        if abs(time.time() - int(ts)) > 600:
+            raise ValueError("stale timestamp")
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid signature")
+
+    event = json.loads(payload)
+    etype = event.get("type", "")
+    obj = (event.get("data") or {}).get("object") or {}
+
+    from ..billing import find_subscription_by_org, set_billing
+
+    org_id = None
+    status = None
+    if etype.startswith("customer.subscription."):
+        org_id = (obj.get("metadata") or {}).get("org_id")
+        status = "canceled" if etype.endswith("deleted") else obj.get("status")
+    elif etype == "invoice.payment_failed":
+        meta = ((obj.get("subscription_details") or {}).get("metadata")) or {}
+        org_id = meta.get("org_id")
+        status = "past_due"
+    elif etype == "checkout.session.completed":
+        org_id = obj.get("client_reference_id")
+        if org_id:
+            find_subscription_by_org(org_id)  # records sub + status
+            print(f"[adapix] stripe checkout completed for org {org_id}")
+        return {"ok": True}
+
+    if org_id and status:
+        set_billing(org_id, {"status": status,
+                             "subscription_id": obj.get("id") if etype.startswith("customer.subscription.") else None} 
+                    if etype.startswith("customer.subscription.") else {"status": status})
+        print(f"[adapix] stripe {etype}: org {org_id} -> {status}")
+    return {"ok": True}
