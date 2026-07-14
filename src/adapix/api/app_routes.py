@@ -2938,6 +2938,75 @@ def api_contacts_add(body: ContactAddBody, _user: str = Depends(verify_admin)):
         return {"ok": True, "id": p.id}
 
 
+class ContactEditBody(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    preferred_channel: str | None = None
+    service_type: str | None = None
+    deal_value: str | None = None
+    notes: str | None = None
+    status: str | None = None
+
+
+@router.patch("/api/v1/patients/{patient_id}")
+def api_patient_edit(patient_id: int, body: ContactEditBody, _user: str = Depends(verify_admin)):
+    """Edit a contact — a typo'd phone or an out-of-date note otherwise had
+    no fix short of deleting and re-adding the whole person."""
+    from ..phone import normalize_phone
+    with get_session() as s:
+        p = s.query(Patient).filter(Patient.id == patient_id, Patient.practice_id == _user).first()
+        if not p:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        if body.first_name is not None:
+            p.first_name = body.first_name.strip()
+        if body.last_name is not None:
+            p.last_name = body.last_name.strip()
+        if body.phone is not None:
+            p.phone = normalize_phone(body.phone) if body.phone.strip() else None
+        if body.email is not None:
+            p.email = body.email.strip() or None
+        if body.preferred_channel is not None and body.preferred_channel in ("sms", "email"):
+            p.preferred_channel = body.preferred_channel
+        if body.service_type is not None:
+            p.treatment_type = body.service_type.strip() or None
+        if body.deal_value is not None:
+            raw = body.deal_value.strip().replace(",", "").replace("$", "")
+            p.treatment_plan_amount = float(raw) if raw else None
+        if body.notes is not None:
+            p.notes = body.notes.strip() or None
+        if body.status is not None and body.status in (
+            "consulted_not_started", "treatment_started", "explicitly_declined", "paused",
+        ):
+            p.status = body.status
+        if not p.first_name.strip() and not p.last_name.strip():
+            raise HTTPException(status_code=400, detail="A contact needs a name.")
+        if not p.phone and not p.email:
+            raise HTTPException(status_code=400, detail="A contact needs a phone number or an email.")
+        s.commit()
+        return {
+            "ok": True, "id": p.id, "first_name": p.first_name, "last_name": p.last_name,
+            "phone": p.phone, "email": p.email, "preferred_channel": p.preferred_channel,
+            "status": p.status, "treatment_type": p.treatment_type,
+            "treatment_plan_amount": p.treatment_plan_amount, "notes": p.notes,
+        }
+
+
+@router.delete("/api/v1/patients/{patient_id}")
+def api_patient_delete(patient_id: int, _user: str = Depends(verify_admin)):
+    """Remove a contact and everything attached to them (campaigns, message
+    history) — for a bad import row or a deletion request."""
+    with get_session() as s:
+        p = s.query(Patient).filter(Patient.id == patient_id, Patient.practice_id == _user).first()
+        if not p:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        s.delete(p)
+        s.commit()
+    return {"ok": True}
+
+
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")
 def api_agent_document(slug: str, filename: str, _user: str = Depends(verify_admin)):
     import os

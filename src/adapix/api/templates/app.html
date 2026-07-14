@@ -1238,7 +1238,13 @@ body::after{
   }
   async function api(path, opts){
     const res = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'},credentials:'include'}, opts||{}));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) {
+      // Surface the server's actual reason (e.g. "A contact needs a phone
+      // number or an email.") instead of a bare status code where possible.
+      let detail = null;
+      try { detail = (await res.json()).detail; } catch(_){}
+      throw new Error(detail || ('HTTP ' + res.status));
+    }
     return res.json();
   }
 
@@ -2710,13 +2716,50 @@ body::after{
         ${searchBox}
         ${!state.patients.length ? `<div style="text-align:center;padding:32px 20px;color:var(--ink-2);font-size:13.5px">No contacts match "${escapeHTML(state.contactsSearch)}"</div>` : ''}
         <div class="rows">${state.patients.slice(0,200).map(p => `
-          <div class="row-card" style="cursor:default">
+          <div class="row-card" style="cursor:default;flex-wrap:wrap" data-contact-id="${p.id}">
             <div class="text">
               <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>${p.needs_attention ? ` <span title="No reply in ${p.silent_days} days" style="font-size:11px;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">Quiet ${p.silent_days}d</span>` : ''}
               <span>${escapeHTML(p.preferred_channel||'sms')}${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
-            ${p.status !== 'treatment_started' ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0;border-color:rgba(52,211,153,.35);color:#6ee7b7" data-action="mark-won" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}" data-amount="${p.treatment_plan_amount || ''}">Won \u2713</button>` : ''}
+            ${p.status !== 'treatment_started' ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0;border-color:rgba(52,211,153,.35);color:#6ee7b7" data-action="mark-won" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}" data-amount="${p.treatment_plan_amount || ''}">Won ✓</button>` : ''}
+            <button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0" data-action="contact-edit-toggle" data-id="${p.id}">Edit</button>
+            <div data-contact-editor hidden style="flex-basis:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);cursor:default" onclick="event.stopPropagation()">
+              <div class="sform-2col">
+                <div class="sform-row"><label class="sform-label">First name</label><input class="sform-input" data-f="first_name" value="${escapeHTML(p.first_name||'')}"></div>
+                <div class="sform-row"><label class="sform-label">Last name</label><input class="sform-input" data-f="last_name" value="${escapeHTML(p.last_name||'')}"></div>
+              </div>
+              <div class="sform-2col">
+                <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" data-f="phone" value="${escapeHTML(p.phone||'')}"></div>
+                <div class="sform-row"><label class="sform-label">Email</label><input class="sform-input" data-f="email" value="${escapeHTML(p.email||'')}"></div>
+              </div>
+              <div class="sform-2col">
+                <div class="sform-row"><label class="sform-label">Service</label><input class="sform-input" data-f="service_type" value="${escapeHTML(p.treatment_type||'')}"></div>
+                <div class="sform-row"><label class="sform-label">Deal value</label><input class="sform-input" data-f="deal_value" value="${p.treatment_plan_amount||''}"></div>
+              </div>
+              <div class="sform-2col">
+                <div class="sform-row"><label class="sform-label">Preferred channel</label>
+                  <select class="sform-input sform-select" data-f="preferred_channel">
+                    <option value="sms" ${p.preferred_channel==='sms'?'selected':''}>Text</option>
+                    <option value="email" ${p.preferred_channel==='email'?'selected':''}>Email</option>
+                  </select>
+                </div>
+                <div class="sform-row"><label class="sform-label">Status</label>
+                  <select class="sform-input sform-select" data-f="status">
+                    <option value="consulted_not_started" ${p.status==='consulted_not_started'?'selected':''}>Following up</option>
+                    <option value="treatment_started" ${p.status==='treatment_started'?'selected':''}>Won</option>
+                    <option value="paused" ${p.status==='paused'?'selected':''}>Paused</option>
+                    <option value="explicitly_declined" ${p.status==='explicitly_declined'?'selected':''}>Declined</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sform-row"><label class="sform-label">Notes</label><textarea class="sform-input" data-f="notes" rows="2">${escapeHTML(p.notes||'')}</textarea></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+                <button class="sform-save" data-action="contact-save" data-id="${p.id}">Save changes</button>
+                <button class="btn btn-ghost" data-action="contact-edit-cancel">Cancel</button>
+                <button class="btn btn-ghost" style="margin-left:auto;border-color:rgba(244,63,94,.35);color:#fda4af" data-action="contact-delete" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}">Delete contact</button>
+              </div>
+            </div>
           </div>`).join('')}
         </div>`;
     }
@@ -2734,6 +2777,40 @@ body::after{
           toast('Logged \u2014 ' + btn.dataset.name.trim() + ' marked as won' + (isNaN(amount) ? '' : ' \u00b7 $' + Math.round(amount).toLocaleString()));
           renderPatientsView();
         } catch(_){ toast('Could not log the win', true); btn.disabled = false; }
+      });
+    });
+    main.querySelectorAll('[data-action="contact-edit-toggle"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('[data-contact-id]');
+        const editor = row.querySelector('[data-contact-editor]');
+        if (editor) editor.hidden = !editor.hidden;
+      });
+    });
+    main.querySelectorAll('[data-action="contact-edit-cancel"]').forEach(btn => {
+      btn.addEventListener('click', () => { btn.closest('[data-contact-editor]').hidden = true; });
+    });
+    main.querySelectorAll('[data-action="contact-save"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const editor = btn.closest('[data-contact-editor]');
+        const payload = {};
+        editor.querySelectorAll('[data-f]').forEach(el => { payload[el.dataset.f] = el.value; });
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Saving…';
+        try {
+          await api(`/api/v1/patients/${btn.dataset.id}`, {method:'PATCH', body: JSON.stringify(payload)});
+          toast('Contact updated');
+          renderPatientsView();
+        } catch(e){ toast(e.message || 'Could not save', true); btn.disabled = false; btn.textContent = orig; }
+      });
+    });
+    main.querySelectorAll('[data-action="contact-delete"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm("Delete " + btn.dataset.name.trim() + "? This removes their message history too. This cannot be undone.")) return;
+        btn.disabled = true; btn.textContent = 'Deleting…';
+        try {
+          await api(`/api/v1/patients/${btn.dataset.id}`, {method:'DELETE'});
+          toast('Contact deleted');
+          renderPatientsView();
+        } catch(e){ toast('Could not delete', true); btn.disabled = false; btn.textContent = 'Delete contact'; }
       });
     });
     const searchInput = main.querySelector('#contacts-search');
