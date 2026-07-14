@@ -3834,9 +3834,11 @@ body::after{
         + '<div class="autos-empty-body">'+(filter==='all'
             ? 'Tell Adapix a URL and what to look for. It checks the page on your schedule and saves the result — no code, no manual checking.'
             : 'No automations match this filter right now.')+'</div>'
-        + (filter==='all' ? '<button class="autos-new-btn" onclick="showAutoModal()"><i data-lucide="plus" style="width:16px;height:16px"></i> Create automation</button>' : '')
+        + (filter==='all' ? '<button class="autos-new-btn" id="autos-empty-new-btn"><i data-lucide="plus" style="width:16px;height:16px"></i> Create automation</button>' : '')
         + '</div>';
       lucide.createIcons();
+      const emptyBtn = document.getElementById('autos-empty-new-btn');
+      if (emptyBtn) emptyBtn.addEventListener('click', () => showAutoModal());
       return;
     }
 
