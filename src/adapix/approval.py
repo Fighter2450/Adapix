@@ -246,6 +246,48 @@ class ApprovalManager:
             )
             return m.status
 
+    def send_now(self, message_id: int) -> str:
+        """Send/place an already-APPROVED message immediately, ignoring
+        scheduled_at and the quiet-hours window — the explicit-human-action
+        override for a scheduled call or message someone doesn't want to
+        wait on (Calls tab 'Call now' on a Scheduled entry). Same immediacy
+        as approve_and_send's single-click flow, just for a message that's
+        already past the approve step."""
+        sms = SmsChannel(self.settings, dry_run=self.dry_run)
+        email = EmailChannel(self.settings, dry_run=self.dry_run)
+        voice = VoiceChannel(self.settings, dry_run=self.dry_run)
+        with get_session(self.settings) as s:
+            m = s.get(Message, message_id)
+            if m is None or m.status != APPROVED:
+                return "not_found_or_not_approved"
+            campaign = s.get(Campaign, m.campaign_id)
+            patient = s.get(Patient, campaign.patient_id) if campaign else None
+            if patient is None:
+                return "no_patient"
+            if patient.opted_out:
+                m.status = "rejected"
+                meta = dict(m.metadata_json or {})
+                meta["rejected_reason"] = "contact opted out"
+                m.metadata_json = meta
+                return "opted_out"
+            org = s.get(Organization, campaign.practice_id) if campaign else None
+            prior_sent = (
+                s.query(Message)
+                .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
+                        Message.direction == "outbound",
+                        Message.status.in_(("sent", "delivered", "replied")))
+                .count()
+            )
+            self._send_one(
+                m, patient, sms, email, voice,
+                org.vapi_phone_number_id if org else None,
+                org.name if org else None,
+                campaign.practice_id if campaign else None,
+                org.blooio_channel_id if org else None,
+                first_touch=prior_sent == 0,
+            )
+            return m.status
+
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------

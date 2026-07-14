@@ -2005,6 +2005,27 @@ def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_
     return {"ok": True, "id": message_id, "status": status}
 
 
+@router.post("/api/v1/approvals/{message_id}/send-now")
+def api_send_now(message_id: int, _user: str = Depends(verify_admin)):
+    """Place a scheduled call (or send a scheduled message) right now instead
+    of waiting for its scheduled_at — the Calls tab's 'Call now' override on
+    a Scheduled entry. Requires the message to already be approved (i.e.
+    already past the plan-approval step, whether scheduled or not)."""
+    _require_message_in_org(message_id, _user)
+    mgr = ApprovalManager()
+    try:
+        status = mgr.send_now(message_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if status == "opted_out":
+        raise HTTPException(status_code=409, detail="This contact opted out — nothing can be sent to them.")
+    if status == "not_found_or_not_approved":
+        raise HTTPException(status_code=400, detail="Nothing to send — it may have already gone out or been cancelled.")
+    if status not in ("sent", "queued"):
+        raise HTTPException(status_code=502, detail=f"Send failed: {status}")
+    return {"ok": True, "id": message_id, "status": status}
+
+
 @router.post("/api/v1/approvals/{message_id}/reject")
 def api_reject(message_id: int, body: RejectBody, _user: str = Depends(verify_admin)):
     _require_message_in_org(message_id, _user)
