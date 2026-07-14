@@ -25,7 +25,16 @@ EMPTY_TWIML = "<?xml version='1.0' encoding='UTF-8'?><Response/>"
 
 
 async def _verify_twilio(request: Request, form: dict) -> bool:
-    """Returns True if signature is valid, OR if verification is disabled."""
+    """Returns True if signature is valid, OR if verification is disabled.
+
+    Twilio signs the HMAC against the EXACT URL it POSTed to. If the number's
+    webhook in the Twilio console points at a different host than
+    PUBLIC_BASE_URL (e.g. the raw *.up.railway.app domain instead of the
+    custom domain — this has happened), a signature computed only against
+    PUBLIC_BASE_URL never matches and every inbound reply is rejected with a
+    403, silently dropping the customer's message before the AI ever sees
+    it. Try every host we might plausibly be reached on and accept the
+    first one that validates."""
     settings = Settings()
     if settings.skip_twilio_verification:
         return True
@@ -38,14 +47,25 @@ async def _verify_twilio(request: Request, form: dict) -> bool:
         return False
     validator = RequestValidator(settings.twilio_auth_token)
     sig = request.headers.get("X-Twilio-Signature", "")
-    # Use public_base_url if configured (handles ngrok/proxy URL rewriting)
+
+    candidates: list[str] = []
+    # 1) The host that actually served the request, forced to https — Railway
+    #    (and most reverse proxies) terminate TLS at the edge, so the app
+    #    often sees an http:// URL internally even though Twilio hit https.
+    raw_url = str(request.url)
+    if raw_url.startswith("http://"):
+        raw_url = "https://" + raw_url[len("http://"):]
+    candidates.append(raw_url)
+    # 2) The configured canonical public URL, if different (covers a custom
+    #    domain configured in Twilio while PUBLIC_BASE_URL differs, or vice
+    #    versa).
     if settings.public_base_url:
-        url = settings.public_base_url.rstrip("/") + str(request.url.path)
+        alt = settings.public_base_url.rstrip("/") + str(request.url.path)
         if request.url.query:
-            url += "?" + request.url.query
-    else:
-        url = str(request.url)
-    return validator.validate(url, form, sig)
+            alt += "?" + request.url.query
+        candidates.append(alt)
+
+    return any(validator.validate(u, form, sig) for u in dict.fromkeys(candidates))
 
 
 @router.post("/twilio/sms")
@@ -54,32 +74,35 @@ async def twilio_inbound_sms(request: Request):
     form_data = await request.form()
     form_dict = {k: str(v) for k, v in form_data.items()}
 
-    if not await _verify_twilio(request, form_dict):
-        # Don't 401 — Twilio retries aggressively. Just no-op + log.
-        print("[adapix] twilio webhook signature verification FAILED")
-        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
-
     From = form_dict.get("From", "")
     To = form_dict.get("To", "")
     Body = form_dict.get("Body", "")
     MessageSid = form_dict.get("MessageSid", "")
 
+    # Persist the raw inbound BEFORE anything else, verification included —
+    # a customer reply must never vanish with zero trace, whether it's a
+    # downstream exception or a signature mismatch (misconfigured webhook
+    # URL, rotated auth token) that eats it.
+    if From and Body:
+        try:
+            import json as _json
+            import os as _os
+            import time as _time
+            from pathlib import Path as _Path
+            raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
+            with raw.open("a", encoding="utf-8") as f:
+                f.write(_json.dumps({"t": int(_time.time()), "from": From, "to": To,
+                                     "body": Body, "sid": MessageSid}) + chr(10))
+        except Exception:
+            pass
+
+    if not await _verify_twilio(request, form_dict):
+        # Don't 401 — Twilio retries aggressively. Just no-op + log.
+        print(f"[adapix] twilio webhook signature verification FAILED from={From}")
+        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+
     if not From or not Body:
         return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
-
-    # Persist the raw inbound BEFORE processing — a customer reply must never
-    # vanish because a downstream exception ate it.
-    try:
-        import json as _json
-        import os as _os
-        import time as _time
-        from pathlib import Path as _Path
-        raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
-        with raw.open("a", encoding="utf-8") as f:
-            f.write(_json.dumps({"t": int(_time.time()), "from": From, "to": To,
-                                 "body": Body, "sid": MessageSid}) + chr(10))
-    except Exception:
-        pass
 
     try:
         processor = InboundProcessor()
