@@ -65,7 +65,8 @@ class InboundProcessor:
             # Tenant isolation: the number the customer texted identifies the
             # business. Without this, two orgs sharing a contact's phone would
             # leak each other's replies.
-            q = s.query(Patient).filter(Patient.phone == from_number)
+            from .phone import normalize_phone
+            q = s.query(Patient).filter(Patient.phone == (normalize_phone(from_number) or from_number))
             if to_number:
                 from .models import Organization
                 org = (
@@ -174,7 +175,8 @@ class InboundProcessor:
             if patient_id:
                 patient = s.get(Patient, int(patient_id))
             if patient is None and from_number:
-                patient = s.query(Patient).filter(Patient.phone == from_number).first()
+                from .phone import normalize_phone
+                patient = s.query(Patient).filter(Patient.phone == (normalize_phone(from_number) or from_number)).first()
             if patient is None:
                 return InboundResult(status="ignored", reason="no contact match for call")
 

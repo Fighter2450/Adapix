@@ -93,10 +93,27 @@ def _run_additive_migrations(engine: Engine) -> None:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
+def _normalize_existing_phones(engine: Engine) -> None:
+    """One-off data fix: bring already-stored patient phones to E.164 so
+    inbound replies match. Idempotent — normalized numbers pass through
+    unchanged on later boots."""
+    from .phone import normalize_phone
+    insp = inspect(engine)
+    if not insp.has_table("patients"):
+        return
+    with engine.begin() as conn:
+        rows = conn.execute(text("SELECT id, phone FROM patients WHERE phone IS NOT NULL")).fetchall()
+        for pid, phone in rows:
+            norm = normalize_phone(phone)
+            if norm and norm != phone:
+                conn.execute(text("UPDATE patients SET phone = :p WHERE id = :i"), {"p": norm, "i": pid})
+
+
 def init_db(settings: Settings | None = None) -> None:
     """Create all tables + apply additive column migrations. Idempotent."""
     engine = get_engine(settings)
     Base.metadata.create_all(bind=engine)
+    _normalize_existing_phones(engine)
     _run_additive_migrations(engine)
 
 

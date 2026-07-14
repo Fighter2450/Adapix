@@ -2650,7 +2650,8 @@ async def api_contacts_import(
         seen_ext = {ext for _, ext in existing if ext}
         for i, row in enumerate(rows):
             try:
-                row_phone = (row.get("phone") or "").strip() or None
+                from ..phone import normalize_phone
+                row_phone = normalize_phone(row.get("phone"))
                 row_ext = (row.get("external_id") or "").strip() or None
                 if (row_phone and row_phone in seen_phones) or (row_ext and row_ext in seen_ext):
                     duplicates += 1
@@ -2673,7 +2674,7 @@ async def api_contacts_import(
                     external_id=(row.get("external_id") or "").strip() or None,
                     first_name=(row.get("first_name") or "").strip(),
                     last_name=(row.get("last_name") or "").strip(),
-                    phone=(row.get("phone") or "").strip() or None,
+                    phone=row_phone,
                     email=(row.get("email") or "").strip() or None,
                     preferred_channel=(row.get("preferred_channel") or "sms").strip(),
                     consult_date=consult_date,
@@ -2711,7 +2712,8 @@ def api_contacts_add(body: ContactAddBody, _user: str = Depends(verify_admin)):
     """Add a single contact straight from the dashboard — no CSV needed."""
     first = (body.first_name or "").strip()
     last = (body.last_name or "").strip()
-    phone = (body.phone or "").strip() or None
+    from ..phone import normalize_phone
+    phone = normalize_phone(body.phone)
     email = (body.email or "").strip() or None
 
     if not first and not last:
