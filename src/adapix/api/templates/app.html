@@ -1498,6 +1498,8 @@ body::after{
         <button id="home-pause-btn" class="btn btn-ghost" hidden style="flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:12.5px;font-weight:600"></button>
       </div>
 
+      <div id="home-insight" style="display:none;font-size:14px;color:var(--ink-2);background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0"></div>
+
       <div id="home-paused-banner" style="display:none;align-items:center;gap:10px;padding:12px 16px;margin-bottom:18px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:12px;font-size:13px;color:#fde68a">
         <i data-lucide="pause-circle" style="width:16px;height:16px;flex-shrink:0"></i>
         Adapix is paused — no new follow-ups will be drafted until you resume. Anything already waiting in your Inbox can still be sent or rejected by hand.
@@ -1649,12 +1651,52 @@ body::after{
 
     loadHomeChart();
 
-    api('/api/v1/wins/summary').then(w => {
+    let winsData = null;
+    const winsPromise = api('/api/v1/wins/summary').then(w => {
+      winsData = w;
       const el = document.getElementById('home-won');
       const sub = document.getElementById('home-won-sub');
       if (!el) return;
       el.textContent = '$' + Math.round(w.month_total || 0).toLocaleString();
       if (sub && w.month_count) sub.textContent = w.month_count + ' job' + (w.month_count !== 1 ? 's' : '') + ' recovered \u00b7 $' + Math.round(w.all_total).toLocaleString() + ' all time';
+    }).catch(() => {});
+
+    // One sentence that does the interpreting instead of leaving the owner
+    // to eyeball three stat tiles. Priority: what needs action > what changed.
+    Promise.all([winsPromise, api('/api/v1/stats/daily?days=14').catch(() => null)]).then(([_, stats]) => {
+      const box = document.getElementById('home-insight');
+      if (!box || state.view !== 'home') return;
+      const staleDrafts = apprs.filter(m => m.created_at && (Date.now() - new Date(m.created_at)) > 24*3600*1000).length;
+      let text = null, tone = 'neutral';
+      if (escs.length){
+        text = escs.length === 1 ? '1 reply needs you' : escs.length + ' replies need you';
+        text += ' -- open Inbox to answer.';
+        tone = 'alert';
+      } else if (staleDrafts){
+        text = staleDrafts + (staleDrafts !== 1 ? ' drafts have' : ' draft has') + ' been waiting over a day -- a quick look keeps things moving.';
+        tone = 'warn';
+      } else if (winsData && winsData.week_total && winsData.last_week_total){
+        const pct = Math.round((winsData.week_total - winsData.last_week_total) / winsData.last_week_total * 100);
+        if (Math.abs(pct) >= 10) text = 'Won back ' + (pct > 0 ? pct + '% more' : Math.abs(pct) + '% less') + ' this week than last ($' + Math.round(winsData.week_total).toLocaleString() + ' vs $' + Math.round(winsData.last_week_total).toLocaleString() + ').';
+      } else if (stats && stats.days && stats.days.length >= 14){
+        const half = Math.floor(stats.days.length / 2);
+        const sumSent = (arr) => arr.reduce((a,d) => a + d.sent, 0);
+        const sumRep  = (arr) => arr.reduce((a,d) => a + d.replies, 0);
+        const thisWk = stats.days.slice(half), lastWk = stats.days.slice(0, half);
+        const rateThis = sumSent(thisWk) ? sumRep(thisWk) / sumSent(thisWk) : null;
+        const rateLast = sumSent(lastWk) ? sumRep(lastWk) / sumSent(lastWk) : null;
+        if (rateThis !== null && rateLast !== null && rateLast > 0){
+          const delta = Math.round((rateThis - rateLast) * 100);
+          if (Math.abs(delta) >= 8) text = 'Reply rate ' + (delta > 0 ? 'up' : 'down') + ' ' + Math.abs(delta) + ' points this week (' + Math.round(rateThis*100) + '% vs ' + Math.round(rateLast*100) + '%).';
+        }
+      }
+      if (text){
+        const colors = {alert:'#fda4af', warn:'#fbbf24', neutral:'var(--ink-2)'};
+        box.style.display = 'block';
+        box.style.color = colors[tone];
+        box.style.borderColor = tone === 'alert' ? 'rgba(244,63,94,.3)' : tone === 'warn' ? 'rgba(251,191,36,.3)' : 'var(--border)';
+        box.textContent = text;
+      }
     }).catch(() => {});
 
     // Fill in the contacts count if it wasn't loaded yet

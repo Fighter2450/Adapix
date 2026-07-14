@@ -2760,11 +2760,17 @@ def api_wins_summary(org_id: str = Depends(verify_admin)):
     now = datetime.utcnow()
     month_start = datetime(now.year, now.month, 1).isoformat()
     month = [w for w in wins if (w.get("at") or "") >= month_start]
+    week_ago = (now - timedelta(days=7)).isoformat()
+    two_weeks_ago = (now - timedelta(days=14)).isoformat()
+    week_total = sum(w.get("amount") or 0 for w in wins if (w.get("at") or "") >= week_ago)
+    last_week_total = sum(w.get("amount") or 0 for w in wins if two_weeks_ago <= (w.get("at") or "") < week_ago)
     return {
         "month_total": sum(w.get("amount") or 0 for w in month),
         "month_count": len(month),
         "all_total": sum(w.get("amount") or 0 for w in wins),
         "all_count": len(wins),
+        "week_total": week_total,
+        "last_week_total": last_week_total,
         "recent": sorted(wins, key=lambda w: w.get("at") or "", reverse=True)[:5],
     }
 
