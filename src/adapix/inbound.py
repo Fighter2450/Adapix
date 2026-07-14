@@ -121,9 +121,9 @@ class InboundProcessor:
             history = self._conversation_history(s, campaign.id, exclude_message_id=inbound.id)
             from .practice import load_profile
             profile = load_profile(patient.practice_id)
-            classification = self.escalator.classify(
-                body, history, business_context=profile.classifier_context_fragment()
-            )
+            ctx = profile.classifier_context_fragment()
+            print(f"[adapix] classifier context for org={patient.practice_id}: {ctx!r}")
+            classification = self.escalator.classify(body, history, business_context=ctx)
 
             # Log escalation event for any non-"other" category
             if classification.category != "other":
