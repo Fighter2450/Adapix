@@ -58,6 +58,7 @@ class CampaignRunner:
                 .filter(
                     Patient.practice_id == self.practice_id,
                     Patient.status == target_status,
+                    Patient.opted_out == False,  # noqa: E712 — TCPA hard gate
                 )
                 .all()
             )
@@ -160,6 +161,9 @@ class CampaignRunner:
                     patient = s.get(Patient, c.patient_id)
                     if patient is None:
                         continue
+                    if patient.opted_out:
+                        c.status = CampaignStatus.stopped.value
+                        break
                     try:
                         self._compose_step_with_retry(s, c, step, patient)
                         c.last_step_completed = step.day

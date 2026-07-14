@@ -62,6 +62,10 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("blooio_channel_id", "VARCHAR(128)"),
         ("imessage_number", "VARCHAR(32)"),
     ],
+    "patients": [
+        ("opted_out", "BOOLEAN DEFAULT FALSE"),
+        ("opted_out_at", "TIMESTAMP"),
+    ],
     "automations": [
         ("org_id", "VARCHAR(64)"),
     ],

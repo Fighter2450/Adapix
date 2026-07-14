@@ -161,6 +161,9 @@ class ApprovalManager:
                 patient = s.get(Patient, campaign.patient_id)
                 if patient is None:
                     continue
+                if patient.opted_out:
+                    m.status = "rejected"
+                    continue
                 org = s.get(Organization, campaign.practice_id)
                 self._send_one(
                     m, patient, sms, email, voice,
@@ -189,6 +192,12 @@ class ApprovalManager:
             patient = s.get(Patient, campaign.patient_id) if campaign else None
             if patient is None:
                 return "no_patient"
+            if patient.opted_out:
+                m.status = "rejected"
+                meta = dict(m.metadata_json or {})
+                meta["rejected_reason"] = "contact opted out"
+                m.metadata_json = meta
+                return "opted_out"
             org = s.get(Organization, campaign.practice_id) if campaign else None
             self._send_one(
                 m, patient, sms, email, voice,

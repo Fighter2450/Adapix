@@ -148,6 +148,10 @@ class Patient(Base):
     status: Mapped[str] = mapped_column(
         String(64), default=PatientStatus.consulted_not_started.value, index=True
     )
+    # TCPA: once a contact opts out (STOP or explicit decline), NOTHING may be
+    # sent to them on ANY channel. Checked at enrollment, drafting, and send.
+    opted_out: Mapped[bool] = mapped_column(Boolean, default=False)
+    opted_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     campaigns: Mapped[list["Campaign"]] = relationship(

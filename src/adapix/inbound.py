@@ -29,6 +29,7 @@ from .models import (
     EscalationEvent,
     Message,
     Patient,
+    PatientStatus,
 )
 
 
@@ -240,6 +241,36 @@ class InboundProcessor:
 
             return InboundResult(status="logged", classification=classification)
 
+    @staticmethod
+    def _opt_out_patient(session, patient: Patient, status: str | None = None) -> None:
+        """Patient-level, cross-channel opt-out: flag the contact, stop every
+        active campaign, and reject every draft still waiting for approval so
+        nothing to this person is one tap from sending."""
+        from datetime import datetime as _dt
+        patient.opted_out = True
+        patient.opted_out_at = _dt.utcnow()
+        if status:
+            patient.status = status
+        elif patient.status == PatientStatus.consulted_not_started.value:
+            patient.status = PatientStatus.paused.value
+        campaigns = (
+            session.query(Campaign)
+            .filter(Campaign.patient_id == patient.id)
+            .all()
+        )
+        for c in campaigns:
+            if c.status == CampaignStatus.active.value:
+                c.status = CampaignStatus.stopped.value
+            for m in (
+                session.query(Message)
+                .filter(Message.campaign_id == c.id, Message.status.in_(("pending_approval", "approved")))
+                .all()
+            ):
+                m.status = "rejected"
+                meta = dict(m.metadata_json or {})
+                meta["rejected_reason"] = "contact opted out"
+                m.metadata_json = meta
+
     # ------------------------------------------------------------------
     # Dispatch by classification
     # ------------------------------------------------------------------
@@ -257,11 +288,16 @@ class InboundProcessor:
 
         if cat == "stop":
             campaign.status = CampaignStatus.stopped.value
-            # TCPA: Twilio auto-blocks; we send no further messages.
+            # TCPA: opt-out is PATIENT-level and cross-channel, not one
+            # campaign row. Close everything, kill every pending draft.
+            self._opt_out_patient(session, patient)
             return InboundResult(status="stopped", classification=classification)
 
         if cat == "decline":
             campaign.status = CampaignStatus.declined.value
+            # An explicit "no" ends all outreach too — the one-time polite
+            # acknowledgment below is the last thing they hear from us.
+            self._opt_out_patient(session, patient, status=PatientStatus.explicitly_declined.value)
             body = self._decline_acknowledgment(campaign.practice_id)
             self._send_and_log(session, campaign, patient, body, "decline_ack")
             return InboundResult(
