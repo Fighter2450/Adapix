@@ -202,6 +202,11 @@ class Message(Base):
     provider_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
+    # Set only on manually-scheduled outbound messages/calls (Write a
+    # message's "Send at", Queue a call's "Call at"). NULL means "send/place
+    # as soon as it's approved" — today's behavior for everything else.
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     campaign: Mapped["Campaign"] = relationship(back_populates="messages")

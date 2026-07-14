@@ -74,6 +74,9 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("smtp_port", "INTEGER"),
         ("smtp_password", "TEXT"),
     ],
+    "messages": [
+        ("scheduled_at", "TIMESTAMP"),
+    ],
 }
 
 

@@ -1240,6 +1240,11 @@ class ComposeMessageBody(BaseModel):
     subject: str = ""
     body: str
     queue: bool = False  # True = drop into the pending-approval queue; False = send now
+    # ISO datetime (no offset — interpreted as America/New_York, same as the
+    # quiet-hours window everywhere else). If set, overrides `queue`: the
+    # message is pre-approved (the owner wrote and scheduled it themselves)
+    # and waits for send_approved()'s background sweep to fire at that time.
+    scheduled_at: str | None = None
 
 
 @router.post("/api/v1/messages/compose")
@@ -1252,6 +1257,19 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
         raise HTTPException(status_code=400, detail="Enter a recipient")
     if not body.body.strip():
         raise HTTPException(status_code=400, detail="Enter a message")
+
+    scheduled_dt = None
+    if body.scheduled_at:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZoneInfo
+        try:
+            naive = _dt.fromisoformat(body.scheduled_at)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid scheduled time")
+        local = naive.replace(tzinfo=_ZoneInfo("America/New_York"))
+        scheduled_dt = local.astimezone(_ZoneInfo("UTC")).replace(tzinfo=None)
+        if scheduled_dt <= _dt.utcnow():
+            raise HTTPException(status_code=400, detail="Pick a time in the future")
 
     from sqlalchemy.orm import Session
     from ..db import get_engine
@@ -1300,6 +1318,15 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
         s.flush()
         message_id = message.id
         s.commit()
+
+    if scheduled_dt is not None:
+        mgr = ApprovalManager()
+        mgr.approve(message_id)
+        with Session(get_engine()) as s2:
+            m = s2.get(Message, message_id)
+            m.scheduled_at = scheduled_dt
+            s2.commit()
+        return {"ok": True, "status": "scheduled", "scheduled_at": scheduled_dt.isoformat(), "message_id": message_id}
 
     if body.queue:
         return {"ok": True, "status": "pending_approval", "message_id": message_id}
@@ -1950,6 +1977,19 @@ def _require_message_in_org(message_id: int, org_id: str) -> None:
 def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_admin)):
     _require_message_in_org(message_id, _user)
     mgr = ApprovalManager()
+
+    # Scheduled for later (set at queue time — e.g. Calls tab "Call at"):
+    # approve the PLAN now, but don't place the call / send the message
+    # until send_approved()'s background sweep says it's due.
+    from datetime import datetime as _dt
+    with get_session() as s:
+        m = s.get(Message, message_id)
+        is_future_scheduled = bool(m and m.scheduled_at and m.scheduled_at > _dt.utcnow())
+    if is_future_scheduled:
+        if not mgr.approve(message_id, edited_body=body.edited_body or None):
+            raise HTTPException(status_code=400, detail="Could not approve — already handled")
+        return {"ok": True, "id": message_id, "status": "scheduled"}
+
     try:
         status = mgr.approve_and_send(message_id, edited_body=body.edited_body or None)
     except Exception as e:
@@ -2000,9 +2040,42 @@ def api_calls_list(org_id: str = Depends(verify_admin)):
                 "patient_id": p.id,
                 "phone": p.phone,
                 "goal": m.body,
+                "scheduled_at": m.scheduled_at.isoformat() if m.scheduled_at else None,
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             }
             for m, c, p in pending_rows
+        ]
+
+        # Approved-but-not-yet-placed scheduled calls: real, but not "placed"
+        # or "waiting on you" — a distinct third bucket so neither pending
+        # nor history mislabels them.
+        from datetime import datetime as _dt
+        now = _dt.utcnow()
+        scheduled_rows = (
+            s.query(Message, Campaign, Patient)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .join(Patient, Campaign.patient_id == Patient.id)
+            .filter(
+                Campaign.practice_id == org_id,
+                Message.channel == "call",
+                Message.status == "approved",
+                Message.scheduled_at.isnot(None),
+                Message.scheduled_at > now,
+            )
+            .order_by(Message.scheduled_at.asc())
+            .all()
+        )
+        scheduled = [
+            {
+                "id": m.id,
+                "patient": _patient_label(p),
+                "patient_id": p.id,
+                "phone": p.phone,
+                "goal": m.body,
+                "scheduled_at": m.scheduled_at.isoformat(),
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m, c, p in scheduled_rows
         ]
 
         history_rows = (
@@ -2010,7 +2083,10 @@ def api_calls_list(org_id: str = Depends(verify_admin)):
             .join(Campaign, Message.campaign_id == Campaign.id)
             .join(Patient, Campaign.patient_id == Patient.id)
             .filter(Campaign.practice_id == org_id, Message.channel == "call")
-            .filter(Message.status != "pending_approval")
+            .filter(
+                (Message.direction == "inbound")
+                | Message.status.in_(("sent", "failed", "rejected"))
+            )
             .order_by(Message.created_at.desc())
             .limit(50)
             .all()
@@ -2029,12 +2105,16 @@ def api_calls_list(org_id: str = Depends(verify_admin)):
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             })
 
-        return {"pending": pending, "history": history}
+        return {"pending": pending, "scheduled": scheduled, "history": history}
 
 
 class QueueCallBody(BaseModel):
     patient_id: int
     goal: str
+    # ISO datetime (no offset — America/New_York, same as Settings ->
+    # Follow-up rules / the quiet-hours window). Optional: leave unset and
+    # the call places as soon as it's approved, same as today.
+    scheduled_at: str | None = None
 
 
 @router.post("/api/v1/calls/queue")
@@ -2051,6 +2131,19 @@ def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
     goal = body.goal.strip()
     if not goal:
         raise HTTPException(status_code=400, detail="Describe what the call should accomplish.")
+
+    scheduled_dt = None
+    if body.scheduled_at:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZoneInfo
+        try:
+            naive = _dt.fromisoformat(body.scheduled_at)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid scheduled time")
+        local = naive.replace(tzinfo=_ZoneInfo("America/New_York"))
+        scheduled_dt = local.astimezone(_ZoneInfo("UTC")).replace(tzinfo=None)
+        if scheduled_dt <= _dt.utcnow():
+            raise HTTPException(status_code=400, detail="Pick a time in the future")
 
     with get_session() as s:
         patient = s.query(Patient).filter(
@@ -2070,6 +2163,7 @@ def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
             channel="call",
             body=goal,
             status="pending_approval",
+            scheduled_at=scheduled_dt,
         )
         s.add(msg)
         s.flush()

@@ -1367,6 +1367,14 @@ body::after{
     return Math.floor(hr/24) + 'd ago';
   }
 
+  // Absolute, readable time for something scheduled in the future — "in 2
+  // days" doesn't tell an owner WHEN, this does.
+  function fmtScheduled(iso){
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+  }
+
   // -------- INBOX view (new nav entry = queue + hero alert) --------
   // -------- HOME view — the morning glance: stats + what needs you --------
   // Home activity chart: two thin lines, recessive grid, crosshair tooltip.
@@ -2083,11 +2091,15 @@ body::after{
           <label class="sform-label">Message</label>
           <textarea class="sform-input" id="msg-body" rows="5" style="resize:vertical" placeholder="Write your message…"></textarea>
         </div>
+        <div class="sform-row">
+          <label class="sform-label">Send at <span style="font-weight:400;color:var(--ink-3)">(optional — applies to Send now)</span></label>
+          <input class="sform-input" id="msg-schedule" type="datetime-local" />
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="sch-connect" id="msg-queue">Queue for approval</button>
           <button class="sform-save" id="msg-send">Send now</button>
         </div>
-        <div class="sform-hint" style="margin-top:10px">Queue it and it waits in your Inbox until you approve it, like everything else Adapix drafts. Send now delivers immediately through the same connections above.</div>
+        <div class="sform-hint" style="margin-top:10px">Queue it and it waits in your Inbox until you approve it, like everything else Adapix drafts. Send now delivers immediately (or at the time above, if set) through the same connections above.</div>
       </div>
 
       <div class="home-section-head" style="margin-top:26px">
@@ -2191,11 +2203,12 @@ body::after{
     async function compose(queue){
       const to = toEl.value.trim();
       const bodyText = document.getElementById('msg-body').value.trim();
+      const scheduledAt = (!queue && document.getElementById('msg-schedule').value) || null;
       if (!to) { toast(channel === 'email' ? 'Enter an email address' : 'Enter a phone number', true); return; }
       if (!bodyText) { toast('Write a message first', true); return; }
       const btn = queue ? document.getElementById('msg-queue') : document.getElementById('msg-send');
       const original = btn.textContent;
-      btn.disabled = true; btn.textContent = queue ? 'Queuing…' : 'Sending…';
+      btn.disabled = true; btn.textContent = queue ? 'Queuing…' : (scheduledAt ? 'Scheduling…' : 'Sending…');
       try {
         const r = await api('/api/v1/messages/compose', { method: 'POST', body: JSON.stringify({
           channel, to,
@@ -2203,8 +2216,11 @@ body::after{
           subject: document.getElementById('msg-subject').value.trim(),
           body: bodyText,
           queue,
+          scheduled_at: scheduledAt,
         })});
-        if (queue) {
+        if (r.status === 'scheduled') {
+          toast('Scheduled for ' + fmtScheduled(r.scheduled_at));
+        } else if (queue) {
           toast('Queued — approve it from your Inbox');
         } else if (r.ok) {
           toast('Sent');
@@ -2213,6 +2229,7 @@ body::after{
         }
         document.getElementById('msg-body').value = '';
         document.getElementById('msg-contact-name').value = '';
+        document.getElementById('msg-schedule').value = '';
         loadMessages();
         refreshFeed();
       } catch(e){
@@ -2591,15 +2608,27 @@ body::after{
         <div class="row-card" data-call-id="${c.id}">
           <div class="text">
             <b>${escapeHTML(c.patient)}</b>
-            <span>Goal: ${escapeHTML((c.goal||'').slice(0,160))}</span>
+            <span>Goal: ${escapeHTML((c.goal||'').slice(0,160))}${c.scheduled_at ? ' · call at ' + fmtScheduled(c.scheduled_at) : ''}</span>
           </div>
           <span class="pill">awaiting approval</span>
           <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="call-approve" data-id="${c.id}">Approve &amp; call</button>
+            <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" data-action="call-approve" data-id="${c.id}">${c.scheduled_at ? 'Approve' : 'Approve &amp; call'}</button>
             <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-action="call-reject" data-id="${c.id}">Reject</button>
           </div>
         </div>`).join('')
       : '<div class="activity-empty">No calls waiting on you right now.</div>';
+
+    const scheduledRows = (calls.scheduled || []).length
+      ? calls.scheduled.map(c => `
+        <div class="row-card" data-call-id="${c.id}">
+          <div class="text">
+            <b>${escapeHTML(c.patient)}</b>
+            <span>Goal: ${escapeHTML((c.goal||'').slice(0,160))}</span>
+          </div>
+          <span class="pill" style="color:var(--cyan)">call at ${fmtScheduled(c.scheduled_at)}</span>
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;flex-shrink:0" data-action="call-reject" data-id="${c.id}">Cancel</button>
+        </div>`).join('')
+      : '';
 
     const historyRows = calls.history.length
       ? calls.history.map(c => {
@@ -2649,11 +2678,21 @@ body::after{
           <textarea class="sform-input" id="cv-goal" rows="2" placeholder="e.g. Follow up on their quote, answer questions, and offer to book a time."></textarea>
           <div class="sform-hint">This is the plan you're approving — Adapix can't have a live call approved word-by-word, so you approve the goal up front and review what happened afterward.</div>
         </div>
+        <div class="sform-row">
+          <label class="sform-label">Call at <span style="font-weight:400;color:var(--ink-3)">(optional)</span></label>
+          <input class="sform-input" id="cv-schedule" type="datetime-local" />
+          <div class="sform-hint">Leave blank to place the call as soon as you approve it. Set a time and Adapix places it then instead — still within business hours (8am&ndash;9pm).</div>
+        </div>
         <button class="sform-save" id="cv-queue">Queue call</button>
       </div>
 
       <div class="section-eyebrow" style="margin-bottom:12px">Awaiting your approval · ${calls.pending.length}</div>
       <div class="rows" id="cv-pending" style="margin-bottom:24px">${pendingRows}</div>
+
+      ${scheduledRows ? `
+      <div class="section-eyebrow" style="margin-bottom:12px">Scheduled · ${(calls.scheduled||[]).length}</div>
+      <div class="rows" id="cv-scheduled" style="margin-bottom:24px">${scheduledRows}</div>
+      ` : ''}
 
       <div class="section-eyebrow" style="margin-bottom:12px">Recent calls</div>
       <div class="activity-feed" id="cv-history">${historyRows}</div>
@@ -2663,16 +2702,17 @@ body::after{
     main.querySelector('#cv-queue').addEventListener('click', async () => {
       const patientId = main.querySelector('#cv-contact').value;
       const goal = main.querySelector('#cv-goal').value.trim();
+      const scheduledAt = main.querySelector('#cv-schedule').value || null;
       if (!patientId) { toast('Add a contact with a phone number first', true); return; }
       if (!goal) { toast('Describe what the call should accomplish', true); return; }
       const btn = main.querySelector('#cv-queue');
       btn.disabled = true; btn.textContent = 'Queuing…';
       try {
-        await api('/api/v1/calls/queue', { method:'POST', body: JSON.stringify({ patient_id: Number(patientId), goal }) });
-        toast('Call queued — approve it below to place it');
+        await api('/api/v1/calls/queue', { method:'POST', body: JSON.stringify({ patient_id: Number(patientId), goal, scheduled_at: scheduledAt }) });
+        toast(scheduledAt ? 'Call queued — approve it below to lock in that time' : 'Call queued — approve it below to place it');
         renderCallsView();
       } catch(e){
-        toast('Could not queue the call', true);
+        toast(e.message || 'Could not queue the call', true);
         btn.disabled = false; btn.textContent = 'Queue call';
       }
     });
@@ -2680,14 +2720,15 @@ body::after{
     main.querySelectorAll('[data-action="call-approve"]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        btn.disabled = true; btn.textContent = 'Calling…';
+        const origLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Working…';
         try {
-          await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify({}) });
-          toast('Placing the call now');
+          const r = await api(`/api/v1/approvals/${id}/approve`, { method:'POST', body: JSON.stringify({}) });
+          toast(r.status === 'scheduled' ? 'Approved — Adapix will call at the scheduled time' : 'Placing the call now');
           renderCallsView();
         } catch(e){
           toast('Could not place the call', true);
-          btn.disabled = false; btn.textContent = 'Approve & call';
+          btn.disabled = false; btn.textContent = origLabel;
         }
       });
     });

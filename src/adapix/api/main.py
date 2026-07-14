@@ -48,6 +48,7 @@ def create_app() -> FastAPI:
         asyncio.create_task(_campaign_loop())
         asyncio.create_task(_automation_loop())
         asyncio.create_task(_digest_loop())
+        asyncio.create_task(_scheduled_send_loop())
 
     async def _campaign_loop() -> None:
         """Run campaigns every 5 minutes in the background."""
@@ -76,6 +77,22 @@ def create_app() -> FastAPI:
             except Exception as exc:
                 log.error(f"Digest scheduler error: {exc}")
             await asyncio.sleep(3600)
+
+    async def _scheduled_send_loop() -> None:
+        """Places scheduled calls and sends scheduled messages once they're
+        due — the manual-scheduling feature (Write a message "Send at",
+        Queue a call "Call at"). Checked every 2 minutes across every org;
+        send_approved() itself skips anything not yet due or outside quiet
+        hours, so an early pass is a harmless no-op."""
+        await asyncio.sleep(20)  # offset from the other loops
+        while True:
+            try:
+                sent = await asyncio.to_thread(ApprovalManager().send_approved)
+                if sent:
+                    log.info(f"Scheduled-send sweep: {sent} message(s)/call(s) dispatched.")
+            except Exception as exc:
+                log.error(f"Scheduled-send scheduler error: {exc}")
+            await asyncio.sleep(120)
 
     async def _automation_loop() -> None:
         """Check every 5 minutes for automations whose cron schedule is due."""

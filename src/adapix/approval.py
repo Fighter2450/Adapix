@@ -19,8 +19,14 @@ Status state machine (Message.status):
        |
        v
     pending_approval ---approve---> approved ---send---> sent | failed
-                  \\
-                   ---reject----> rejected (terminal)
+                  \\                    ^
+                   ---reject----> rejected (terminal, also reachable from approved)
+
+scheduled_at is orthogonal to status: manual scheduling (Write a message's
+"Send at", Queue a call's "Call at") sets it on an otherwise-normal
+"approved" row. send_approved()'s background sweep (main.py's
+_scheduled_send_loop) only sends rows where scheduled_at is NULL or due,
+inside the same 8am-9pm ET quiet-hours window the automated cadence uses.
 """
 from __future__ import annotations
 
@@ -114,7 +120,10 @@ class ApprovalManager:
     def reject(self, message_id: int, *, reason: str | None = None) -> bool:
         with get_session(self.settings) as s:
             m = s.get(Message, message_id)
-            if m is None or m.status != PENDING:
+            # A scheduled send/call sits in "approved" (not yet sent) until
+            # its scheduled_at comes due — that's still cancellable, same as
+            # a plain pending-approval draft.
+            if m is None or m.status not in (PENDING, APPROVED):
                 return False
             m.status = REJECTED
             md = dict(m.metadata_json or {})
@@ -140,7 +149,17 @@ class ApprovalManager:
             return True
 
     def send_approved(self, practice_id: str | None = None) -> int:
-        """Send all messages currently in 'approved' status. Returns count attempted."""
+        """Send every 'approved' message that's actually due: no scheduled_at
+        (send/place as soon as approved — today's default), or scheduled_at
+        that has arrived. Same TCPA quiet-hours window as the automated
+        cadence — a message scheduled for 2am waits for the window to open
+        rather than firing at the exact requested time."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now = datetime.utcnow()
+        local_hour = datetime.now(ZoneInfo("America/New_York")).hour
+        in_quiet_hours_window = 8 <= local_hour < 21
+
         sms = SmsChannel(self.settings, dry_run=self.dry_run)
         email = EmailChannel(self.settings, dry_run=self.dry_run)
         voice = VoiceChannel(self.settings, dry_run=self.dry_run)
@@ -153,6 +172,9 @@ class ApprovalManager:
                 .all()
             )
             for m in messages:
+                if m.scheduled_at is not None:
+                    if m.scheduled_at > now or not in_quiet_hours_window:
+                        continue
                 campaign = s.get(Campaign, m.campaign_id)
                 if campaign is None:
                     continue
