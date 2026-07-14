@@ -1155,13 +1155,55 @@ def api_services_delete(entry_id: str, org_id: str = Depends(verify_admin)):
 # preferred over the shared Resend sender, real Twilio SMS).
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/messages")
-def api_messages_list(channel: str = "sms,email", limit: int = 50, org_id: str = Depends(verify_admin)):
-    from sqlalchemy import desc
+def api_messages_list(
+    channel: str = "sms,email",
+    limit: int = 50,
+    patient_id: int | None = None,
+    org_id: str = Depends(verify_admin),
+):
+    """Flat message feed, newest first — or, with patient_id, the FULL
+    conversation with one contact across every channel and every campaign
+    they've ever had, oldest first (a readable thread)."""
+    from sqlalchemy import asc, desc
     from sqlalchemy.orm import Session
     from ..db import get_engine
 
     wanted = {c.strip() for c in channel.split(",") if c.strip()}
     with Session(get_engine()) as s:
+        if patient_id is not None:
+            patient = s.query(Patient).filter(
+                Patient.id == patient_id, Patient.practice_id == org_id
+            ).first()
+            if patient is None:
+                raise HTTPException(status_code=404, detail="Contact not found")
+            campaign_ids = [c.id for c in s.query(Campaign.id).filter(
+                Campaign.patient_id == patient_id, Campaign.practice_id == org_id
+            ).all()]
+            if not campaign_ids:
+                return {"messages": []}
+            q = (
+                s.query(Message)
+                .filter(Message.campaign_id.in_(campaign_ids))
+                .filter(Message.channel.in_({"sms", "email", "call"}))
+                .order_by(asc(Message.created_at))
+            )
+            out = []
+            for m in q.all():
+                out.append({
+                    "id": m.id,
+                    "channel": m.channel,
+                    "direction": m.direction,
+                    "status": m.status,
+                    "subject": m.subject,
+                    "body": m.body,
+                    "recording_url": (m.metadata_json or {}).get("recording_url"),
+                    "contact_name": f"{patient.first_name} {patient.last_name}".strip(),
+                    "contact_phone": patient.phone,
+                    "contact_email": patient.email,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                })
+            return {"messages": out}
+
         campaign_ids = [c.id for c in s.query(Campaign.id).filter(Campaign.practice_id == org_id).all()]
         if not campaign_ids:
             return {"messages": []}

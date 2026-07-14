@@ -759,6 +759,25 @@ textarea.sform-input{resize:vertical}
 .auto-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 
 /* ================================================================
+   CONVERSATION THREAD MODAL
+   ================================================================ */
+.thread-modal{max-width:620px;max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.thread-modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.thread-modal-head h2{margin:0;font-size:16px}
+.thread-modal-close{background:none;border:none;color:var(--ink-3);cursor:pointer;font-size:20px;line-height:1;padding:4px}
+.thread-modal-close:hover{color:var(--ink)}
+.thread-modal-body{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;flex:1}
+.thread-msg{max-width:80%;display:flex;flex-direction:column;gap:4px}
+.thread-msg.out{align-self:flex-end;align-items:flex-end}
+.thread-msg.in{align-self:flex-start;align-items:flex-start}
+.thread-bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.45;white-space:pre-wrap}
+.thread-msg.out .thread-bubble{background:rgba(124,106,255,.16);border:1px solid rgba(124,106,255,.3);border-bottom-right-radius:4px}
+.thread-msg.in .thread-bubble{background:var(--bg-3);border:1px solid var(--border);border-bottom-left-radius:4px}
+.thread-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
+.thread-meta .st-ch{display:inline-flex;align-items:center;gap:3px}
+.thread-empty{text-align:center;padding:40px 20px;color:var(--ink-2);font-size:13.5px}
+
+/* ================================================================
    VOICE OVERLAY
    ================================================================ */
 .voice-overlay{
@@ -2740,6 +2759,7 @@ body::after{
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
             ${p.status !== 'treatment_started' ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0;border-color:rgba(52,211,153,.35);color:#6ee7b7" data-action="mark-won" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}" data-amount="${p.treatment_plan_amount || ''}">Won ✓</button>` : ''}
+            <button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0" data-action="view-thread" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}">Conversation</button>
             <button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0" data-action="contact-edit-toggle" data-id="${p.id}">Edit</button>
             <div data-contact-editor hidden style="flex-basis:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);cursor:default" onclick="event.stopPropagation()">
               <div class="sform-2col">
@@ -2796,6 +2816,9 @@ body::after{
         } catch(_){ toast('Could not log the win', true); btn.disabled = false; }
       });
     });
+    main.querySelectorAll('[data-action="view-thread"]').forEach(btn => {
+      btn.addEventListener('click', () => openThreadModal(btn.dataset.id, btn.dataset.name));
+    });
     main.querySelectorAll('[data-action="contact-edit-toggle"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const row = btn.closest('[data-contact-id]');
@@ -2851,6 +2874,56 @@ body::after{
     wire('go-import',    () => goContactsView('import'));
     wire('go-add',       () => goContactsView('add'));
     wire('go-add-empty', () => goContactsView('add'));
+  }
+
+  // -------- Conversation thread (all channels, one contact) --------
+  async function openThreadModal(patientId, patientName){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'auto-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="auto-modal thread-modal">
+        <div class="thread-modal-head">
+          <h2>${escapeHTML(patientName || 'Conversation')}</h2>
+          <button class="thread-modal-close" data-close>&times;</button>
+        </div>
+        <div class="thread-modal-body" id="thread-body"><div class="thread-empty">Loading conversation…</div></div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('[data-close]').addEventListener('click', close);
+
+    const body = backdrop.querySelector('#thread-body');
+    try {
+      const j = await api('/api/v1/messages?patient_id=' + encodeURIComponent(patientId));
+      const msgs = j.messages || [];
+      if (!msgs.length){
+        body.innerHTML = '<div class="thread-empty">No messages yet — this contact hasn\'t been texted, emailed, or called.</div>';
+        return;
+      }
+      const chIcon = {sms:'message-square', email:'mail', call:'phone'};
+      const chColor = {sms:'#22d3ee', email:'#a78bfa', call:'var(--cyan)'};
+      body.innerHTML = msgs.map(m => {
+        const out = m.direction === 'outbound';
+        const ch = m.channel || 'sms';
+        const when = m.created_at ? timeAgo(new Date(m.created_at)) : '';
+        const label = ch === 'call' ? (out ? 'call plan' : 'call outcome') : ch;
+        let text = m.subject && ch === 'email' ? `<b>${escapeHTML(m.subject)}</b>\n${escapeHTML(m.body||'')}` : escapeHTML(m.body || '(no content)');
+        let extra = '';
+        if (ch === 'call' && m.recording_url){
+          extra = `<audio controls preload="none" src="${escapeHTML(m.recording_url)}" style="width:100%;height:32px;margin-top:8px"></audio>`;
+        }
+        return `
+        <div class="thread-msg ${out ? 'out' : 'in'}">
+          <div class="thread-bubble">${text}${extra}</div>
+          <div class="thread-meta"><span class="st-ch" style="color:${chColor[ch]||'var(--ink-3)'}"><i data-lucide="${chIcon[ch]||'message-square'}" style="width:10px;height:10px"></i>${escapeHTML(label)}</span> · ${out ? 'sent' : 'received'} · ${when}</div>
+        </div>`;
+      }).join('');
+      renderLucide(body);
+      body.scrollTop = body.scrollHeight;
+    } catch(e){
+      body.innerHTML = '<div class="thread-empty">Could not load this conversation.</div>';
+    }
   }
 
   function goContactsView(page){
