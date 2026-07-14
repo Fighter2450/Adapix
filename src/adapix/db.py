@@ -105,6 +105,30 @@ def _relax_message_campaign_fk(engine: Engine) -> None:
         pass  # already nullable
 
 
+def _fix_bad_escalation_default(engine: Engine) -> None:
+    """One-off data fix: orgs configured before the wizard bug fix have
+    'complaint' baked into their escalation list — a category the classifier
+    never produces, so it silently never fires. Swap it for the real
+    equivalent ('clinical_question') everywhere it appears."""
+    from sqlalchemy.orm import Session
+    from .models import OrgProfile
+    with Session(engine) as s:
+        rows = s.query(OrgProfile).all()
+        changed = False
+        for row in rows:
+            data = dict(row.data or {})
+            esc = data.get("escalations")
+            if esc and "complaint" in esc:
+                data["escalations"] = ["clinical_question" if e == "complaint" else e for e in esc]
+                # de-dupe in case clinical_question was already present
+                seen = set()
+                data["escalations"] = [e for e in data["escalations"] if not (e in seen or seen.add(e))]
+                row.data = data
+                changed = True
+        if changed:
+            s.commit()
+
+
 def _normalize_existing_phones(engine: Engine) -> None:
     """One-off data fix: bring already-stored patient phones to E.164 so
     inbound replies match. Idempotent — normalized numbers pass through
@@ -127,6 +151,7 @@ def init_db(settings: Settings | None = None) -> None:
     Base.metadata.create_all(bind=engine)
     _relax_message_campaign_fk(engine)
     _normalize_existing_phones(engine)
+    _fix_bad_escalation_default(engine)
     _run_additive_migrations(engine)
 
 

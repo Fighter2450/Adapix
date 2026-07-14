@@ -54,6 +54,14 @@ WORKFLOW_LABELS = {
 
 # Human-readable labels + classifier hints for each escalation category.
 ESCALATION_LABELS = {
+    # Legacy default from a bug where new orgs got "complaint" instead of
+    # "clinical_question" — the classifier never produces "complaint" as a
+    # category, so this entry exists only so already-configured orgs don't
+    # show a broken raw label. New signups no longer get this value.
+    "complaint": (
+        "Customer expresses frustration or dissatisfaction that needs a "
+        "human response."
+    ),
     "emergency": (
         "Customer mentions an urgent situation, safety concern, or anything "
         "that requires immediate human attention."
@@ -434,7 +442,7 @@ def _raw_to_profile(raw: dict) -> PracticeProfile:
         workflows=raw.get("workflows") or ["case_acceptance"],
         workflow_custom=raw.get("workflow_custom") or "",
         escalations=raw.get("escalations") or [
-            "emergency", "complaint", "callback_request", "pricing_question",
+            "emergency", "clinical_question", "callback_request", "pricing_question",
         ],
         escalation_custom=raw.get("escalation_custom") or "",
         practice_problems=raw.get("practice_problems") or "",
