@@ -2036,7 +2036,7 @@ body::after{
           <span class="sch-badge off" id="msg-imessage-badge">…</span>
           <button class="sch-connect" id="msg-sms-connect">Set up my line</button>
         </div>
-        <div class="sform-hint" style="margin-top:10px">Every business texts from its OWN dedicated line — blue-bubble iMessage on Apple devices, never a shared number. Until your line is set up, texts fall back to standard SMS.</div>
+        <div class="sform-hint" style="margin-top:10px">Texts go out blue-bubble on Apple devices via Adapix's shared line today; your own dedicated number is available on request. Until either is set up, texts fall back to standard SMS.</div>
       </div>
 
       <div class="scard">
@@ -2085,8 +2085,13 @@ body::after{
       const btn = document.getElementById('msg-sms-connect');
       if (!val || !badge) return;
       if (d.imessage_connected) {
-        val.textContent = (d.imessage_number || 'Your dedicated line') + ' — texts go blue on Apple devices';
-        badge.textContent = 'Connected';
+        if (d.imessage_dedicated) {
+          val.textContent = (d.imessage_number || 'Your dedicated line') + ' — texts go blue on Apple devices';
+          badge.textContent = 'Connected';
+        } else {
+          val.textContent = 'Shared Adapix line for now — texts go blue on Apple devices';
+          badge.textContent = 'Connected (shared)';
+        }
         badge.classList.remove('off');
         if (btn) btn.style.display = 'none';
       } else {
@@ -2576,13 +2581,16 @@ body::after{
 
     const historyRows = calls.history.length
       ? calls.history.map(c => {
-          const placed = c.direction === 'outbound';
-          const icon = placed ? 'phone-outgoing' : (c.status === 'failed' ? 'phone-off' : 'phone-incoming');
-          const label = placed
-            ? (c.status === 'failed' ? 'Call could not be placed' : 'Call placed — goal: ' + (c.goal||'').slice(0,120))
-            : (c.summary || 'Call ended');
-          const hasRecording = !placed && c.recording_url;
-          const hasTranscript = !placed && c.transcript;
+          const rejected = c.status === 'rejected';
+          const placed = c.direction === 'outbound' && !rejected;
+          const icon = rejected ? 'x-circle' : placed ? 'phone-outgoing' : (c.status === 'failed' ? 'phone-off' : 'phone-incoming');
+          const label = rejected
+            ? 'Call plan rejected — goal: ' + (c.goal||'').slice(0,120)
+            : placed
+              ? (c.status === 'failed' ? 'Call could not be placed' : 'Call placed — goal: ' + (c.goal||'').slice(0,120))
+              : (c.summary || 'Call ended');
+          const hasRecording = !placed && !rejected && c.recording_url;
+          const hasTranscript = !placed && !rejected && c.transcript;
           const extras = (hasRecording || hasTranscript) ? `
             <div class="call-recording" id="rec-${c.id}">
               ${hasRecording ? `<audio controls preload="none" src="${escapeHTML(c.recording_url)}" style="width:100%;height:32px;margin-top:8px"></audio>` : ''}
@@ -2591,7 +2599,7 @@ body::after{
                 <div class="call-transcript" id="tr-${c.id}" hidden>${escapeHTML(c.transcript)}</div>` : ''}
             </div>` : '';
           return `
-          <div class="activity-row activity-${placed ? (c.status==='failed'?'call_failed':'call_placed') : 'call_outcome'}" style="flex-direction:column;align-items:stretch">
+          <div class="activity-row activity-${rejected ? 'call_rejected' : placed ? (c.status==='failed'?'call_failed':'call_placed') : 'call_outcome'}" style="flex-direction:column;align-items:stretch">
             <div style="display:flex;align-items:center;gap:10px">
               <div class="activity-icon"><i data-lucide="${icon}"></i></div>
               <div class="activity-body">
@@ -4333,6 +4341,22 @@ body::after{
     const pay = document.getElementById('acct-pay');
     const cancel = document.getElementById('acct-cancel');
     if (!box) return;
+    (async () => {
+      const av = document.getElementById('acct-member-av');
+      const nm = document.getElementById('acct-member-name');
+      if (!av || !nm) return;
+      try {
+        const d = await api('/api/v1/database');
+        const name = (d.owner_name || d.business_name || '').trim();
+        if (name){
+          const initials = name.split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
+          av.textContent = initials || '?';
+          nm.textContent = d.owner_name ? d.owner_name : 'You';
+        } else {
+          av.textContent = '?';
+        }
+      } catch(_){ av.textContent = '?'; }
+    })();
     async function refresh(){
       try {
         const j = await api('/api/v1/billing/status');
@@ -4821,8 +4845,8 @@ body::after{
         <div class="scard">
           <div class="scard-title">Team members</div>
           <div class="smember-row">
-            <div class="smember-av">RC</div>
-            <div><div class="smember-name">You</div><div class="smember-role">Owner</div></div>
+            <div class="smember-av" id="acct-member-av">&hellip;</div>
+            <div><div class="smember-name" id="acct-member-name">You</div><div class="smember-role">Owner</div></div>
           </div>
           <div style="margin-top:14px">
             <button class="sch-connect" style="font-size:13px;padding:7px 14px" data-action="invite">+ Invite team member</button>
@@ -5234,4 +5258,3 @@ body::after{
 </script>
 </body>
 </html>
-                                                                                                                                                                                  
