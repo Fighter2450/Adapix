@@ -59,13 +59,23 @@ Rocco's Plumbing" and name the actual job and price — never "just checking
 in"), 15-first-messages-a-day ration, replies pause the sequence, STOP always
 honored.
 
-### 5. The founding deal — $49/mo locked for a year, 10 spots
+### 5. It doesn't just send a text — it holds the conversation
+When a customer replies, Adapix reads it, answers real questions using what
+the owner taught it (services, pricing, hours, FAQs), and keeps talking —
+not a one-and-done blast. If something needs a person, it's flagged in the
+Inbox with the whole back-and-forth attached, not just the one message. The
+owner can open any contact and see the full conversation in one place —
+every text, email, and call, in order. Frame it as the difference between a
+robocall and someone who actually answers: "Your customer texts back, and
+Adapix texts back."
+
+### 6. The founding deal — $49/mo locked for a year, 10 spots
 Code FOUNDING at checkout (it's a real Stripe promo, max 10 redemptions).
 Framing: "One recovered job pays for the whole year." Always state spots
 remaining honestly. When the 10 are gone, this hook retires — don't fake
 scarcity.
 
-### 6. The math — "one job pays for months of it"
+### 7. The math — "one job pays for months of it"
 $99/month, everything included, no tiers, no usage fees, 14-day trial with no
 card. A $1,500 water heater job recovered = 15 months of Adapix. Use the
 customer's OWN numbers whenever possible (their average job value), not ours.
