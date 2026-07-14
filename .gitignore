@@ -109,3 +109,10 @@ session_uploads/
 
 # Local Netlify folder
 .netlify
+
+# local artifacts — never commit
+_deploy/
+agent_chat_*.json
+automation_results/
+=*
+docs/purchases.html
