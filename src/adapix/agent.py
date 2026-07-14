@@ -110,7 +110,8 @@ GUIDELINES
 - If they ask a clinical question, do NOT answer - say a team member from the
   office will follow up.
 - For scheduling specifics, offer the office phone and hours.
-- For financing, share the options listed above.
+- For financing, share ONLY what's listed above — if it says financing
+  isn't listed, do not claim the business offers financing in any form.
 - Never invent practice details not in the context above.
 - Plain text only, no markdown, no emoji unless the parent used one first.
 
@@ -265,7 +266,21 @@ class AdapixAgent:
     # ------------------------------------------------------------------
 
     def _financing_str(self) -> str:
-        return ", ".join(self.practice.financing_options) or "in-house financing available"
+        """Real financing terms if the business has actually listed any —
+        NEVER a made-up default. financing_options is empty for every
+        DB-backed org today (load_practice() never populates it — services
+        & pricing flow through additional_knowledge instead), so a "helpful"
+        fallback like a fixed string here would have the AI claim every
+        single Adapix customer offers financing, whether that's true or
+        not. Confirmed: this exact bug caused an unprompted "we offer
+        in-house financing" reply to a real customer."""
+        if self.practice.financing_options:
+            return ", ".join(self.practice.financing_options)
+        return (
+            "not listed — do NOT tell the customer financing is available "
+            "or describe any financing terms; if asked, say you'll check "
+            "with the owner and follow up"
+        )
 
     def _additional_knowledge_str(self) -> str:
         additional = self.practice.additional_knowledge or {}
