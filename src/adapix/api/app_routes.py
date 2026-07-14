@@ -1624,6 +1624,92 @@ def activity(limit: int = 50, _user: str = Depends(verify_admin)) -> dict[str, A
     }
 
 
+class EscalationReplyBody(BaseModel):
+    body: str = ""
+
+
+@router.post("/api/v1/escalations/{escalation_id}/resolve")
+def api_escalation_resolve(escalation_id: int, org_id: str = Depends(verify_admin)):
+    """Mark an escalation handled — with no reply (owner called them, texted
+    from their own phone, or it just needed acknowledging)."""
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        e = s.get(EscalationEvent, escalation_id)
+        if not e:
+            raise HTTPException(status_code=404, detail="Escalation not found")
+        campaign = s.get(Campaign, e.campaign_id)
+        if not campaign or campaign.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="Escalation not found")
+        e.resolved = True
+        s.commit()
+    return {"ok": True}
+
+
+@router.post("/api/v1/escalations/{escalation_id}/reply")
+def api_escalation_reply(escalation_id: int, body: EscalationReplyBody, org_id: str = Depends(verify_admin)):
+    """Reply directly from the escalation card — sends the owner's own words
+    on the same channel it came in on, logs it, and resolves in one action."""
+    text = body.body.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Write a reply first")
+    from ..db import get_engine
+    from ..channels import SmsChannel
+    from ..config import Settings
+    from ..models import Organization
+    from ..oauth import send_email_for_org
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        e = s.get(EscalationEvent, escalation_id)
+        if not e:
+            raise HTTPException(status_code=404, detail="Escalation not found")
+        campaign = s.get(Campaign, e.campaign_id)
+        if not campaign or campaign.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="Escalation not found")
+        patient = s.get(Patient, campaign.patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        if patient.opted_out:
+            raise HTTPException(status_code=409, detail="This contact opted out — nothing can be sent to them.")
+
+        triggering_channel = None
+        if e.triggered_by_message_id:
+            m = s.get(Message, e.triggered_by_message_id)
+            triggering_channel = m.channel if m else None
+        channel = triggering_channel if triggering_channel in ("sms", "email") else (patient.preferred_channel or "sms")
+
+        settings = Settings()
+        org = s.get(Organization, org_id)
+        if channel == "email":
+            if not patient.email:
+                raise HTTPException(status_code=400, detail="This contact has no email on file")
+            r = send_email_for_org(org_id, patient.email, f"Re: your message to {org.name if org else 'us'}",
+                                   text, org.name if org else None, settings)
+            status = "sent" if r.get("ok") else "failed"
+            provider_id = r.get("provider_id")
+            error = r.get("error")
+        else:
+            if not patient.phone:
+                raise HTTPException(status_code=400, detail="This contact has no phone on file")
+            r = SmsChannel(settings).send(patient.phone, text)
+            status, provider_id, error = r.status, r.provider_id, r.error
+
+        s.add(Message(
+            campaign_id=campaign.id,
+            direction="outbound",
+            channel=channel,
+            body=text,
+            status=status,
+            provider_id=provider_id,
+            metadata_json={"kind": "owner_reply", "error": error} if error else {"kind": "owner_reply"},
+        ))
+        e.resolved = True
+        s.commit()
+    if status == "failed":
+        raise HTTPException(status_code=502, detail=f"Send failed: {error}")
+    return {"ok": True, "status": status}
+
+
 @router.get("/api/v1/feed")
 def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
     """Everything the home screen needs: escalations, pending approvals, today's digest.
@@ -1642,6 +1728,10 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             .all()
         )
 
+        # Severity ranking so a burst pipe sorts above a pricing question,
+        # not just whichever came in most recently.
+        SEVERITY_RANK = {"emergency": 0, "stop": 1, "callback_request": 2,
+                         "clinical_question": 2, "decline": 3, "other": 4}
         esc_payload = []
         for e in escalations:
             campaign = s.get(Campaign, e.campaign_id)
@@ -1661,9 +1751,13 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             esc_payload.append(
                 {
                     "id": e.id,
+                    "patient_id": patient.id if patient else None,
                     "patient": _patient_label(patient),
                     "phone_last4": (patient.phone or "")[-4:] if patient else "",
+                    "has_phone": bool(patient and patient.phone),
+                    "has_email": bool(patient and patient.email),
                     "category": e.category,
+                    "severity_rank": SEVERITY_RANK.get(e.category, 4),
                     "confidence": e.confidence,
                     "reasoning": e.reasoning,
                     "suggested_action": e.suggested_action,
@@ -1674,6 +1768,7 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
                     "created_at": e.created_at.isoformat() if e.created_at else None,
                 }
             )
+        esc_payload.sort(key=lambda x: (x["severity_rank"], x["created_at"] or ""), reverse=False)
 
         # Pending-approval messages
         pending = (

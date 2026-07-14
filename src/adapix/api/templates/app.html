@@ -2328,11 +2328,24 @@ body::after{
           const nameLine = fromCall
             ? `<i data-lucide="phone-incoming" style="width:12px;height:12px;color:var(--cyan)"></i> ${escapeHTML(e.patient)}`
             : escapeHTML(e.patient);
+          const channelForReply = (e.channel === 'sms' || e.channel === 'email') ? e.channel : 'sms';
+          const canReply = channelForReply === 'email' ? e.has_email : e.has_phone;
           return `
-          <div class="row-card hot" style="cursor:pointer" onclick="goView('contacts')" title="${fromCall ? 'From a phone call' : 'Open conversation'}">
+          <div class="row-card hot" data-esc-id="${e.id}" style="cursor:pointer;flex-wrap:wrap" data-action="esc-toggle" title="Click to reply or mark handled">
             <div class="text"><b style="display:inline-flex;align-items:center;gap:6px">${nameLine}</b><span>${escapeHTML(escLabel(e.category) + (detail ? ' · ' + detail : ''))}</span></div>
             <span class="pill hot">${escapeHTML(escLabel(e.category))}</span>
             <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
+            <div data-esc-editor hidden style="flex-basis:100%;margin-top:12px;padding-top:12px;border-top:1px solid rgba(244,63,94,.2);cursor:default" onclick="event.stopPropagation()">
+              ${e.triggering_body ? `<div style="font-size:13px;color:var(--ink-2);background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;margin-bottom:10px;white-space:pre-wrap">${escapeHTML(e.triggering_body)}</div>` : ''}
+              ${canReply ? `
+              <textarea data-esc-reply rows="3" placeholder="Type your reply…" style="width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;margin-bottom:8px"></textarea>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" data-action="esc-reply" data-id="${e.id}">Send &amp; mark handled</button>
+                <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" data-action="esc-resolve" data-id="${e.id}">Mark handled, no reply</button>
+              </div>` : `
+              <div style="font-size:13px;color:var(--ink-3);margin-bottom:8px">No ${channelForReply === 'email' ? 'email' : 'phone number'} on file for this contact — handle it your own way, then clear it here.</div>
+              <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" data-action="esc-resolve" data-id="${e.id}">Mark handled</button>`}
+            </div>
           </div>`;
         }).join('') + '</div>';
       }
@@ -2410,6 +2423,42 @@ body::after{
       toast('All rejected');
       renderInboxView();
     });
+    // Escalations: toggle the inline reply/resolve panel, then act.
+    main.querySelectorAll('[data-action="esc-toggle"]').forEach(row => {
+      row.addEventListener('click', () => {
+        const editor = row.querySelector('[data-esc-editor]');
+        if (editor) editor.hidden = !editor.hidden;
+        if (editor && !editor.hidden){
+          const ta = editor.querySelector('[data-esc-reply]');
+          if (ta) ta.focus();
+        }
+      });
+    });
+    main.querySelectorAll('[data-action="esc-resolve"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Marking…';
+        try {
+          await api(`/api/v1/escalations/${btn.dataset.id}/resolve`, {method:'POST', body: JSON.stringify({})});
+          toast('Marked handled');
+          refreshFeed();
+        } catch(e){ toast('Could not mark handled', true); btn.disabled = false; btn.textContent = orig; }
+      });
+    });
+    main.querySelectorAll('[data-action="esc-reply"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const editor = btn.closest('[data-esc-editor]');
+        const ta = editor ? editor.querySelector('[data-esc-reply]') : null;
+        const body = ta ? ta.value.trim() : '';
+        if (!body){ toast('Write a reply first', true); return; }
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Sending…';
+        try {
+          await api(`/api/v1/escalations/${btn.dataset.id}/reply`, {method:'POST', body: JSON.stringify({body})});
+          toast('Sent — marked handled');
+          refreshFeed();
+        } catch(e){ toast(e.message || 'Could not send', true); btn.disabled = false; btn.textContent = orig; }
+      });
+    });
+
     // Edit before sending — the approve endpoint has always accepted an
     // edited_body; this finally puts that control in the owner's hands.
     main.querySelectorAll('[data-action="draft-edit"]').forEach(btn => {
