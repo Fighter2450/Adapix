@@ -972,6 +972,13 @@ class DatabaseUpdateBody(BaseModel):
     hours: str | None = None
     tone: str | None = None
     description: str | None = None
+    website: str | None = None
+    address: str | None = None
+    hours_weekday: str | None = None
+    hours_saturday: str | None = None
+    hours_sunday: str | None = None
+    business_type_id: str | None = None
+    business_type_label: str | None = None
 
 
 @router.get("/api/v1/database")
@@ -1010,7 +1017,13 @@ def api_database(org_id: str = Depends(verify_admin)):
             "owner_name": practice.get("owner") or practice.get("doctor") or "",
             "phone": practice.get("phone") or "",
             "hours": practice.get("hours") or "",
-            "business_type": data.get("practice_type_label") or data.get("practice_type", "").replace("_", " "),
+            "website": practice.get("website") or "",
+            "address": practice.get("address") or "",
+            "hours_weekday": practice.get("hours_weekday") or "",
+            "hours_saturday": practice.get("hours_saturday") or "",
+            "hours_sunday": practice.get("hours_sunday") or "",
+            "business_type": data.get("practice_type_label") or (data.get("practice_type") or "").replace("_", " "),
+            "business_type_id": data.get("practice_type") or "",
             "tone": data.get("tone") or "warm_professional",
             "description": data.get("description") or "",
             "services": data.get("services") or [],
@@ -1047,11 +1060,24 @@ def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_a
             practice["phone"] = body.phone.strip()
         if body.hours is not None:
             practice["hours"] = body.hours.strip()
+        if body.website is not None:
+            practice["website"] = body.website.strip()
+        if body.address is not None:
+            practice["address"] = body.address.strip()
+        if body.hours_weekday is not None:
+            practice["hours_weekday"] = body.hours_weekday.strip()
+        if body.hours_saturday is not None:
+            practice["hours_saturday"] = body.hours_saturday.strip()
+        if body.hours_sunday is not None:
+            practice["hours_sunday"] = body.hours_sunday.strip()
         data["practice"] = practice
         if body.tone is not None and body.tone in ("warm_professional", "casual_friendly", "clinical_formal"):
             data["tone"] = body.tone
         if body.description is not None:
             data["description"] = body.description.strip()
+        if body.business_type_id is not None:
+            data["practice_type"] = body.business_type_id.strip()
+            data["practice_type_label"] = (body.business_type_label or "").strip()
         _save_org_profile_data(s, org_id, data)
         s.commit()
     return {"ok": True}

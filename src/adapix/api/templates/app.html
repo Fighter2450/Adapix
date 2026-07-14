@@ -1770,7 +1770,7 @@ body::after{
           <div class="sform-row">
             <label class="sform-label">Business type</label>
             <input class="sform-input" value="${escapeAttr(d.business_type || 'Not set')}" disabled style="opacity:.6" />
-            <div class="sform-hint">Set during onboarding — <a href="#" data-goto-team style="color:var(--cyan)">chat with the AI Team</a> to update it.</div>
+            <div class="sform-hint">Set during onboarding — <a href="#" data-goto-bizprofile style="color:var(--cyan)">edit it in Business profile</a>.</div>
           </div>
           <div class="sform-row">
             <label class="sform-label">How I sound</label>
@@ -1909,6 +1909,7 @@ body::after{
       });
 
       body.querySelector('[data-goto-team]')?.addEventListener('click', (e) => { e.preventDefault(); goView('team'); });
+      body.querySelector('[data-goto-bizprofile]')?.addEventListener('click', (e) => { e.preventDefault(); goView('settings'); goSettingsView('profile'); });
       body.querySelector('[data-goto-channels]')?.addEventListener('click', (e) => { e.preventDefault(); goView('settings'); goSettingsView('channels'); });
 
       // Services & pricing catalog
@@ -4189,6 +4190,48 @@ body::after{
     });
   }
 
+  // Settings -> Business profile: the actual business-info form (name,
+  // specialty, phone, website, address, hours) — loads what's on file and
+  // saves for real, replacing the placeholder inputs that used to do nothing.
+  async function initBusinessProfile(){
+    const save = document.getElementById('bp-save');
+    if (!save) return;
+    const ids = ['bp-name','bp-phone','bp-website','bp-address','bp-hours-weekday','bp-hours-sat','bp-hours-sun'];
+    try {
+      const d = await api('/api/v1/database');
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+      set('bp-name', d.business_name);
+      set('bp-phone', d.phone);
+      set('bp-website', d.website);
+      set('bp-address', d.address);
+      set('bp-hours-weekday', d.hours_weekday);
+      set('bp-hours-sat', d.hours_saturday);
+      set('bp-hours-sun', d.hours_sunday);
+      if (window.stypePreset) window.stypePreset(d.business_type_id, d.business_type);
+    } catch(_){ /* leave blank — better than blocking the page */ }
+
+    save.addEventListener('click', async () => {
+      save.disabled = true; const orig = save.textContent; save.textContent = 'Saving…';
+      const val = (id) => (document.getElementById(id) || {}).value || '';
+      const stypeEl = document.getElementById('stype-search');
+      try {
+        await api('/api/v1/database', {method:'POST', body: JSON.stringify({
+          business_name: val('bp-name'),
+          phone: val('bp-phone'),
+          website: val('bp-website'),
+          address: val('bp-address'),
+          hours_weekday: val('bp-hours-weekday'),
+          hours_saturday: val('bp-hours-sat'),
+          hours_sunday: val('bp-hours-sun'),
+          business_type_id: stypeEl ? (stypeEl.dataset.selId || '') : '',
+          business_type_label: stypeEl ? stypeEl.value : '',
+        })});
+        toast('Business info saved');
+      } catch(e){ toast('Could not save', true); }
+      save.disabled = false; save.textContent = orig;
+    });
+  }
+
   // Settings -> Business profile: website import (read site -> review -> apply)
   async function initWebsiteImport(){
     const urlIn = document.getElementById('wi-url');
@@ -4613,7 +4656,7 @@ body::after{
         </div>
         <div class="scard">
           <div class="scard-title">Business info</div>
-          <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" placeholder="e.g. Bright Smile Orthodontics" /></div>
+          <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" id="bp-name" placeholder="e.g. Mike's Plumbing Co" /></div>
           <div class="sform-row">
             <label class="sform-label">Specialty / type</label>
             <div class="stype-wrap">
@@ -4626,18 +4669,18 @@ body::after{
             </div>
           </div>
           <div class="sform-2col">
-            <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" placeholder="(555) 000-0000" /></div>
-            <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" placeholder="yourbusiness.com" /></div>
+            <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" id="bp-phone" placeholder="(555) 000-0000" /></div>
+            <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" id="bp-website" placeholder="yourbusiness.com" /></div>
           </div>
-          <div class="sform-row"><label class="sform-label">Address</label><textarea class="sform-input" rows="2" placeholder="123 Main St, Suite 1, City, State 00000" style="resize:vertical"></textarea></div>
+          <div class="sform-row"><label class="sform-label">Address</label><textarea class="sform-input" id="bp-address" rows="2" placeholder="123 Main St, Suite 1, City, State 00000" style="resize:vertical"></textarea></div>
         </div>
         <div class="scard">
           <div class="scard-title">Business hours</div>
           <div class="sform-2col">
-            <div class="sform-row"><label class="sform-label">Weekdays (Mon&ndash;Fri)</label><input class="sform-input" placeholder="9:00 AM &ndash; 5:00 PM" /></div>
-            <div class="sform-row"><label class="sform-label">Saturday</label><input class="sform-input" placeholder="Closed" /></div>
+            <div class="sform-row"><label class="sform-label">Weekdays (Mon&ndash;Fri)</label><input class="sform-input" id="bp-hours-weekday" placeholder="9:00 AM &ndash; 5:00 PM" /></div>
+            <div class="sform-row"><label class="sform-label">Saturday</label><input class="sform-input" id="bp-hours-sat" placeholder="Closed" /></div>
           </div>
-          <div class="sform-row"><label class="sform-label">Sunday</label><input class="sform-input" placeholder="Closed" /></div>
+          <div class="sform-row"><label class="sform-label">Sunday</label><input class="sform-input" id="bp-hours-sun" placeholder="Closed" /></div>
         </div>
         <div class="scard" id="knowledge-card">
           <div class="scard-title">Teach Adapix about your business</div>
@@ -4649,7 +4692,7 @@ body::after{
             <button class="sch-connect" id="kb-add" style="align-self:flex-start">+ Add answer</button>
           </div>
         </div>
-        <button class="sform-save" data-action="save">Save changes</button>`;
+        <button class="sform-save" id="bp-save">Save changes</button>`;
 
     } else if (page === 'channels'){
       body = `
@@ -4781,7 +4824,7 @@ body::after{
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 
     main.querySelectorAll('.sform-save, [data-action="save"]').forEach(btn => {
-      if (btn.id === 'rules-save') return; // has its own real handler
+      if (btn.id === 'rules-save' || btn.id === 'bp-save') return; // has its own real handler
       btn.addEventListener('click', () => toast('Changes saved'));
     });
     const inv = main.querySelector('[data-action="invite"]');
@@ -4838,6 +4881,7 @@ body::after{
             const it = BUSINESS_TYPES.find(x => x.id === id);
             if (!it) return;
             stypeSearch.value = it.name;
+            stypeSearch.dataset.selId = it.id;
             stypeSelN.textContent = it.name;
             stypeSelC.textContent = it.cat;
             stypeSel.hidden = false;
@@ -4845,6 +4889,18 @@ body::after{
           });
         });
       }
+      // Pre-select a saved value on page load — the id lets Save persist the
+      // slug, not just the display text (matches the wizard's own model).
+      window.stypePreset = (id, label) => {
+        if (!id && !label) return;
+        stypeSearch.value = label || '';
+        stypeSearch.dataset.selId = id || '';
+        if (label){
+          stypeSelN.textContent = label;
+          stypeSelC.textContent = (BUSINESS_TYPES.find(x => x.id === id) || {}).cat || '';
+          stypeSel.hidden = false;
+        }
+      };
 
       function stypeShowDefaults(){
         const items = STYPE_DEFAULTS.map(id => BUSINESS_TYPES.find(b => b.id === id)).filter(Boolean);
@@ -4866,6 +4922,7 @@ body::after{
       stypeSearch.addEventListener('blur', () => { setTimeout(() => { stypeDD.hidden = true; }, 120); });
       stypeClr.addEventListener('click', () => {
         stypeSearch.value = '';
+        stypeSearch.dataset.selId = '';
         stypeSel.hidden = true;
       });
     }
@@ -4945,6 +5002,7 @@ body::after{
     if (page === 'notifications') setTimeout(initNotifPage, 50);
     if (page === 'account') setTimeout(initAccountBilling, 50);
     if (page === 'profile') setTimeout(initWebsiteImport, 50);
+    if (page === 'profile') setTimeout(initBusinessProfile, 50);
   }
 
   function bindNav(){
