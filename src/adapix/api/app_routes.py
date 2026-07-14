@@ -2735,6 +2735,22 @@ def api_win_mark(body: WinBody, org_id: str = Depends(verify_admin)):
     return {"ok": True, "amount": float(amount or 0)}
 
 
+@router.post("/api/v1/digest/test")
+def api_digest_test(org_id: str = Depends(verify_admin)):
+    """Send this org's digest right now, bypassing the once-daily schedule —
+    lets the owner see what it looks like without waiting for 8am."""
+    from ..digest import _org_digest, _digest_text
+    from ..notifications import push_notification
+    d = _org_digest(org_id)
+    if d is None:
+        d = {"drafts": 0, "escalations": 0, "stale_hours": 0, "won_this_week": 0, "won_last_week": 0}
+    title, body = _digest_text(d)
+    res = push_notification(title=title, body=body, url="/app", tag="adapix-digest", org_id=org_id)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error") or "no devices subscribed")
+    return {"ok": True, "title": title, "body": body}
+
+
 @router.get("/api/v1/wins/summary")
 def api_wins_summary(org_id: str = Depends(verify_admin)):
     from ..db import get_engine

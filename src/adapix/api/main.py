@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
         init_db()
         asyncio.create_task(_campaign_loop())
         asyncio.create_task(_automation_loop())
+        asyncio.create_task(_digest_loop())
 
     async def _campaign_loop() -> None:
         """Run campaigns every 5 minutes in the background."""
@@ -61,6 +62,20 @@ def create_app() -> FastAPI:
             except Exception as exc:
                 log.error(f"Campaign scheduler error: {exc}")
             await asyncio.sleep(300)
+
+    async def _digest_loop() -> None:
+        """Once-daily push per org with what's waiting and what's been won —
+        checked hourly, dedup'd by a date stamp so it only actually sends once."""
+        await asyncio.sleep(45)  # offset from the other two loops
+        while True:
+            try:
+                from ..digest import run_daily_digests
+                sent = await asyncio.to_thread(run_daily_digests)
+                if sent:
+                    log.info(f"Daily digest: sent to {sent} org(s).")
+            except Exception as exc:
+                log.error(f"Digest scheduler error: {exc}")
+            await asyncio.sleep(3600)
 
     async def _automation_loop() -> None:
         """Check every 5 minutes for automations whose cron schedule is due."""
