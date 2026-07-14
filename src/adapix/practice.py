@@ -276,7 +276,7 @@ class PracticeProfile:
         """One consistent price string for a service entry, shared by the
         prompt fragments, the classifier context, and the Database tab's
         display list — so a subscription always reads the same way
-        everywhere: '$49/month (12-month minimum)'."""
+        everywhere: '$49/month (12-month minimum, 14-day free trial)'."""
         price = (e.get("price") or "").strip()
         if not price:
             return ""
@@ -289,9 +289,14 @@ class PracticeProfile:
             unit = "month" if period == "month" else "year"
             # Hyphenated compound adjective ("12-month minimum") never
             # pluralizes the unit, unlike "12 months" as a plain noun phrase.
-            out += f" ({term}-{unit} minimum)"
+            out += f" ({term}-{unit} minimum"
         else:
-            out += " (no minimum term)"
+            out += " (no minimum term"
+        trial = str(e.get("trial_days") or "").strip()
+        if trial:
+            out += f", {trial}-day free trial)"
+        else:
+            out += ")"
         return out
 
     def services_fragment(self) -> str:

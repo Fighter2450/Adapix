@@ -1102,6 +1102,9 @@ class ServiceEntryBody(BaseModel):
     pricing_type: str = "one_time"
     billing_period: str = "month"
     term_length: str = ""
+    # Subscriptions only: length of a free trial before the first charge, in
+    # days. Blank means no trial — never assume one.
+    trial_days: str = ""
 
 
 @router.post("/api/v1/services")
@@ -1122,6 +1125,7 @@ def api_services_add(body: ServiceEntryBody, org_id: str = Depends(verify_admin)
         "pricing_type": pricing_type,
         "billing_period": billing_period if pricing_type == "subscription" else "",
         "term_length": body.term_length.strip() if pricing_type == "subscription" else "",
+        "trial_days": body.trial_days.strip() if pricing_type == "subscription" else "",
     }
     with Session(get_engine()) as s:
         data = _load_org_profile_data(s, org_id)

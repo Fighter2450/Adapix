@@ -1835,7 +1835,7 @@ body::after{
               <option value="subscription">Subscription (recurring)</option>
             </select>
           </div>
-          <div class="sform-2col" id="db-svc-sub-row" hidden>
+          <div class="sform-2col" id="db-svc-sub-row" hidden style="grid-template-columns:1fr 1fr 1fr">
             <div class="sform-row">
               <label class="sform-label">Billed every</label>
               <select class="sform-input sform-select" id="db-svc-period">
@@ -1846,6 +1846,10 @@ body::after{
             <div class="sform-row">
               <label class="sform-label" id="db-svc-term-label">Minimum months (optional)</label>
               <input class="sform-input" id="db-svc-term" type="number" min="0" placeholder="e.g. 12" />
+            </div>
+            <div class="sform-row">
+              <label class="sform-label">Free trial? <span style="font-weight:400;color:var(--ink-3)">(optional)</span></label>
+              <input class="sform-input" id="db-svc-trial" type="number" min="0" placeholder="e.g. 14 days — leave blank for none" />
             </div>
           </div>
           <div class="sform-row"><textarea class="sform-input" id="db-svc-details" rows="2" style="resize:vertical" placeholder="Optional details — what's included, financing options, etc."></textarea></div>
@@ -1939,8 +1943,10 @@ body::after{
         const period = e.billing_period || 'month';
         let out = e.price + '/' + period;
         const term = String(e.term_length || '').trim();
-        if (term) { const unit = period === 'month' ? 'month' : 'year'; out += ` (${term}-${unit} minimum)`; }
-        else out += ' (no minimum term)';
+        if (term) { const unit = period === 'month' ? 'month' : 'year'; out += ` (${term}-${unit} minimum`; }
+        else out += ' (no minimum term';
+        const trial = String(e.trial_days || '').trim();
+        out += trial ? `, ${trial}-day free trial)` : ')';
         return out;
       }
       function renderSvc(entries){
@@ -1981,6 +1987,7 @@ body::after{
       document.getElementById('db-svc-add').addEventListener('click', async () => {
         const nameEl = document.getElementById('db-svc-name'), priceEl = document.getElementById('db-svc-price'), detailsEl = document.getElementById('db-svc-details');
         const termEl = document.getElementById('db-svc-term');
+        const trialEl = document.getElementById('db-svc-trial');
         const name = (nameEl.value || '').trim();
         if (!name) { toast('Enter a service name', true); return; }
         const btn = document.getElementById('db-svc-add');
@@ -1989,9 +1996,10 @@ body::after{
           const r = await api('/api/v1/services', { method: 'POST', body: JSON.stringify({
             name, price: priceEl.value.trim(), details: detailsEl.value.trim(),
             pricing_type: svcTypeEl.value, billing_period: svcPeriodEl.value, term_length: termEl.value.trim(),
+            trial_days: trialEl.value.trim(),
           })});
           svcEntries = [...svcEntries, r.entry];
-          nameEl.value = ''; priceEl.value = ''; detailsEl.value = ''; termEl.value = '';
+          nameEl.value = ''; priceEl.value = ''; detailsEl.value = ''; termEl.value = ''; trialEl.value = '';
           svcTypeEl.value = 'one_time'; syncSvcSubRow();
           toast('Added');
           renderSvc(svcEntries);
