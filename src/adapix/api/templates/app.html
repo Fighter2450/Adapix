@@ -1135,10 +1135,6 @@ body::after{
         <span class="nav-badge" id="ct-calls"></span>
       </button>
       <button class="nav-item" data-view="messages"><i data-lucide="send"></i><span>SMS &amp; Email</span></button>
-      <button class="nav-item" data-view="station"><i data-lucide="train-front"></i><span>Station</span></button>
-      <button class="nav-item" data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
-      <button class="nav-item" data-view="database"><i data-lucide="database"></i><span>Database</span></button>
-      <button class="nav-item" data-view="workshop"><i data-lucide="zap"></i><span>Workshop</span></button>
     </div>
     <div class="sidebar-bottom">
       <button class="nav-item" data-view="settings"><i data-lucide="settings"></i><span>Settings</span></button>
@@ -1158,12 +1154,9 @@ body::after{
 <nav class="mobile-nav" id="bn">
   <button data-view="home"><i data-lucide="layout-dashboard"></i><span>Home</span></button>
   <button data-view="inbox"><i data-lucide="inbox"></i><span>Inbox</span></button>
-  <button data-view="station"><i data-lucide="train-front"></i><span>Station</span></button>
-  <button data-view="messages"><i data-lucide="send"></i><span>SMS/Email</span></button>
-  <button data-view="calls"><i data-lucide="phone"></i><span>Calls</span></button>
   <button data-view="contacts"><i data-lucide="users"></i><span>Contacts</span></button>
-  <button data-view="team"><i data-lucide="bot"></i><span>AI Team</span></button>
-  <button data-view="database"><i data-lucide="database"></i><span>Database</span></button>
+  <button data-view="calls"><i data-lucide="phone"></i><span>Calls</span></button>
+  <button data-view="messages"><i data-lucide="send"></i><span>SMS/Email</span></button>
   <button data-view="settings"><i data-lucide="settings"></i><span>Settings</span></button>
 </nav>
 
@@ -4043,6 +4036,7 @@ body::after{
   function renderSettingsHub(){
     const cats = [
       { icon:'user',         key:'profile',  title:'Business profile',       sub:'Name, address, hours, what you do' },
+      { icon:'database',     key:'database', title:'Business knowledge',     sub:'Services, pricing, FAQs Adapix has learned', view:'database' },
       { icon:'mail',         key:'channels', title:'Messaging & channels',   sub:'Connected email, SMS, notification preferences' },
       { icon:'list-checks',  key:'rules',    title:'Follow-up rules',        sub:'Timing, tone, auto-approve thresholds' },
       { icon:'bell',         key:'notifications', title:'Notifications',     sub:'Pings on this device when a draft or customer needs you' },
@@ -4063,7 +4057,11 @@ body::after{
     + `</div>`;
     renderLucide(main);
     main.querySelectorAll('[data-settings-view]').forEach(el => {
-      el.addEventListener('click', () => goSettingsView(el.dataset.settingsView));
+      el.addEventListener('click', () => {
+        const cat = cats.find(c => c.key === el.dataset.settingsView);
+        if (cat && cat.view) { goView(cat.view); return; }
+        goSettingsView(el.dataset.settingsView);
+      });
     });
   }
 
