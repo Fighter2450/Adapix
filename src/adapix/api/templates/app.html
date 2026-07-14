@@ -2681,9 +2681,12 @@ body::after{
         <div class="sform-row">
           <label class="sform-label">Call at <span style="font-weight:400;color:var(--ink-3)">(optional)</span></label>
           <input class="sform-input" id="cv-schedule" type="datetime-local" />
-          <div class="sform-hint">Leave blank to place the call as soon as you approve it. Set a time and Adapix places it then instead — still within business hours (8am&ndash;9pm).</div>
+          <div class="sform-hint">Leave blank for "Call now" below, or set a specific time and use "Queue call" — Adapix places it then instead, still within business hours (8am&ndash;9pm).</div>
         </div>
-        <button class="sform-save" id="cv-queue">Queue call</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="sch-connect" id="cv-queue">Queue call</button>
+          <button class="sform-save" id="cv-call-now">Call now</button>
+        </div>
       </div>
 
       <div class="section-eyebrow" style="margin-bottom:12px">Awaiting your approval · ${calls.pending.length}</div>
@@ -2714,6 +2717,28 @@ body::after{
       } catch(e){
         toast(e.message || 'Could not queue the call', true);
         btn.disabled = false; btn.textContent = 'Queue call';
+      }
+    });
+
+    main.querySelector('#cv-call-now').addEventListener('click', async () => {
+      const patientId = main.querySelector('#cv-contact').value;
+      const goal = main.querySelector('#cv-goal').value.trim();
+      if (!patientId) { toast('Add a contact with a phone number first', true); return; }
+      if (!goal) { toast('Describe what the call should accomplish', true); return; }
+      const btn = main.querySelector('#cv-call-now');
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Calling…';
+      try {
+        // Ignores the "Call at" field on purpose — this button means right
+        // now. One request creates the plan, the second is the approval
+        // (still a real, separate step; it just happens instantly instead
+        // of making you go find the pending row below and click again).
+        const q = await api('/api/v1/calls/queue', { method:'POST', body: JSON.stringify({ patient_id: Number(patientId), goal }) });
+        await api(`/api/v1/approvals/${q.id}/approve`, { method:'POST', body: JSON.stringify({}) });
+        toast('Placing the call now');
+        renderCallsView();
+      } catch(e){
+        toast(e.message || 'Could not place the call', true);
+        btn.disabled = false; btn.textContent = orig;
       }
     });
 
