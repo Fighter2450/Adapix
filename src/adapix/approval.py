@@ -187,13 +187,7 @@ class ApprovalManager:
                     m.status = "rejected"
                     continue
                 org = s.get(Organization, campaign.practice_id)
-                prior_sent = (
-                    s.query(Message)
-                    .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
-                            Message.direction == "outbound",
-                            Message.status.in_(("sent", "delivered", "replied")))
-                    .count()
-                )
+                prior_sent = self._prior_sms_sent_to_patient(s, campaign.patient_id, exclude_message_id=m.id)
                 self._send_one(
                     m, patient, sms, email, voice,
                     org.vapi_phone_number_id if org else None,
@@ -229,13 +223,7 @@ class ApprovalManager:
                 m.metadata_json = meta
                 return "opted_out"
             org = s.get(Organization, campaign.practice_id) if campaign else None
-            prior_sent = (
-                s.query(Message)
-                .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
-                        Message.direction == "outbound",
-                        Message.status.in_(("sent", "delivered", "replied")))
-                .count()
-            )
+            prior_sent = self._prior_sms_sent_to_patient(s, campaign.patient_id, exclude_message_id=m.id) if campaign else 0
             self._send_one(
                 m, patient, sms, email, voice,
                 org.vapi_phone_number_id if org else None,
@@ -271,13 +259,7 @@ class ApprovalManager:
                 m.metadata_json = meta
                 return "opted_out"
             org = s.get(Organization, campaign.practice_id) if campaign else None
-            prior_sent = (
-                s.query(Message)
-                .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
-                        Message.direction == "outbound",
-                        Message.status.in_(("sent", "delivered", "replied")))
-                .count()
-            )
+            prior_sent = self._prior_sms_sent_to_patient(s, campaign.patient_id, exclude_message_id=m.id) if campaign else 0
             self._send_one(
                 m, patient, sms, email, voice,
                 org.vapi_phone_number_id if org else None,
@@ -291,6 +273,33 @@ class ApprovalManager:
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _prior_sms_sent_to_patient(session, patient_id: int, *, exclude_message_id: int) -> int:
+        """How many outbound SMS this PATIENT has already received, across
+        every campaign they've ever had — not just the current one.
+
+        Determines the SMS opt-out (STOP) footer: it belongs on the actual
+        first text to someone, not on every message. Scoping this to a
+        single campaign_id (the old behavior) was wrong the moment a
+        contact could have more than one campaign — a one-off "Write a
+        message" send, an ad-hoc voice-call plan, and the automated
+        follow-up cadence each get their OWN Campaign row, so a
+        campaign-scoped count was always 0 for anything but the automated
+        cadence and put "Reply STOP to opt out" on literally every manual
+        send to a contact who'd already been texted plenty."""
+        return (
+            session.query(Message)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(
+                Campaign.patient_id == patient_id,
+                Message.id != exclude_message_id,
+                Message.channel == "sms",
+                Message.direction == "outbound",
+                Message.status.in_(("sent", "delivered", "replied")),
+            )
+            .count()
+        )
 
     @staticmethod
     def _patient_context(patient: Patient) -> str:
