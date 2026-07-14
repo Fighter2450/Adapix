@@ -2528,6 +2528,58 @@ def api_phone_provision(body: ProvisionBody, org_id: str = Depends(verify_admin)
     return ensure_org_number(org_id, area_code=(body.area_code.strip() or None))
 
 
+# ---------------------------------------------------------------------------
+# Wins — the ROI proof loop. One tap when a chased contact turns into a job;
+# the dashboard rolls it up as "Won back $X this month". This number is the
+# product's whole argument at renewal time.
+# ---------------------------------------------------------------------------
+class WinBody(BaseModel):
+    patient_id: int
+    amount: float | None = None
+
+
+@router.post("/api/v1/wins")
+def api_win_mark(body: WinBody, org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        p = s.get(Patient, body.patient_id)
+        if not p or p.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        amount = body.amount if body.amount is not None else (p.treatment_plan_amount or 0)
+        data = _load_org_profile_data(s, org_id)
+        wins = list(data.get("wins") or [])
+        wins.append({
+            "patient_id": p.id,
+            "name": f"{p.first_name or ''} {p.last_name or ''}".strip(),
+            "amount": float(amount or 0),
+            "at": datetime.utcnow().isoformat() + "Z",
+        })
+        data["wins"] = wins
+        _save_org_profile_data(s, org_id, data)
+        p.status = "treatment_started"
+        s.commit()
+    return {"ok": True, "amount": float(amount or 0)}
+
+
+@router.get("/api/v1/wins/summary")
+def api_wins_summary(org_id: str = Depends(verify_admin)):
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        wins = (_load_org_profile_data(s, org_id).get("wins")) or []
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1).isoformat()
+    month = [w for w in wins if (w.get("at") or "") >= month_start]
+    return {
+        "month_total": sum(w.get("amount") or 0 for w in month),
+        "month_count": len(month),
+        "all_total": sum(w.get("amount") or 0 for w in wins),
+        "all_count": len(wins),
+        "recent": sorted(wins, key=lambda w: w.get("at") or "", reverse=True)[:5],
+    }
+
+
 @router.get("/api/v1/contacts/template.csv", response_class=PlainTextResponse)
 def api_contacts_template(_user: str = Depends(verify_admin)):
     """Download a blank CSV template pre-filled with one example row."""

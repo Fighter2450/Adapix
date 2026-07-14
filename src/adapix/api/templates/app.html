@@ -1512,7 +1512,12 @@ body::after{
 
       <div id="home-setup-gaps"></div>
 
-      <div class="home-stat-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="home-stat-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="home-stat-card" style="cursor:pointer" onclick="goView('contacts')">
+          <div class="home-stat-label">Won back this month</div>
+          <div class="home-stat-val green" id="home-won">$0</div>
+          <div class="home-stat-sub" id="home-won-sub">Mark wins on the Contacts tab</div>
+        </div>
         <div class="home-stat-card">
           <div class="home-stat-label">Sent today</div>
           <div class="home-stat-val cyan">${d.sent_today || 0}</div>
@@ -1650,6 +1655,14 @@ body::after{
     }).catch(() => {});
 
     loadHomeChart();
+
+    api('/api/v1/wins/summary').then(w => {
+      const el = document.getElementById('home-won');
+      const sub = document.getElementById('home-won-sub');
+      if (!el) return;
+      el.textContent = '$' + Math.round(w.month_total || 0).toLocaleString();
+      if (sub && w.month_count) sub.textContent = w.month_count + ' job' + (w.month_count !== 1 ? 's' : '') + ' recovered \u00b7 $' + Math.round(w.all_total).toLocaleString() + ' all time';
+    }).catch(() => {});
 
     // Fill in the contacts count if it wasn't loaded yet
     if (!state.patients) {
@@ -2605,11 +2618,26 @@ body::after{
               <span>${escapeHTML(p.preferred_channel||'sms')}${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
+            ${p.status !== 'treatment_started' ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0;border-color:rgba(52,211,153,.35);color:#6ee7b7" data-action="mark-won" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}" data-amount="${p.treatment_plan_amount || ''}">Won \u2713</button>` : ''}
           </div>`).join('')}
         </div>`;
     }
     renderLucide(main);
     const wire = (id, fn) => { const el = main.querySelector('#'+id); if (el) el.addEventListener('click', fn); };
+    main.querySelectorAll('[data-action="mark-won"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const suggested = btn.dataset.amount || '';
+        const raw = prompt('Nice. Roughly how much is this job worth? (numbers only)', suggested);
+        if (raw === null) return;
+        const amount = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+        btn.disabled = true;
+        try {
+          await api('/api/v1/wins', {method:'POST', body: JSON.stringify({patient_id: Number(btn.dataset.id), amount: isNaN(amount) ? null : amount})});
+          toast('Logged \u2014 ' + btn.dataset.name.trim() + ' marked as won' + (isNaN(amount) ? '' : ' \u00b7 $' + Math.round(amount).toLocaleString()));
+          renderPatientsView();
+        } catch(_){ toast('Could not log the win', true); btn.disabled = false; }
+      });
+    });
     wire('go-import',    () => goContactsView('import'));
     wire('go-add',       () => goContactsView('add'));
     wire('go-add-empty', () => goContactsView('add'));
