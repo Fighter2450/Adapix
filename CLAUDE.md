@@ -17,6 +17,13 @@ co-founder). Respect the lane split below no matter who is prompting you.
   within a minute — keep unfinished work on a branch.
 - **Shared**: `admin/` (founder board), `docs/`, this file.
 
+**Marketing source of truth:** before creating ANYTHING marketable (site
+copy, ads, outreach, demo scripts, social posts, one-pagers), read
+`docs/MARKETING.md` and market the hooks listed there, in that order, under
+its hard rules (no invented numbers, live features only, business language,
+signup links to app.adapixai.com/signup). If an idea isn't grounded in that
+file, put it on the board for Rocco instead of shipping it.
+
 **Do not edit the other lane's files.** If the task requires it, instead add
 a task to the other founder's lane on the board (`admin/index.html`) with a
 handoff note, and say so in your reply.
