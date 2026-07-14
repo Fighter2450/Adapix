@@ -1466,17 +1466,21 @@ body::after{
           if (it.kind === 'esc') {
             const fromCall = it.e.channel === 'call';
             const detail = fromCall ? (it.e.call_summary || it.e.reasoning || '') : (it.e.reasoning || '');
+            const pIcon = fromCall ? 'phone-incoming' : (it.e.channel === 'email' ? 'mail' : 'message-square');
+            const pColor = fromCall ? 'var(--cyan)' : (it.e.channel === 'email' ? '#a78bfa' : '#22d3ee');
             return `
             <div class="row-card hot" style="cursor:pointer" onclick="goView('inbox')">
-              <div class="text"><b>${escapeHTML(it.e.patient)}</b><span>${escapeHTML(escLabel(it.e.category) + (detail ? ' · ' + detail : ''))}</span></div>
+              <div class="text"><b style="display:inline-flex;align-items:center;gap:6px">${escapeHTML(it.e.patient)}<i data-lucide="${pIcon}" style="width:12px;height:12px;color:${pColor}"></i></b><span>${escapeHTML(escLabel(it.e.category) + (detail ? ' · ' + detail : ''))}</span></div>
               <span class="pill hot">${escapeHTML(escLabel(it.e.category))}</span>
               <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
             </div>`;
           }
           if (it.kind === 'draft') {
+            const dIcon = it.m.channel === 'email' ? 'mail' : 'message-square';
+            const dColor = it.m.channel === 'email' ? '#a78bfa' : '#22d3ee';
             return `
             <div class="row-card" style="cursor:pointer" onclick="goView('inbox')">
-              <div class="text"><b>${escapeHTML(it.m.patient)}</b><span>${escapeHTML((it.m.body||'').slice(0,140))}</span></div>
+              <div class="text"><b style="display:inline-flex;align-items:center;gap:6px">${escapeHTML(it.m.patient)}<i data-lucide="${dIcon}" style="width:12px;height:12px;color:${dColor}"></i></b><span>${escapeHTML((it.m.body||'').slice(0,140))}</span></div>
               <span class="pill">draft to review</span>
               <span style="color:var(--ink-3);font-size:18px;flex:0 0 auto">›</span>
             </div>`;
@@ -2366,9 +2370,10 @@ body::after{
         html += '<div class="rows">' + escs.map(e => {
           const fromCall = e.channel === 'call';
           const detail = fromCall ? (e.call_summary || e.reasoning || '') : (e.reasoning || '');
-          const nameLine = fromCall
-            ? `<i data-lucide="phone-incoming" style="width:12px;height:12px;color:var(--cyan)"></i> ${escapeHTML(e.patient)}`
-            : escapeHTML(e.patient);
+          const escIcon = fromCall ? 'phone-incoming' : (e.channel === 'email' ? 'mail' : 'message-square');
+          const escLabel2 = fromCall ? 'CALL' : (e.channel === 'email' ? 'EMAIL' : 'TEXT');
+          const escColor = fromCall ? 'var(--cyan)' : (e.channel === 'email' ? '#a78bfa' : '#22d3ee');
+          const nameLine = `${escapeHTML(e.patient)} <span class="st-ch" style="color:${escColor}"><i data-lucide="${escIcon}" style="width:12px;height:12px"></i>${escLabel2}</span>`;
           const channelForReply = (e.channel === 'sms' || e.channel === 'email') ? e.channel : 'sms';
           const canReply = channelForReply === 'email' ? e.has_email : e.has_phone;
           return `
@@ -2403,7 +2408,7 @@ body::after{
         html += '<div class="rows">' + apprs.map(m => `
           <div class="row-card" data-draft-id="${m.id}" style="cursor:default;align-items:flex-start;flex-wrap:wrap">
             <div class="text" style="flex:1;min-width:200px">
-              <b>${escapeHTML(m.patient)}${m.touch_label ? ` <span style="font-weight:600;font-size:11px;color:var(--ink-3);background:rgba(124,58,237,.12);border:1px solid var(--border);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">${escapeHTML(m.touch_label)}</span>` : ''}</b>
+              <b style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${escapeHTML(m.patient)}<span class="st-ch" style="color:${m.channel==='email'?'#a78bfa':'#22d3ee'}"><i data-lucide="${m.channel==='email'?'mail':'message-square'}" style="width:12px;height:12px"></i>${m.channel==='email'?'EMAIL':'TEXT'}</span>${m.touch_label ? ` <span style="font-weight:600;font-size:11px;color:var(--ink-3);background:rgba(124,58,237,.12);border:1px solid var(--border);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">${escapeHTML(m.touch_label)}</span>` : ''}</b>
               ${m.subject ? `<span style="color:var(--ink);font-weight:600">${escapeHTML(m.subject)}</span>` : ''}
               <span data-draft-preview data-action="draft-edit" data-id="${m.id}" style="cursor:text" title="Click to edit before sending">${escapeHTML((m.body||'').slice(0,220))}</span>
             </div>
@@ -2719,7 +2724,7 @@ body::after{
           <div class="row-card" style="cursor:default;flex-wrap:wrap" data-contact-id="${p.id}">
             <div class="text">
               <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>${p.needs_attention ? ` <span title="No reply in ${p.silent_days} days" style="font-size:11px;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">Quiet ${p.silent_days}d</span>` : ''}
-              <span>${escapeHTML(p.preferred_channel||'sms')}${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><span class="st-ch" style="color:${p.preferred_channel==='email'?'#a78bfa':'#22d3ee'}"><i data-lucide="${p.preferred_channel==='email'?'mail':'message-square'}" style="width:11px;height:11px"></i>${p.preferred_channel==='email'?'EMAIL':'TEXT'}</span>${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
             ${p.status !== 'treatment_started' ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;flex-shrink:0;border-color:rgba(52,211,153,.35);color:#6ee7b7" data-action="mark-won" data-id="${p.id}" data-name="${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}" data-amount="${p.treatment_plan_amount || ''}">Won ✓</button>` : ''}
