@@ -85,6 +85,9 @@ class InboundProcessor:
                 .filter(
                     Campaign.patient_id == patient.id,
                     Campaign.status == CampaignStatus.active.value,
+                    # Ad-hoc call plans create bookkeeping campaigns with no
+                    # loadable workflow — an SMS reply must never route there.
+                    Campaign.workflow_id != "voice_call",
                 )
                 .order_by(Campaign.started_at.desc())
                 .first()
@@ -93,7 +96,7 @@ class InboundProcessor:
                 # Still log inbound for audit, but no action
                 s.add(
                     Message(
-                        campaign_id=0,
+                        campaign_id=None,
                         direction="inbound",
                         channel="sms",
                         body=body,
@@ -186,6 +189,12 @@ class InboundProcessor:
             if campaign is None:
                 campaign = (
                     s.query(Campaign)
+                    .filter(Campaign.patient_id == patient.id,
+                            Campaign.workflow_id != "voice_call")
+                    .order_by(Campaign.started_at.desc())
+                    .first()
+                ) or (
+                    s.query(Campaign)
                     .filter(Campaign.patient_id == patient.id)
                     .order_by(Campaign.started_at.desc())
                     .first()
@@ -193,7 +202,7 @@ class InboundProcessor:
 
             # Log the call transcript as an inbound record on the contact.
             rec = Message(
-                campaign_id=campaign.id if campaign else 0,
+                campaign_id=campaign.id if campaign else None,
                 direction="inbound",
                 channel="call",
                 subject=(summary[:250] or None) if summary else None,
@@ -329,7 +338,13 @@ class InboundProcessor:
             )
 
         # cat == "other" — let the agent reply
-        workflow = load_workflow(campaign.workflow_id)
+        try:
+            workflow = load_workflow(campaign.workflow_id)
+        except FileNotFoundError:
+            # Unloadable workflow (legacy/ad-hoc campaign): don't crash the
+            # webhook — escalate so a human answers instead.
+            campaign.status = CampaignStatus.escalated.value
+            return InboundResult(status="escalated", classification=classification)
         practice = load_practice(campaign.practice_id)
         agent = AdapixAgent(workflow=workflow, practice=practice, settings=self.settings)
         plan = agent.respond_to_inbound(inbound_body, history)

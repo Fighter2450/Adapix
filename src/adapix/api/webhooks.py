@@ -120,6 +120,18 @@ async def vapi_call_events(request: Request):
     event = msg.get("type") or ""
 
     if event == "end-of-call-report":
+        # Persist the raw report BEFORE processing — Vapi never retries, so a
+        # downstream exception must not cost us the transcript.
+        try:
+            import json as _json
+            import os as _os
+            import time as _time
+            from pathlib import Path as _Path
+            raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "vapi_raw.jsonl"
+            with raw.open("a", encoding="utf-8") as f:
+                f.write(_json.dumps({"t": int(_time.time()), "payload": msg}, default=str) + chr(10))
+        except Exception:
+            pass
         call = msg.get("call") or {}
         meta = call.get("metadata") or msg.get("metadata") or {}
         number = ((call.get("customer") or {}).get("number")) or ""

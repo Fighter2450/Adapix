@@ -187,7 +187,9 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id"), index=True)
+    # Nullable: inbound from a contact with no active campaign is still a
+    # customer reply worth keeping — never force a fake FK.
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id"), index=True, nullable=True)
 
     direction: Mapped[str] = mapped_column(String(16))
     channel: Mapped[str] = mapped_column(String(16))

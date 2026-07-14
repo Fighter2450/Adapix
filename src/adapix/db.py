@@ -93,6 +93,18 @@ def _run_additive_migrations(engine: Engine) -> None:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
+def _relax_message_campaign_fk(engine: Engine) -> None:
+    """messages.campaign_id must accept NULL (orphan inbound). Postgres only;
+    SQLite dev DBs are recreated freely."""
+    if engine.dialect.name != "postgresql":
+        return
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE messages ALTER COLUMN campaign_id DROP NOT NULL"))
+    except Exception:
+        pass  # already nullable
+
+
 def _normalize_existing_phones(engine: Engine) -> None:
     """One-off data fix: bring already-stored patient phones to E.164 so
     inbound replies match. Idempotent — normalized numbers pass through
@@ -113,6 +125,7 @@ def init_db(settings: Settings | None = None) -> None:
     """Create all tables + apply additive column migrations. Idempotent."""
     engine = get_engine(settings)
     Base.metadata.create_all(bind=engine)
+    _relax_message_campaign_fk(engine)
     _normalize_existing_phones(engine)
     _run_additive_migrations(engine)
 
