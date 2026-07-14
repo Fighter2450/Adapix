@@ -1808,7 +1808,6 @@ body::after{
               ${toneOpts.map(([v,l]) => `<option value="${v}" ${v===d.tone?'selected':''}>${l}</option>`).join('')}
             </select>
           </div>
-          <button class="sform-save" id="db-save-identity">Save changes</button>
         </div>
 
         <div class="scard">
@@ -1817,7 +1816,8 @@ body::after{
           <div class="sform-row">
             <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run plumbing company handling repairs, water heaters, and emergency calls for homes and small businesses. Most of our work comes from repeat customers and word of mouth.">${escapeHTML(d.description)}</textarea>
           </div>
-          <button class="sform-save" id="db-save-description">Save changes</button>
+          <button class="sform-save" id="db-save-all">Save all changes</button>
+          <div class="sform-hint" style="margin-top:8px">Saves identity, tone, and what-you-do together. Services and taught Q&amp;A below save the moment you add them — no separate step.</div>
         </div>
 
         <div class="scard">
@@ -1908,10 +1908,11 @@ body::after{
         state.focusDbField = null;
       }
 
-      // Identity save
-      document.getElementById('db-save-identity').addEventListener('click', async (e) => {
+      // Identity + tone + "what you do" — one save action for the whole
+      // top section instead of two easy-to-miss buttons in separate cards.
+      document.getElementById('db-save-all').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-        btn.disabled = true; btn.textContent = 'Saving…';
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Saving…';
         try {
           await api('/api/v1/database', { method: 'POST', body: JSON.stringify({
             business_name: document.getElementById('db-name').value,
@@ -1919,23 +1920,11 @@ body::after{
             phone: document.getElementById('db-phone').value,
             hours: document.getElementById('db-hours').value,
             tone: document.getElementById('db-tone').value,
-          })});
-          toast('Saved');
-        } catch(_){ toast('Could not save', true); }
-        btn.disabled = false; btn.textContent = 'Save changes';
-      });
-
-      // "What you do" description save
-      document.getElementById('db-save-description').addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        btn.disabled = true; btn.textContent = 'Saving…';
-        try {
-          await api('/api/v1/database', { method: 'POST', body: JSON.stringify({
             description: document.getElementById('db-description').value,
           })});
           toast('Saved');
         } catch(_){ toast('Could not save', true); }
-        btn.disabled = false; btn.textContent = 'Save changes';
+        btn.disabled = false; btn.textContent = orig;
       });
 
       body.querySelector('[data-goto-team]')?.addEventListener('click', (e) => { e.preventDefault(); goView('team'); });
