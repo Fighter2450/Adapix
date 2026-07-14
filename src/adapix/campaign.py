@@ -101,6 +101,11 @@ class CampaignRunner:
         first_followup_days = int(rules.get("first_followup_days") or 0)
         max_touches = int(rules.get("max_touches") or 0)
 
+        # A 200-contact import must NOT become 200 drafts in one pass — that
+        # buries the inbox and reads as spam. First touches are rationed per
+        # day; oldest campaigns (longest-quiet contacts) go first.
+        FIRST_TOUCH_DAILY_CAP = 15
+
         with get_session(self.settings) as s:
             campaigns = (
                 s.query(Campaign)
@@ -109,9 +114,23 @@ class CampaignRunner:
                     Campaign.workflow_id == self.workflow.id,
                     Campaign.status == CampaignStatus.active.value,
                 )
+                .order_by(Campaign.started_at.asc())
                 .all()
             )
             now = datetime.utcnow()
+            today_start = datetime(now.year, now.month, now.day)
+            first_day = min((st.day for st in self.workflow.cadence), default=0)
+            first_touches_today = (
+                s.query(Message)
+                .join(Campaign, Message.campaign_id == Campaign.id)
+                .filter(
+                    Campaign.practice_id == self.practice_id,
+                    Message.direction == "outbound",
+                    Message.day_in_campaign == first_day,
+                    Message.created_at >= today_start,
+                )
+                .count()
+            )
             for c in campaigns:
                 days_since_start = (now - c.started_at).days
 
@@ -126,13 +145,14 @@ class CampaignRunner:
                 if max_touches > 0 and self._outbound_since_last_reply(s, c.id) >= max_touches:
                     continue
 
-                first_day = min((st.day for st in self.workflow.cadence), default=0)
                 for step in self.workflow.cadence:
                     # The opening touch drafts immediately (day 0) — a brand-new
                     # user shouldn't wait until tomorrow to see Adapix do
                     # anything. The owner's first_followup_days gate above
                     # still delays it when they've set one.
                     is_first_touch = step.day == first_day and c.last_step_completed == 0
+                    if is_first_touch and first_touches_today >= FIRST_TOUCH_DAILY_CAP:
+                        continue
                     if step.day > days_since_start and not is_first_touch:
                         continue
                     if step.day <= c.last_step_completed:
@@ -144,6 +164,8 @@ class CampaignRunner:
                         self._compose_step_with_retry(s, c, step, patient)
                         c.last_step_completed = step.day
                         sent += 1
+                        if is_first_touch:
+                            first_touches_today += 1
                     except Exception as exc:
                         log.warning(f"Skipping step day={step.day} for campaign {c.id}: {exc}")
                 if c.last_step_completed >= max_day and max_day > 0:

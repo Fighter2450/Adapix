@@ -2544,9 +2544,15 @@ def api_contacts_template(_user: str = Depends(verify_admin)):
 async def api_contacts_import(
     file: UploadFile = File(...),
     preview: str = Form("false"),
+    chase: str = Form("all"),
     _user: str = Depends(verify_admin),
 ):
-    """Upload a CSV of contacts. With preview=true returns first 5 rows without inserting."""
+    """Upload a CSV of contacts. With preview=true returns first 5 rows without inserting.
+
+    chase="all"  -> imported contacts enter the follow-up pool (capped drafting)
+    chase="none" -> imported as records only; the owner opts each one in later
+    Re-imports are deduped on (org, phone) and (org, external_id).
+    """
     import csv as csv_mod
     import io
     from datetime import datetime as dt
@@ -2566,11 +2572,21 @@ async def api_contacts_import(
 
     imported = 0
     skipped = 0
+    duplicates = 0
     errors: list[str] = []
+    status_for_new = "consulted_not_started" if chase != "none" else "on_hold"
 
     with get_session() as s:
+        existing = s.query(Patient.phone, Patient.external_id).filter(Patient.practice_id == _user).all()
+        seen_phones = {ph for ph, _ in existing if ph}
+        seen_ext = {ext for _, ext in existing if ext}
         for i, row in enumerate(rows):
             try:
+                row_phone = (row.get("phone") or "").strip() or None
+                row_ext = (row.get("external_id") or "").strip() or None
+                if (row_phone and row_phone in seen_phones) or (row_ext and row_ext in seen_ext):
+                    duplicates += 1
+                    continue
                 consult_date = None
                 raw_date = row.get("consult_date", "").strip()
                 if raw_date:
@@ -2596,14 +2612,18 @@ async def api_contacts_import(
                     treatment_type=(row.get("service_type") or row.get("treatment_type") or "").strip() or None,
                     treatment_plan_amount=amount,
                     notes=(row.get("notes") or "").strip() or None,
-                    status="consulted_not_started",
+                    status=status_for_new,
                 ))
+                if row_phone:
+                    seen_phones.add(row_phone)
+                if row_ext:
+                    seen_ext.add(row_ext)
                 imported += 1
             except Exception as exc:
                 errors.append(f"Row {i + 2}: {exc}")
                 skipped += 1
 
-    return {"imported": imported, "skipped": skipped, "errors": errors}
+    return {"imported": imported, "skipped": skipped, "duplicates": duplicates, "errors": errors}
 
 
 class ContactAddBody(BaseModel):

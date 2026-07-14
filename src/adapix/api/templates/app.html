@@ -2314,7 +2314,15 @@ body::after{
         }).join('') + '</div>';
       }
       if (apprs.length){
-        html += '<div class="section-eyebrow" style="margin-top:24px;margin-bottom:12px">Ready to send — just say OK · ' + apprs.length + '</div>';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:24px;margin-bottom:12px">'
+             + '<span class="section-eyebrow" style="margin:0">Ready to send — just say OK · ' + apprs.length + '</span>'
+             + (apprs.length > 1
+                ? '<span style="display:flex;gap:8px">'
+                  + '<button class="btn btn-primary" style="padding:6px 14px;font-size:12px" data-action="bulk-approve">Send all ' + apprs.length + '</button>'
+                  + '<button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" data-action="bulk-reject">Reject all</button>'
+                  + '</span>'
+                : '')
+             + '</div>';
         html += '<div class="rows">' + apprs.map(m => `
           <div class="row-card" data-draft-id="${m.id}" style="cursor:default;align-items:flex-start;flex-wrap:wrap">
             <div class="text" style="flex:1;min-width:200px">
@@ -2353,6 +2361,31 @@ body::after{
     }
     main.querySelectorAll('[data-action="draft-approve"]').forEach(btn => {
       btn.addEventListener('click', () => approveDraft(btn.dataset.id, btn, null));
+    });
+    const bulkA = main.querySelector('[data-action="bulk-approve"]');
+    if (bulkA) bulkA.addEventListener('click', async () => {
+      if (!confirm('Send all ' + apprs.length + ' drafts as written? Read them first — this is the whole batch.')) return;
+      bulkA.disabled = true;
+      let ok = 0, fail = 0;
+      for (const m of apprs){
+        bulkA.textContent = 'Sending ' + (ok + fail + 1) + '/' + apprs.length + '…';
+        try { await api(`/api/v1/approvals/${m.id}/approve`, {method:'POST', body: JSON.stringify({})}); ok++; }
+        catch(_){ fail++; }
+      }
+      toast(ok + ' sent' + (fail ? ', ' + fail + ' failed' : ''));
+      renderInboxView();
+    });
+    const bulkR = main.querySelector('[data-action="bulk-reject"]');
+    if (bulkR) bulkR.addEventListener('click', async () => {
+      if (!confirm('Reject all ' + apprs.length + ' drafts? Nothing will send; Adapix takes the hint.')) return;
+      bulkR.disabled = true;
+      let done = 0;
+      for (const m of apprs){
+        bulkR.textContent = 'Rejecting ' + (++done) + '/' + apprs.length + '…';
+        try { await api(`/api/v1/approvals/${m.id}/reject`, {method:'POST', body: JSON.stringify({})}); } catch(_){}
+      }
+      toast('All rejected');
+      renderInboxView();
     });
     // Edit before sending — the approve endpoint has always accepted an
     // edited_body; this finally puts that control in the owner's hands.
@@ -2683,7 +2716,7 @@ body::after{
         <div class="scard" style="margin-bottom:16px">
           <div class="scard-title" id="ci-preview-title">Preview</div>
           <div id="ci-preview-table" style="overflow-x:auto;margin-bottom:18px;border-radius:8px;background:var(--bg-3);border:1px solid rgba(255,255,255,.05)"></div>
-          <button id="ci-import-btn" style="padding:12px 28px;border-radius:10px;background:linear-gradient(180deg,var(--cyan-2),#00a8cc);color:#04243a;font-size:14px;font-weight:800;border:0;cursor:pointer;font-family:inherit">Import contacts →</button>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);margin:10px 0 12px;cursor:pointer"><input type="checkbox" id="ci-chase" checked style="accent-color:#7c3aed;width:16px;height:16px" />Start following up with these contacts (max 15 first messages drafted per day, oldest first \u2014 you approve each one)</label><button id="ci-import-btn" style="padding:12px 28px;border-radius:10px;background:linear-gradient(180deg,var(--cyan-2),#00a8cc);color:#04243a;font-size:14px;font-weight:800;border:0;cursor:pointer;font-family:inherit">Import contacts →</button>
         </div>
       </div>
 
@@ -2753,12 +2786,15 @@ body::after{
       const fd = new FormData();
       fd.append('file', pendingFile);
       fd.append('preview', 'false');
+      const chaseEl = main.querySelector('#ci-chase');
+      fd.append('chase', chaseEl && !chaseEl.checked ? 'none' : 'all');
 
       try {
         const j = await fetch('/api/v1/contacts/import', {method:'POST', credentials:'include', body:fd}).then(r=>r.json());
         previewCard.style.display = 'none';
         successEl.style.display = 'block';
-        main.querySelector('#ci-success-count').textContent = j.imported + ' contact' + (j.imported !== 1 ? 's' : '') + ' imported';
+        main.querySelector('#ci-success-count').textContent = j.imported + ' contact' + (j.imported !== 1 ? 's' : '') + ' imported'
+          + (j.duplicates ? ' \u00b7 ' + j.duplicates + ' already existed (skipped)' : '');
         if (j.errors && j.errors.length) toast(j.errors.length + ' row(s) skipped — check format');
       } catch(e){
         toast('Import failed — please try again');
