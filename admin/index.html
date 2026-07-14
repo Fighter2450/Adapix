@@ -93,6 +93,7 @@
    ================================================================ */
 const UPDATED = "2026-07-08";
 const TASKS = [
+  {owner:"rocco", status:"done",    title:"Channel audit: all 12 criticals closed", note:"6-agent audit 7/14 of contacts/SMS/email/calls/orchestration. Fixed same day: opt-out that sticks cross-channel (STOP/decline closes everything), orphan-inbound crash+retry-loop, SMS tenant identity, voice-call thread hijack, engine off event loop, Vapi webhook auth, STOP footer+quiet hours+messaging-service SID, E.164 phone normalization+migration, unified email send path (fixes OAuth auto-mode bypass), email reply-to+reauth alerts, voice billing gate+callback destination+no silent shared-number fallback+retry UI."},
   {owner:"rocco", status:"done",    title:"Full business audit + top-5 fixes shipped", note:"6-agent audit 7/14: viable economics (83% margin, ~25-31 customers to profitability) but 3 gaps. ALL FIXED same day: trust-killer copy (fake stats, dental leftovers, stale signup URLs), security (JWT secret, inbound org isolation, durable webhooks), import flow (dedupe, 15/day first-touch cap, bulk approve), ROI loop (Won-back $X on Home), billing enforcement (Stripe webhook, engine gate, no trial stacking, FOUNDING promo live)."},
   // ---- Rocco (technical) ----
   {owner:"rocco", status:"done",    title:"Upgrade Railway to Hobby ($5/mo)", note:"Done 2026-07-06 — 24/7 uptime + custom domains unlocked."},
