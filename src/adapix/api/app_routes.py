@@ -1211,6 +1211,7 @@ def api_messages_list(
                     "subject": m.subject,
                     "body": m.body,
                     "recording_url": (m.metadata_json or {}).get("recording_url"),
+                    "send_error": (m.metadata_json or {}).get("send_error"),
                     "contact_name": f"{patient.first_name} {patient.last_name}".strip(),
                     "contact_phone": patient.phone,
                     "contact_email": patient.email,
@@ -2137,6 +2138,7 @@ def api_calls_list(org_id: str = Depends(verify_admin)):
                 "summary": m.subject if m.direction == "inbound" else None,
                 "transcript": m.body if m.direction == "inbound" else None,
                 "recording_url": (m.metadata_json or {}).get("recording_url"),
+                "send_error": (m.metadata_json or {}).get("send_error"),
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             })
 
