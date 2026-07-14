@@ -33,7 +33,17 @@ def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
             org.phone_status = "unconfigured"
             return {"ok": False, "reason": "vapi_not_configured"}
 
-        result = create_vapi_number(settings, area_code=area_code, name=org.name)
+        # Look up the owner's real phone from what they taught Adapix so an
+        # inbound callback has somewhere to ring instead of dead air.
+        fallback = None
+        try:
+            from .api.app_routes import _load_org_profile_data
+            from sqlalchemy.orm import Session as _Session
+            with _Session(s.bind) as _s2:
+                fallback = ((_load_org_profile_data(_s2, org_id).get("practice") or {}).get("phone") or "").strip() or None
+        except Exception:
+            pass
+        result = create_vapi_number(settings, area_code=area_code, name=org.name, fallback_number=fallback)
         if not result:
             org.phone_status = "failed"
             return {"ok": False, "reason": "provision_failed"}

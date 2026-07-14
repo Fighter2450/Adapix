@@ -1781,7 +1781,7 @@ body::after{
           <div class="scard-title">Connected channels</div>
           <div class="sch-row">
             <div class="sch-icon"><i data-lucide="phone" style="width:16px;height:16px"></i></div>
-            <div class="sch-body"><div class="sch-name">Calling number</div><div class="sch-val">${d.calling_number ? escapeHTML(d.calling_number) : (d.calling_status === 'pending' ? 'Being set up…' : 'Not set up yet')}</div></div>
+            <div class="sch-body"><div class="sch-name">Calling number</div><div class="sch-val">${d.calling_number ? escapeHTML(d.calling_number) : (d.calling_status === 'pending' ? 'Being set up…' : (d.calling_status === 'failed' ? 'Setup failed — ' : 'Not set up yet'))}${d.calling_status === 'failed' ? '<button class="btn btn-ghost" id="retry-calling-number" style="padding:3px 10px;font-size:11px;margin-left:6px">Retry</button>' : ''}</div></div>
             <span class="sch-badge ${d.calling_number ? '' : 'off'}">${d.calling_number ? 'Connected' : 'Disconnected'}</span>
           </div>
           <div class="sch-row">
@@ -2056,6 +2056,16 @@ body::after{
 
     const smsConnect = document.getElementById('msg-sms-connect');
     if (smsConnect) smsConnect.addEventListener('click', () => toast('Ask Adapix to provision your dedicated texting line — self-serve setup coming soon'));
+
+    const retryNum = document.getElementById('retry-calling-number');
+    if (retryNum) retryNum.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      retryNum.disabled = true; retryNum.textContent = 'Retrying…';
+      try {
+        await api('/api/v1/calling-number/retry', {method:'POST'});
+        toast('Retrying — check back in a minute');
+      } catch(_){ toast('Could not retry', true); retryNum.disabled = false; retryNum.textContent = 'Retry'; }
+    });
 
     // Channel tabs swap the "To" field's meaning and toggle the subject line.
     const toEl = document.getElementById('msg-to');

@@ -74,11 +74,16 @@ def extract_recording_url(call_or_report: dict) -> str:
 
 
 def create_vapi_number(
-    settings: Settings, *, area_code: str | None = None, name: str | None = None
+    settings: Settings, *, area_code: str | None = None, name: str | None = None,
+    fallback_number: str | None = None,
 ) -> tuple[str, str] | None:
     """Buy a free Vapi US number for a business. Returns (phone_number_id, number)
     or None on failure. Swap this for a Twilio buy+import when you productionize
-    reputation management (Twilio gives A-level attestation + CNAM control)."""
+    reputation management (Twilio gives A-level attestation + CNAM control).
+
+    fallback_number: where an INBOUND call to this number goes — without it,
+    a customer calling back after a missed-call text hits dead air. Route to
+    the owner's real office/cell phone if we have one on file."""
     if not settings.vapi_api_key:
         return None
     body: dict = {"provider": "vapi"}
@@ -86,6 +91,8 @@ def create_vapi_number(
         body["numberDesiredAreaCode"] = str(area_code)[:3]
     if name:
         body["name"] = name[:40]
+    if fallback_number:
+        body["fallbackDestination"] = {"type": "number", "number": fallback_number}
     try:
         req = urlrequest.Request(
             VAPI_NUMBER_URL,
@@ -149,8 +156,19 @@ class VoiceChannel:
         if not to:
             return VoiceResult(None, "failed", "missing recipient phone")
 
-        # Each org calls from its OWN number; fall back to the global test number.
-        number_id = phone_number_id or self.settings.vapi_phone_number_id
+        # Each org calls from its OWN number. A dev/global test number
+        # (settings.vapi_phone_number_id) is fine in dry_run or local dev,
+        # but in production a missing org number means provisioning failed —
+        # placing the call anyway would silently mask that from the owner
+        # and put a mystery number in the customer's caller ID.
+        number_id = phone_number_id
+        if not number_id:
+            if self.dry_run or not self.settings.public_base_url:
+                number_id = self.settings.vapi_phone_number_id  # local/dev fallback only
+            else:
+                return VoiceResult(None, "failed",
+                                   "no calling number provisioned for this business — "
+                                   "check Settings -> Messaging & channels")
         biz = business_name or self.settings.business_name or "our office"
         # Always disclose AI in the opening line (compliance). Callers may pass
         # their own first_message, but it must still disclose — so we default to

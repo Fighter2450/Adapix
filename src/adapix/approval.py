@@ -300,6 +300,17 @@ class ApprovalManager:
                 error=r.get("error"),
             )
         elif message.channel == "call":
+            # Calls are the one unmetered spend — check billing right before
+            # dialing, not just when the plan was queued.
+            if org_id:
+                from .billing import engine_allowed
+                from .models import Organization as _Org
+                with get_session(self.settings) as _s:
+                    _org = _s.get(_Org, org_id)
+                allowed, _why = engine_allowed(org_id, _org.created_at if _org else None)
+                if not allowed:
+                    message.status = "rejected"
+                    return
             # message.body is the human-approved CALL PLAN (goal + talking points).
             # It becomes the assistant's instructions; the opening line auto-discloses AI.
             # The business name comes from the ORG (its own identity), not a global setting.

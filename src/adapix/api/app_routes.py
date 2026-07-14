@@ -1876,6 +1876,13 @@ class QueueCallBody(BaseModel):
 def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
     """Queue an AI call for a contact — the human approves the GOAL up front
     (a live call can't be approved word-by-word); approving it places the call."""
+    from ..billing import engine_allowed
+    from ..models import Organization as _Org
+    with get_session() as _s:
+        _org = _s.get(_Org, org_id)
+    allowed, why = engine_allowed(org_id, _org.created_at if _org else None)
+    if not allowed:
+        raise HTTPException(status_code=402, detail=f"Calls are paused ({why}) — check Settings → Account & billing.")
     goal = body.goal.strip()
     if not goal:
         raise HTTPException(status_code=400, detail="Describe what the call should accomplish.")
@@ -2556,6 +2563,15 @@ def api_phone_provision(body: ProvisionBody, org_id: str = Depends(verify_admin)
 class WinBody(BaseModel):
     patient_id: int
     amount: float | None = None
+
+
+@router.post("/api/v1/calling-number/retry")
+def api_calling_number_retry(background: BackgroundTasks, org_id: str = Depends(verify_admin)):
+    """Manual retry after failed number provisioning — surfaced in Settings
+    since a silent failure otherwise leaves calls permanently broken."""
+    from ..provisioning import ensure_org_number
+    background.add_task(ensure_org_number, org_id)
+    return {"ok": True, "status": "retrying"}
 
 
 @router.post("/api/v1/wins")
