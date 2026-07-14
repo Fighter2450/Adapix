@@ -60,23 +60,41 @@ async def twilio_inbound_sms(request: Request):
         raise HTTPException(status_code=403, detail="Invalid Twilio signature")
 
     From = form_dict.get("From", "")
+    To = form_dict.get("To", "")
     Body = form_dict.get("Body", "")
     MessageSid = form_dict.get("MessageSid", "")
 
     if not From or not Body:
         return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
 
+    # Persist the raw inbound BEFORE processing — a customer reply must never
+    # vanish because a downstream exception ate it.
+    try:
+        import json as _json
+        import os as _os
+        import time as _time
+        from pathlib import Path as _Path
+        raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
+        with raw.open("a", encoding="utf-8") as f:
+            f.write(_json.dumps({"t": int(_time.time()), "from": From, "to": To,
+                                 "body": Body, "sid": MessageSid}) + "
+")
+    except Exception:
+        pass
+
     try:
         processor = InboundProcessor()
         result = processor.process_sms(
-            from_number=From, body=Body, provider_id=MessageSid or None
+            from_number=From, body=Body, provider_id=MessageSid or None, to_number=To or None
         )
         print(
             f"[adapix] inbound from={From} status={result.status} "
             f"category={result.classification.category if result.classification else 'n/a'}"
         )
     except Exception as e:
+        # 500 makes Twilio retry instead of silently dropping the reply.
         print(f"[adapix] inbound webhook error: {e}")
+        raise HTTPException(status_code=500, detail="inbound processing failed")
 
     return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
 

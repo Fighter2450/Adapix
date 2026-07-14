@@ -58,11 +58,23 @@ class InboundProcessor:
         from_number: str,
         body: str,
         provider_id: str | None = None,
+        to_number: str | None = None,
     ) -> InboundResult:
         with get_session(self.settings) as s:
-            patient = (
-                s.query(Patient).filter(Patient.phone == from_number).first()
-            )
+            # Tenant isolation: the number the customer texted identifies the
+            # business. Without this, two orgs sharing a contact's phone would
+            # leak each other's replies.
+            q = s.query(Patient).filter(Patient.phone == from_number)
+            if to_number:
+                from .models import Organization
+                org = (
+                    s.query(Organization)
+                    .filter(Organization.phone_number == to_number)
+                    .first()
+                )
+                if org is not None:
+                    q = q.filter(Patient.practice_id == org.id)
+            patient = q.first()
             if patient is None:
                 return InboundResult(status="ignored", reason="no patient match for phone")
 

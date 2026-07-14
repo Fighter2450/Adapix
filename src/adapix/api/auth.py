@@ -8,7 +8,25 @@ import bcrypt
 from fastapi import Depends, HTTPException, Request, status
 from jose import JWTError, jwt
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-production-please")
+def _jwt_secret() -> str:
+    """Env var wins. Without one, use a per-install random secret persisted
+    on the data volume — NEVER a hardcoded default anyone can read on GitHub
+    and use to forge sessions."""
+    env = os.environ.get("JWT_SECRET_KEY", "").strip()
+    if env:
+        return env
+    from pathlib import Path
+    p = Path(os.environ.get("ADAPIX_VAR", ".")) / "jwt_secret"
+    if p.exists():
+        return p.read_text().strip()
+    import secrets
+    val = secrets.token_hex(32)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(val)
+    return val
+
+
+SECRET_KEY = _jwt_secret()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 COOKIE_NAME = "adapix_session"
