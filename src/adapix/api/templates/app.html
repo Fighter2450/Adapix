@@ -1727,7 +1727,7 @@ body::after{
           <div class="scard-title">What you do</div>
           <div class="sform-hint" style="margin-bottom:10px">The general context Adapix uses to understand your business — separate from specific Q&A below. Write it like you're briefing a new hire.</div>
           <div class="sform-row">
-            <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run plumbing company handling repairs, water heaters, and emergency calls for homes and small businesses. Most patients come to us after a referral from their general dentist.">${escapeHTML(d.description)}</textarea>
+            <textarea class="sform-input" id="db-description" rows="4" style="resize:vertical" placeholder="e.g. We're a family-run plumbing company handling repairs, water heaters, and emergency calls for homes and small businesses. Most of our work comes from repeat customers and word of mouth.">${escapeHTML(d.description)}</textarea>
           </div>
           <button class="sform-save" id="db-save-description">Save changes</button>
         </div>
@@ -3273,7 +3273,7 @@ body::after{
       sub:'Collections, billing reminders, revenue insights.',
       tasks:[
         {label:'Draft a polite past-due billing reminder', prompt:'Help me draft a polite past-due balance reminder for customers with balances over 30 days old.'},
-        {label:'Summarize this month\'s revenue',           prompt:'Pull this month\'s production, collections, and acceptance rate and summarize it as a quick paragraph I can read in 10 seconds.'},
+        {label:'Summarize this month\'s revenue',           prompt:'Pull this month\'s revenue, money collected, and how many quotes turned into jobs and summarize it as a quick paragraph I can read in 10 seconds.'},
         {label:'Compare this month vs. last month',        prompt:'Compare this month\'s production and collections to last month and call out anything unusual.'},
         {label:'Identify expiring credits or unused benefits', prompt:'Find customers with unused credits, store balance, or expiring benefits and draft a friendly "use it before you lose it" message for each.'},
         {label:'+ Something else about finance',           prompt:'I have a financial question or task that isn\'t in this list. Ask me about it and help me work through it.', custom:true},
