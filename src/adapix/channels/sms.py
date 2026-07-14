@@ -31,18 +31,27 @@ class SmsChannel:
             self._client = Client(self.settings.twilio_account_sid, self.settings.twilio_auth_token)
         return self._client
 
-    def send(self, to: str, body: str) -> SmsResult:
+    STOP_FOOTER = " Reply STOP to opt out."
+
+    def send(self, to: str, body: str, *, first_touch: bool = False) -> SmsResult:
         if not to:
             return SmsResult(provider_id=None, status="failed", error="missing recipient phone")
+        # A2P/CTIA: the first message of a conversation must carry the
+        # opt-out disclosure (skipped when the composer already wrote one).
+        if first_touch and "stop" not in body.lower():
+            body = body.rstrip() + self.STOP_FOOTER
         if self.dry_run:
             print(f"\n[DRY RUN — SMS to {to}]\n{body}\n")
             return SmsResult(provider_id=None, status="skipped (dry run)")
         try:
-            msg = self.client.messages.create(
-                to=to,
-                from_=self.settings.twilio_from_number,
-                body=body,
-            )
+            params = {"to": to, "body": body}
+            # Route through the registered A2P messaging service when set —
+            # that ties every send to the approved 10DLC campaign.
+            if self.settings.twilio_messaging_service_sid:
+                params["messaging_service_sid"] = self.settings.twilio_messaging_service_sid
+            else:
+                params["from_"] = self.settings.twilio_from_number
+            msg = self.client.messages.create(**params)
             return SmsResult(provider_id=msg.sid, status="sent")
         except Exception as e:
             return SmsResult(provider_id=None, status="failed", error=str(e))

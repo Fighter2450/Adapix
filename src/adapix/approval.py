@@ -165,12 +165,20 @@ class ApprovalManager:
                     m.status = "rejected"
                     continue
                 org = s.get(Organization, campaign.practice_id)
+                prior_sent = (
+                    s.query(Message)
+                    .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
+                            Message.direction == "outbound",
+                            Message.status.in_(("sent", "delivered", "replied")))
+                    .count()
+                )
                 self._send_one(
                     m, patient, sms, email, voice,
                     org.vapi_phone_number_id if org else None,
                     org.name if org else None,
                     campaign.practice_id,
                     org.blooio_channel_id if org else None,
+                    first_touch=prior_sent == 0,
                 )
                 attempted += 1
         return attempted
@@ -199,12 +207,20 @@ class ApprovalManager:
                 m.metadata_json = meta
                 return "opted_out"
             org = s.get(Organization, campaign.practice_id) if campaign else None
+            prior_sent = (
+                s.query(Message)
+                .filter(Message.campaign_id == m.campaign_id, Message.id != m.id,
+                        Message.direction == "outbound",
+                        Message.status.in_(("sent", "delivered", "replied")))
+                .count()
+            )
             self._send_one(
                 m, patient, sms, email, voice,
                 org.vapi_phone_number_id if org else None,
                 org.name if org else None,
                 campaign.practice_id if campaign else None,
                 org.blooio_channel_id if org else None,
+                first_touch=prior_sent == 0,
             )
             return m.status
 
@@ -235,6 +251,7 @@ class ApprovalManager:
         org_business_name: str | None = None,
         org_id: str | None = None,
         org_blooio_channel_id: str | None = None,
+        first_touch: bool = False,
     ) -> None:
         if message.channel == "sms":
             # If THIS org has its own Blooio line, try iMessage first (blue
@@ -269,7 +286,7 @@ class ApprovalManager:
                         md["imessage_error"] = r.error
                     message.metadata_json = md
             if result is None:
-                result = sms.send(patient.phone or "", message.body)
+                result = sms.send(patient.phone or "", message.body, first_touch=first_touch)
         elif message.channel == "email":
             subject = message.subject or "A note from your practice"
             # If the org connected their own Gmail/Outlook, send AS them.

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
+    # A2P: registered messaging service (MG...) — sends route through it so
+    # they're tied to the approved 10DLC campaign.
+    twilio_messaging_service_sid: str = ""
 
     # Resend (email)
     resend_api_key: str = ""

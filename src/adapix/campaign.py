@@ -102,6 +102,15 @@ class CampaignRunner:
         first_followup_days = int(rules.get("first_followup_days") or 0)
         max_touches = int(rules.get("max_touches") or 0)
 
+        # TCPA quiet hours: no automated outreach outside 8am-9pm (America/
+        # New_York default until per-org timezones exist). Drafting waits too
+        # — the engine passes every few minutes, so due steps compose the
+        # moment the window opens.
+        from zoneinfo import ZoneInfo
+        local_hour = datetime.now(ZoneInfo("America/New_York")).hour
+        if not (8 <= local_hour < 21):
+            return 0
+
         # A 200-contact import must NOT become 200 drafts in one pass — that
         # buries the inbox and reads as spam. First touches are rationed per
         # day; oldest campaigns (longest-quiet contacts) go first.
@@ -254,7 +263,8 @@ class CampaignRunner:
 
         # Auto mode - send immediately
         if step.channel == "sms":
-            result = self.sms.send(patient.phone or "", plan.body)
+            result = self.sms.send(patient.phone or "", plan.body,
+                                   first_touch=campaign.last_step_completed == 0)
             extra: dict[str, Any] = {"intent": step.intent}
         elif step.channel == "email":
             subject = plan.subject or f"A note from {self.practice.name}"
