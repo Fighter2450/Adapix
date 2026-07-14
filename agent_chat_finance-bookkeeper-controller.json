@@ -1,0 +1,17 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize our current metrics",
+      "ts": "2026-06-26T18:26:43.172258Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's a summary of Chenet Dental's current metrics:\n\n---\n\n## \ud83d\udcca Practice Dashboard Summary\n\n| Metric | Value | Status |\n|---|---|---|\n| \ud83d\udce8 Messages Sent Today | 7 | \u2014 |\n| \u23f3 Pending Approval | 33 | \ud83d\udd34 Needs Attention |\n| \ud83d\udea8 Open Escalations | 0 | \u2705 Clear |\n| \ud83d\udc64 Customers in Database | 5 | \u2014 |\n\n---\n\n### Key Observations\n\n1. **33 Messages Pending Approval** \u2014 This is the most pressing item. A significant backlog has built up in the approval queue. Dr. Chenet should review and action these to ensure timely outreach to patients.\n\n2. **7 Messages Sent Today** \u2014 Communication activity is live and moving, but the large pending queue suggests drafts are being created faster than they're being approved.\n\n3. **No Open Escalations** \u2014 Clean on the escalation front. No patient interactions currently require urgent human intervention.\n\n4. **5 Patients in Database** \u2014 The practice has a small, manageable patient database at this time.\n\n---\n\n**Recommended Next Step:** Prioritize clearing the 33 pending approvals in the queue. Would you like me to pull up the patient list or help with any outreach drafts?",
+      "ts": "2026-06-26T18:26:43.172258Z",
+      "tools_used": [
+        "\ud83d\udcca Business metrics"
+      ]
+    }
+  ]
+}

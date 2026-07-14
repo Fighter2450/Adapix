@@ -94,11 +94,16 @@ class ClawChannel:
                 if status in ("failed", "error") or ev_type == "error":
                     return IMessageResult(provider_id=msg_id, status="failed",
                                           error=ev.get("error") or ev.get("message") or raw[:200])
-                if status in ("accepted", "sent", "delivery_confirmed", "not_confirmed") or ev_type in ("send.result", "status"):
+                if status in ("accepted", "sent", "delivery_confirmed"):
                     return IMessageResult(provider_id=msg_id, status="sent")
-            # No explicit ack — the send was written to an open socket, so
-            # treat as accepted rather than failing a message that likely went.
-            return IMessageResult(provider_id=msg_id, status="sent")
+                if status == "not_confirmed":
+                    return IMessageResult(provider_id=msg_id, status="failed",
+                                          error="claw did not confirm delivery")
+            # No explicit ack: treat as FAILED so the Twilio fallback fires —
+            # a message that "probably went" with no inbound path is exactly
+            # how STOPs and replies get lost.
+            return IMessageResult(provider_id=msg_id, status="failed",
+                                  error="no delivery ack from claw")
         except Exception as e:
             return IMessageResult(provider_id=None, status="failed", error=f"ws send: {e}")
         finally:

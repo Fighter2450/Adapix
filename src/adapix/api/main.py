@@ -54,7 +54,8 @@ def create_app() -> FastAPI:
         while True:
             try:
                 log.info("Running scheduled campaign pass...")
-                result = run_all_campaigns()
+                # Blocking Claude calls must not freeze webhooks/health checks.
+                result = await asyncio.to_thread(run_all_campaigns)
                 total = sum(r.get("composed", 0) for r in result.get("results", []))
                 log.info(f"Campaign pass complete — {total} messages composed.")
             except Exception as exc:

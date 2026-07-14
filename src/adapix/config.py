@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     blooio_api_key: str = ""
     blooio_channel_id: str = ""
     claw_api_key: str = ""   # Claw Messenger — iMessage relay ($5/mo tier)
+    # iMessage transports have NO inbound path (replies and STOPs sent there
+    # vanish). Twilio is where A2P, inbound, and opt-out actually work — so
+    # iMessage is opt-in per deployment, off by default.
+    prefer_imessage: bool = False
 
     # Vapi (AI voice calling). Vapi handles telephony + speech + turn-taking;
     # we bring the model (Claude) and the prompt. Get these from the Vapi

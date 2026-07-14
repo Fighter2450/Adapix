@@ -100,6 +100,10 @@ async def twilio_inbound_sms(request: Request):
 
 @router.post("/vapi")
 async def vapi_call_events(request: Request):
+    import os as _os
+    expected = _os.environ.get("VAPI_WEBHOOK_SECRET", "").strip()
+    if expected and request.headers.get("x-vapi-secret", "") != expected:
+        raise HTTPException(status_code=403, detail="bad vapi secret")
     """Vapi call events. The important one is 'end-of-call-report', which
     carries the transcript + summary once a call finishes.
 

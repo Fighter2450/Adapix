@@ -265,7 +265,7 @@ class ApprovalManager:
             # then a per-org Blooio line if one exists, then Twilio SMS.
             from .channels import ClawChannel
             claw = ClawChannel(self.settings, dry_run=self.dry_run)
-            if claw.is_configured():
+            if self.settings.prefer_imessage and claw.is_configured():
                 r = claw.send(patient.phone or "", message.body)
                 md = dict(message.metadata_json or {})
                 if r.status != "failed":
@@ -276,7 +276,7 @@ class ApprovalManager:
                 message.metadata_json = md
             if result is None:
                 imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
-                if imsg.is_configured(org_blooio_channel_id):
+                if self.settings.prefer_imessage and imsg.is_configured(org_blooio_channel_id):
                     r = imsg.send(patient.phone or "", message.body, channel_id=org_blooio_channel_id)
                     md = dict(message.metadata_json or {})
                     if r.status != "failed":

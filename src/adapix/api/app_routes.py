@@ -1735,7 +1735,7 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
         booked_today = (
             s.query(Patient)
             .filter(Patient.practice_id == _user)
-            .filter(Patient.status == "scheduled")
+            .filter(Patient.status == "treatment_started")
             .filter(Patient.created_at >= today_start - timedelta(days=14))
             .count()
         )
@@ -1786,10 +1786,14 @@ def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_
     _require_message_in_org(message_id, _user)
     mgr = ApprovalManager()
     try:
-        mgr.approve_and_send(message_id, edited_body=body.edited_body or None)
+        status = mgr.approve_and_send(message_id, edited_body=body.edited_body or None)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"ok": True, "id": message_id}
+    if status == "opted_out":
+        raise HTTPException(status_code=409, detail="This contact opted out — nothing can be sent to them.")
+    if status not in ("sent", "queued"):
+        raise HTTPException(status_code=502, detail=f"Send failed: {status}")
+    return {"ok": True, "id": message_id, "status": status}
 
 
 @router.post("/api/v1/approvals/{message_id}/reject")
@@ -2574,6 +2578,14 @@ def api_win_mark(body: WinBody, org_id: str = Depends(verify_admin)):
         data["wins"] = wins
         _save_org_profile_data(s, org_id, data)
         p.status = "treatment_started"
+        # A won customer stops being chased: close their active campaigns and
+        # clear any drafts still waiting.
+        for c in s.query(Campaign).filter(Campaign.patient_id == p.id,
+                                          Campaign.status == "active").all():
+            c.status = "completed"
+            for m in s.query(Message).filter(Message.campaign_id == c.id,
+                                             Message.status.in_(("pending_approval", "approved"))).all():
+                m.status = "rejected"
         s.commit()
     return {"ok": True, "amount": float(amount or 0)}
 

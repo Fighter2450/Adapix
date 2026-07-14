@@ -180,6 +180,13 @@ class VoiceChannel:
                 "systemPrompt": system_prompt,
             },
             "firstMessage": opening,
+            # Cost guardrails: calls are the one unmetered spend. Hard cap
+            # the duration, hang up on dead air, and don't pitch a voicemail
+            # at full rate.
+            "maxDurationSeconds": 300,
+            "silenceTimeoutSeconds": 20,
+            "voicemailDetection": {"provider": "twilio"},
+            "voicemailMessage": "",
         }
         # Only pin a voice if one is configured; otherwise use Vapi's default
         # (avoids failing on an invalid voice id).
@@ -193,6 +200,10 @@ class VoiceChannel:
             assistant["server"] = {
                 "url": self.settings.public_base_url.rstrip("/") + "/webhooks/vapi",
             }
+            import os as _os
+            _secret = _os.environ.get("VAPI_WEBHOOK_SECRET", "").strip()
+            if _secret:
+                assistant["server"]["secret"] = _secret
 
         body: dict = {
             "phoneNumberId": number_id,
