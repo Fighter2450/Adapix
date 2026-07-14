@@ -77,8 +77,7 @@ async def twilio_inbound_sms(request: Request):
         raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
         with raw.open("a", encoding="utf-8") as f:
             f.write(_json.dumps({"t": int(_time.time()), "from": From, "to": To,
-                                 "body": Body, "sid": MessageSid}) + "
-")
+                                 "body": Body, "sid": MessageSid}) + chr(10))
     except Exception:
         pass
 
