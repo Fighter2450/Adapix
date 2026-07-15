@@ -11,6 +11,13 @@ from .channels.voice import create_vapi_number
 from .config import Settings
 from .db import get_session
 from .models import Organization
+from .phone import normalize_phone
+
+# Vapi requires numberDesiredAreaCode or sipUri on every create-number
+# request — omitting both is a hard 400, and the app has never collected an
+# area-code preference from the owner. Fall back to a real major-metro area
+# code (not toll-free/premium) rather than fail provisioning outright.
+_DEFAULT_AREA_CODE = "212"
 
 
 def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
@@ -34,16 +41,33 @@ def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
             return {"ok": False, "reason": "vapi_not_configured"}
 
         # Look up the owner's real phone from what they taught Adapix so an
-        # inbound callback has somewhere to ring instead of dead air.
+        # inbound callback has somewhere to ring instead of dead air. Must be
+        # E.164 — Vapi rejects fallbackDestination.number outright otherwise,
+        # and the Business Profile phone field stores whatever raw format
+        # the owner typed ("(412) 555-0100"), never normalized before now.
         fallback = None
         try:
             from .api.app_routes import _load_org_profile_data
             from sqlalchemy.orm import Session as _Session
             with _Session(s.bind) as _s2:
-                fallback = ((_load_org_profile_data(_s2, org_id).get("practice") or {}).get("phone") or "").strip() or None
+                raw_phone = ((_load_org_profile_data(_s2, org_id).get("practice") or {}).get("phone") or "").strip()
+            fallback = normalize_phone(raw_phone) if raw_phone else None
+            if fallback and not fallback.startswith("+"):
+                fallback = None  # normalize_phone() couldn't confidently E.164-ify it — omit rather than send garbage
         except Exception:
             pass
-        result = create_vapi_number(settings, area_code=area_code, name=org.name, fallback_number=fallback)
+
+        # Vapi needs an area code (or sipUri) on every request; derive one
+        # from the owner's own number when we have a real E.164 one, else a
+        # sane default — never send neither and let the whole call 400.
+        resolved_area_code = area_code
+        if not resolved_area_code:
+            if fallback and len(fallback) >= 5:
+                resolved_area_code = fallback[2:5]  # "+1XXXNNNNNNN" -> "XXX"
+            else:
+                resolved_area_code = _DEFAULT_AREA_CODE
+
+        result = create_vapi_number(settings, area_code=resolved_area_code, name=org.name, fallback_number=fallback)
         if not result.phone_number_id:
             org.phone_status = "failed"
             return {"ok": False, "reason": "provision_failed", "detail": result.error}
