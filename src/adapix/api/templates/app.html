@@ -1645,6 +1645,7 @@ body::after{
       if (!(d.description || '').trim()) gaps.push({label: 'Describe what your business does', focus: 'db-description'});
       if (!(d.services || []).length) gaps.push({label: 'Add your pricing', focus: 'db-svc-name'});
       if (!d.calling_number) gaps.push({label: 'Set up your calling number', channels: true});
+      else if (d.calling_status !== 'registered') gaps.push({label: 'Register your number (avoid "Spam Likely")', channels: true});
       if (!d.email_connected) gaps.push({label: 'Connect your email', channels: true});
 
       // Notifications bubble: shows until THIS device is subscribed.
