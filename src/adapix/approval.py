@@ -388,6 +388,25 @@ class ApprovalManager:
             # It becomes the assistant's instructions; the opening line auto-discloses AI.
             # The business name comes from the ORG (its own identity), not a global setting.
             biz = org_business_name or self.settings.business_name
+            # Optional phonetic spelling (Settings -> Business profile) so the
+            # TTS voice says an unusual name correctly — "Adapix" read literally
+            # by a generic pronunciation model doesn't always land right.
+            biz_spoken = biz
+            pronunciation_note = ""
+            if org_id:
+                try:
+                    from .api.app_routes import _load_org_profile_data
+                    with get_session(self.settings) as _s3:
+                        pron = (_load_org_profile_data(_s3, org_id).get("pronunciation") or "").strip()
+                    if pron and pron != biz:
+                        biz_spoken = pron
+                        pronunciation_note = (
+                            f'\n\nPRONUNCIATION: The business\'s real name is "{biz}", but write it '
+                            f'phonetically as "{pron}" whenever you SAY it out loud during this call — '
+                            f'that spelling is only for correct AI pronunciation, not a name change.'
+                        )
+                except Exception:
+                    pass
             system_prompt = (
                 f"You are a warm, professional voice assistant calling on behalf of "
                 f"{biz}. Here is what you're trying to accomplish "
@@ -397,12 +416,13 @@ class ApprovalManager:
                 "You already disclosed you're an AI in your opening line. If they ask "
                 "something you can't answer or want a person, warmly offer a callback and "
                 "end politely."
+                f"{pronunciation_note}"
             )
             result = voice.place_call(
                 to=patient.phone or "",
                 system_prompt=system_prompt,
                 goal=message.body,
-                business_name=biz,
+                business_name=biz_spoken,
                 phone_number_id=org_phone_number_id,
                 # so the end-of-call-report webhook can link the outcome back
                 metadata={

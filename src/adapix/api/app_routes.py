@@ -989,6 +989,7 @@ class DatabaseUpdateBody(BaseModel):
     hours_sunday: str | None = None
     business_type_id: str | None = None
     business_type_label: str | None = None
+    pronunciation: str | None = None
 
 
 @router.get("/api/v1/database")
@@ -1036,6 +1037,7 @@ def api_database(org_id: str = Depends(verify_admin)):
             "business_type_id": data.get("practice_type") or "",
             "tone": data.get("tone") or "warm_professional",
             "description": data.get("description") or "",
+            "pronunciation": data.get("pronunciation") or "",
             "services": data.get("services") or [],
             "workflows": workflows,
             "escalations": escalations,
@@ -1087,6 +1089,8 @@ def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_a
             data["tone"] = body.tone
         if body.description is not None:
             data["description"] = body.description.strip()
+        if body.pronunciation is not None:
+            data["pronunciation"] = body.pronunciation.strip()
         if body.business_type_id is not None:
             data["practice_type"] = body.business_type_id.strip()
             data["practice_type_label"] = (body.business_type_label or "").strip()

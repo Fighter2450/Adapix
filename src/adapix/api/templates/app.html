@@ -4399,7 +4399,7 @@ body::after{
   async function initBusinessProfile(){
     const save = document.getElementById('bp-save');
     if (!save) return;
-    const ids = ['bp-name','bp-phone','bp-website','bp-address','bp-hours-weekday','bp-hours-sat','bp-hours-sun'];
+    const ids = ['bp-name','bp-phone','bp-website','bp-address','bp-hours-weekday','bp-hours-sat','bp-hours-sun','bp-pronunciation'];
     try {
       const d = await api('/api/v1/database');
       const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
@@ -4410,6 +4410,7 @@ body::after{
       set('bp-hours-weekday', d.hours_weekday);
       set('bp-hours-sat', d.hours_saturday);
       set('bp-hours-sun', d.hours_sunday);
+      set('bp-pronunciation', d.pronunciation);
       if (window.stypePreset) window.stypePreset(d.business_type_id, d.business_type);
     } catch(_){ /* leave blank — better than blocking the page */ }
 
@@ -4426,6 +4427,7 @@ body::after{
           hours_weekday: val('bp-hours-weekday'),
           hours_saturday: val('bp-hours-sat'),
           hours_sunday: val('bp-hours-sun'),
+          pronunciation: val('bp-pronunciation'),
           business_type_id: stypeEl ? (stypeEl.dataset.selId || '') : '',
           business_type_label: stypeEl ? stypeEl.value : '',
         })});
@@ -4906,6 +4908,11 @@ body::after{
         <div class="scard">
           <div class="scard-title">Business info</div>
           <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" id="bp-name" placeholder="e.g. Mike's Plumbing Co" /></div>
+          <div class="sform-row">
+            <label class="sform-label">Pronunciation <span style="font-weight:400;color:var(--ink-3)">(optional — for phone calls only)</span></label>
+            <input class="sform-input" id="bp-pronunciation" placeholder="e.g. Adapix &rarr; AD-uh-pix" />
+            <div class="sform-hint">Only used to help the AI voice say an unusual name correctly on calls. Spell it out how it sounds — everything else (texts, emails) still uses the real name above.</div>
+          </div>
           <div class="sform-row">
             <label class="sform-label">Specialty / type</label>
             <div class="stype-wrap">
