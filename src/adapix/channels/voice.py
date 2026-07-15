@@ -17,6 +17,7 @@ back for review — with a live hand-off to a person when the call needs one.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from urllib import request as urlrequest
 from urllib.error import HTTPError, URLError
@@ -116,27 +117,38 @@ def create_vapi_number(
     if fallback_number:
         body["fallbackDestination"] = {"type": "number", "number": fallback_number}
 
-    try:
-        return _post(body)
-    except HTTPError as e:
-        detail = e.read().decode(errors="replace")[:300]
-        # A rejected fallback destination (bad/unparseable owner phone number
-        # slipping past our own validation) shouldn't block getting a working
-        # calling line at all — retry once without it. A missing callback
-        # route is a real but minor gap; no number is a much bigger one.
-        if fallback_number and "fallbackDestination" in detail:
-            try:
-                return _post({k: v for k, v in body.items() if k != "fallbackDestination"})
-            except HTTPError as e2:
-                detail2 = e2.read().decode(errors="replace")[:300]
-                return NumberProvisionResult(None, None, f"Vapi HTTP {e2.code} (retry without fallback number): {detail2}")
-            except (URLError, TimeoutError) as e2:
-                return NumberProvisionResult(None, None, f"Could not reach Vapi (retry without fallback number): {e2}")
-        return NumberProvisionResult(None, None, f"Vapi HTTP {e.code}: {detail}")
-    except (URLError, TimeoutError) as e:
-        return NumberProvisionResult(None, None, f"Could not reach Vapi: {e}")
-    except Exception as e:  # noqa: BLE001 — surface any client error as a result
-        return NumberProvisionResult(None, None, str(e))
+    # Two known-recoverable rejections, neither of which should ever block
+    # getting a working calling line: (1) a bad/unparseable owner phone
+    # slipping past our own validation as the fallback destination — a
+    # missing callback route is a minor gap, not worth failing over; (2)
+    # Vapi has no free-tier inventory in the requested area code — it
+    # helpfully names real alternatives in the error text ("Try one of 573,
+    # 719, 458"), so use the first one instead of just giving up. Bounded to
+    # a few attempts so a genuinely bad request can't loop.
+    attempts_left = 4
+    last_error = ""
+    while attempts_left > 0:
+        attempts_left -= 1
+        try:
+            return _post(body)
+        except HTTPError as e:
+            detail = e.read().decode(errors="replace")[:300]
+            last_error = f"Vapi HTTP {e.code}: {detail}"
+            if "fallbackDestination" in detail and "fallbackDestination" in body:
+                del body["fallbackDestination"]
+                continue
+            alt_match = re.search(r"[Tt]ry one of ([\d, ]+)", detail)
+            if "area code" in detail.lower() and alt_match:
+                alt = alt_match.group(1).split(",")[0].strip()
+                if alt and alt != body.get("numberDesiredAreaCode"):
+                    body["numberDesiredAreaCode"] = alt
+                    continue
+            return NumberProvisionResult(None, None, last_error)
+        except (URLError, TimeoutError) as e:
+            return NumberProvisionResult(None, None, f"Could not reach Vapi: {e}")
+        except Exception as e:  # noqa: BLE001 — surface any client error as a result
+            return NumberProvisionResult(None, None, str(e))
+    return NumberProvisionResult(None, None, last_error or "Vapi rejected the request repeatedly")
 
 
 @dataclass
