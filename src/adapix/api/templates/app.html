@@ -2881,7 +2881,7 @@ body::after{
         <div class="rows">${state.patients.slice(0,200).map(p => `
           <div class="row-card" style="cursor:default;flex-wrap:wrap" data-contact-id="${p.id}">
             <div class="text">
-              <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>${p.needs_attention ? ` <span title="No reply in ${p.silent_days} days" style="font-size:11px;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">Quiet ${p.silent_days}d</span>` : ''}
+              <b>${escapeHTML((p.first_name||'') + ' ' + (p.last_name||''))}</b>${p.needs_attention ? ` <span title="No reply in ${p.silent_days} days" style="font-size:11px;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">Quiet ${p.silent_days}d</span>` : ''}${p.memory_count ? ` <span title="${p.memory_count} thing${p.memory_count===1?'':'s'} Adapix has learned about them" style="font-size:11px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:999px;padding:2px 9px;vertical-align:1px;white-space:nowrap">🧠 ${p.memory_count}</span>` : ''}
               <span style="display:inline-flex;align-items:center;gap:6px"><span class="st-ch" style="color:${p.preferred_channel==='email'?'#a78bfa':'#22d3ee'}"><i data-lucide="${p.preferred_channel==='email'?'mail':'message-square'}" style="width:11px;height:11px"></i>${p.preferred_channel==='email'?'EMAIL':'TEXT'}</span>${p.treatment_type ? ' · ' + escapeHTML(p.treatment_type) : ''}${p.treatment_plan_amount ? ' · $' + Number(p.treatment_plan_amount).toLocaleString() : ''}</span>
             </div>
             <span class="pill" style="color:${statusColors[p.status]||'var(--ink-3)'};">${escapeHTML(statusLabel(p.status))}</span>
@@ -2918,6 +2918,7 @@ body::after{
                 </div>
               </div>
               <div class="sform-row"><label class="sform-label">Notes</label><textarea class="sform-input" data-f="notes" rows="2">${escapeHTML(p.notes||'')}</textarea></div>
+              <div class="thread-memory" id="cm-${p.id}" style="border:1px solid var(--border);border-radius:9px;margin:4px 0 10px;max-height:none"></div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
                 <button class="sform-save" data-action="contact-save" data-id="${p.id}">Save changes</button>
                 <button class="btn btn-ghost" data-action="contact-edit-cancel">Cancel</button>
@@ -2950,7 +2951,9 @@ body::after{
       btn.addEventListener('click', () => {
         const row = btn.closest('[data-contact-id]');
         const editor = row.querySelector('[data-contact-editor]');
-        if (editor) editor.hidden = !editor.hidden;
+        if (!editor) return;
+        editor.hidden = !editor.hidden;
+        if (!editor.hidden) loadContactMemoryInto(document.getElementById('cm-' + btn.dataset.id), btn.dataset.id);
       });
     });
     main.querySelectorAll('[data-action="contact-edit-cancel"]').forEach(btn => {
@@ -3003,6 +3006,34 @@ body::after{
     wire('go-add-empty', () => goContactsView('add'));
   }
 
+  // -------- Per-contact memory: shared by the Conversation modal and the
+  // Contacts row's inline edit panel, so it's visible in either place
+  // without opening the other. --------
+  async function loadContactMemoryInto(memEl, patientId){
+    if (!memEl) return;
+    try {
+      const mj = await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory');
+      const facts = mj.facts || [];
+      if (!facts.length){ memEl.hidden = true; return; }
+      memEl.hidden = false;
+      memEl.innerHTML = `<div class="thread-memory-title">What Adapix has learned</div>` + facts.map(f => `
+        <div class="thread-memory-fact" data-fact-id="${escapeAttr(f.id)}">
+          <span class="cat">${escapeHTML(f.category || 'detail')}</span>
+          <span>${escapeHTML(f.text || '')}</span>
+          <button class="del" data-fact-del="${escapeAttr(f.id)}" title="Remove">&times;</button>
+        </div>`).join('');
+      memEl.querySelectorAll('[data-fact-del]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          try {
+            await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory/' + encodeURIComponent(btn.dataset.factDel), {method:'DELETE'});
+            loadContactMemoryInto(memEl, patientId);
+          } catch(_){ toast('Could not remove', true); }
+        });
+      });
+    } catch(_){ memEl.hidden = true; }
+  }
+
   // -------- Conversation thread (all channels, one contact) --------
   async function openThreadModal(patientId, patientName){
     const backdrop = document.createElement('div');
@@ -3023,30 +3054,7 @@ body::after{
 
     // What Adapix has learned about this contact — separate fetch, doesn't
     // block the conversation from loading if it fails.
-    const memEl = backdrop.querySelector('#thread-memory');
-    async function loadMemory(){
-      try {
-        const mj = await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory');
-        const facts = mj.facts || [];
-        if (!facts.length){ memEl.hidden = true; return; }
-        memEl.hidden = false;
-        memEl.innerHTML = `<div class="thread-memory-title">What Adapix has learned</div>` + facts.map(f => `
-          <div class="thread-memory-fact" data-fact-id="${escapeAttr(f.id)}">
-            <span class="cat">${escapeHTML(f.category || 'detail')}</span>
-            <span>${escapeHTML(f.text || '')}</span>
-            <button class="del" data-fact-del="${escapeAttr(f.id)}" title="Remove">&times;</button>
-          </div>`).join('');
-        memEl.querySelectorAll('[data-fact-del]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            try {
-              await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory/' + encodeURIComponent(btn.dataset.factDel), {method:'DELETE'});
-              loadMemory();
-            } catch(_){ toast('Could not remove', true); }
-          });
-        });
-      } catch(_){ memEl.hidden = true; }
-    }
-    loadMemory();
+    loadContactMemoryInto(backdrop.querySelector('#thread-memory'), patientId);
 
     const body = backdrop.querySelector('#thread-body');
     try {

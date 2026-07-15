@@ -2867,6 +2867,7 @@ def api_patients_list(q: str = "", _user: str = Depends(verify_admin)):
                 "consult_date": p.consult_date.isoformat() if p.consult_date else None,
                 "silent_days": silent_days,
                 "needs_attention": needs_attention,
+                "memory_count": len(p.memory_json or []),
             })
         # Needs-attention first, then longest-silent, so the top of the list
         # is always "who should I actually think about today."
