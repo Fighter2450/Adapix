@@ -440,7 +440,6 @@ class ApprovalManager:
                 f"{knowledge_block}"
                 f"{pronunciation_note}"
             )
-            print(f"[adapix] call system_prompt for org={org_id}:\n{system_prompt}\n[/adapix]")
             result = voice.place_call(
                 to=patient.phone or "",
                 system_prompt=system_prompt,
