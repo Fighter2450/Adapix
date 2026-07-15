@@ -69,13 +69,23 @@ every text, email, and call, in order. Frame it as the difference between a
 robocall and someone who actually answers: "Your customer texts back, and
 Adapix texts back."
 
-### 6. The founding deal — $49/mo locked for a year, 10 spots
+### 6. It remembers your customers, not just their name and number
+Every conversation teaches Adapix something about the person on the other
+end — the dog that needs to be locked up before a tech shows, that they're
+only free after 5pm, that they mentioned a cheaper quote elsewhere. Adapix
+remembers it and quietly uses it next time — nobody has to dig through old
+texts or make the customer repeat themselves. The owner can see exactly
+what's been learned about each contact, right on their profile, and delete
+anything wrong. Frame it as the opposite of a form-letter follow-up system:
+"It doesn't just remember what they bought — it remembers who they are."
+
+### 7. The founding deal — $49/mo locked for a year, 10 spots
 Code FOUNDING at checkout (it's a real Stripe promo, max 10 redemptions).
 Framing: "One recovered job pays for the whole year." Always state spots
 remaining honestly. When the 10 are gone, this hook retires — don't fake
 scarcity.
 
-### 7. The math — "one job pays for months of it"
+### 8. The math — "one job pays for months of it"
 $99/month, everything included, no tiers, no usage fees, 14-day trial with no
 card. A $1,500 water heater job recovered = 15 months of Adapix. Use the
 customer's OWN numbers whenever possible (their average job value), not ours.
