@@ -1642,6 +1642,13 @@ body::after{
       if (!(d.business_name || '').trim()) gaps.push({label: 'Add your business name', focus: 'db-name'});
       if (!(d.owner_name || '').trim()) gaps.push({label: 'Tell Adapix what to call you', focus: 'db-owner'});
       if (!(d.phone || '').trim()) gaps.push({label: 'Add your business phone number', focus: 'db-phone'});
+      // Fastest path to a well-taught AI (fewer escalations): paste the
+      // website once instead of filling in description/pricing/FAQs by
+      // hand. Suggested first, before the slower manual-entry gaps below —
+      // clears most of them in one shot for anyone with a real site.
+      if (!(d.services || []).length && !(d.knowledge_base || []).length) {
+        gaps.push({label: 'Let Adapix read your website (fills in pricing & FAQs fast)', website_import_start: true});
+      }
       if (!(d.description || '').trim()) gaps.push({label: 'Describe what your business does', focus: 'db-description'});
       if (!(d.services || []).length) gaps.push({label: 'Add your pricing', focus: 'db-svc-name'});
       if (!d.calling_number) gaps.push({label: 'Set up your calling number', channels: true});
@@ -1668,7 +1675,7 @@ body::after{
           btn.addEventListener('click', () => {
             const g = gaps[Number(btn.dataset.gapIdx)];
             if (g.notifications) { goView('settings'); goSettingsView('notifications'); }
-            else if (g.website_import) { goView('settings'); goSettingsView('profile'); }
+            else if (g.website_import || g.website_import_start) { goView('settings'); goSettingsView('profile'); }
             else if (g.channels) { goView('settings'); goSettingsView('channels'); }
             else { state.focusDbField = g.focus; goView('database'); }
           });

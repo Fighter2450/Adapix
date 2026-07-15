@@ -91,8 +91,9 @@
    status: "now" | "next" | "waiting" | "done"
    handoff: optional — what you need from the other founder
    ================================================================ */
-const UPDATED = "2026-07-08";
+const UPDATED = "2026-07-14";
 const TASKS = [
+  {owner:"rocco", status:"next",    title:"DECIDE: per-org dedicated texting line (Blooio $39/mo/business)", note:"Confirmed 7/14: SMS still runs through Claw (shared platform-wide iMessage line, not per-business) plus a shared Twilio fallback — no business gets their own texting number today. Blooio adapter is built and per-org-ready (Organization.blooio_channel_id), just never auto-provisioned. Rocco: explicitly deferred 7/14 ('keep that on the to-do list, not doing that right now') — real recurring cost per business, needs a pricing-tier decision before turning on."},
   {owner:"rocco", status:"done",    title:"Channel audit: all 12 criticals closed", note:"6-agent audit 7/14 of contacts/SMS/email/calls/orchestration. Fixed same day: opt-out that sticks cross-channel (STOP/decline closes everything), orphan-inbound crash+retry-loop, SMS tenant identity, voice-call thread hijack, engine off event loop, Vapi webhook auth, STOP footer+quiet hours+messaging-service SID, E.164 phone normalization+migration, unified email send path (fixes OAuth auto-mode bypass), email reply-to+reauth alerts, voice billing gate+callback destination+no silent shared-number fallback+retry UI."},
   {owner:"rocco", status:"done",    title:"Full business audit + top-5 fixes shipped", note:"6-agent audit 7/14: viable economics (83% margin, ~25-31 customers to profitability) but 3 gaps. ALL FIXED same day: trust-killer copy (fake stats, dental leftovers, stale signup URLs), security (JWT secret, inbound org isolation, durable webhooks), import flow (dedupe, 15/day first-touch cap, bulk approve), ROI loop (Won-back $X on Home), billing enforcement (Stripe webhook, engine gate, no trial stacking, FOUNDING promo live)."},
   // ---- Rocco (technical) ----
