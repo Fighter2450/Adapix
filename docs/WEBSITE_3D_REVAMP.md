@@ -90,6 +90,13 @@ A second Higgsfield piece: a ~24s silent "how it works" demo in the same
 - Scene job ids: opener `e9d0595b`, notices `77dcad29`, approve
   `240efcaa`, booked `0bb19454`; stitch `9f15bbbd`; keyframes `72ffa6c4`,
   `54194e94`, `d5c0fd51`, clean-A opener reuses `4f86a1ce`.
+- **60-second demo cut (2026-07-15, 1280×720)** — assembled free from the
+  project's existing takes (logo orbit → hero master → A splits open →
+  notices → Approve → feature ring → A rebuilds the ring → Booked +
+  tagline). Sections are straight cuts and two mid-film scenes are
+  budget-tier takes; a from-scratch smooth pro master (~115 credits) and
+  the 4K pass are still gated on a credit top-up (balance was 7):
+  <https://d8j0ntlcm91z4.cloudfront.net/user_3FGpqky25EoXR4BrSlSF8lPXHSf/hf_20260715_154210_7fdaf1a9-4b80-43a5-850a-507f4ab54fa7.mp4>
 - 4K master: pending Rocco's approval (upscale pass on the account).
 - A discarded alternate opener exists (black device box splitting open,
   clip `1c8693af` from device render): Rocco redirected to the A-split.
