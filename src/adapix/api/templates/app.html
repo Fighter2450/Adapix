@@ -2784,7 +2784,7 @@ body::after{
           toast(r.status === 'scheduled' ? 'Approved — Adapix will call at the scheduled time' : 'Placing the call now');
           renderCallsView();
         } catch(e){
-          toast('Could not place the call', true);
+          toast(e.message || 'Could not place the call', true);
           btn.disabled = false; btn.textContent = origLabel;
         }
       });

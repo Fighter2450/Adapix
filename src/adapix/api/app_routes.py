@@ -1988,6 +1988,19 @@ def _require_message_in_org(message_id: int, org_id: str) -> None:
             raise HTTPException(status_code=404, detail="Message not found")
 
 
+def _send_failure_detail(message_id: int, status: str) -> str:
+    """'Send failed: failed' told the owner nothing — _send_one() always
+    writes the REAL reason (a Vapi HTTP error, 'no calling number
+    provisioned', etc.) to metadata_json.send_error, but the approve/
+    send-now endpoints only ever echoed back the terminal status string,
+    which for a failure is always just the literal word 'failed'. Pull the
+    real reason back out for the error response."""
+    with get_session() as s:
+        m = s.get(Message, message_id)
+        err = (m.metadata_json or {}).get("send_error") if m else None
+    return f"Send failed: {err}" if err else f"Send failed: {status}"
+
+
 @router.post("/api/v1/approvals/{message_id}/approve")
 def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_admin)):
     _require_message_in_org(message_id, _user)
@@ -2012,7 +2025,7 @@ def api_approve(message_id: int, body: ApproveBody, _user: str = Depends(verify_
     if status == "opted_out":
         raise HTTPException(status_code=409, detail="This contact opted out — nothing can be sent to them.")
     if status not in ("sent", "queued"):
-        raise HTTPException(status_code=502, detail=f"Send failed: {status}")
+        raise HTTPException(status_code=502, detail=_send_failure_detail(message_id, status))
     return {"ok": True, "id": message_id, "status": status}
 
 
@@ -2033,7 +2046,7 @@ def api_send_now(message_id: int, _user: str = Depends(verify_admin)):
     if status == "not_found_or_not_approved":
         raise HTTPException(status_code=400, detail="Nothing to send — it may have already gone out or been cancelled.")
     if status not in ("sent", "queued"):
-        raise HTTPException(status_code=502, detail=f"Send failed: {status}")
+        raise HTTPException(status_code=502, detail=_send_failure_detail(message_id, status))
     return {"ok": True, "id": message_id, "status": status}
 
 
