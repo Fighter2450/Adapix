@@ -106,6 +106,7 @@ session_uploads/
 *.webm
 # ...but the compressed hero film ships with the site
 !website/adapix_hero.mp4
+!website/assets/rcs/demo.webm
 
 # Local Netlify folder
 .netlify
