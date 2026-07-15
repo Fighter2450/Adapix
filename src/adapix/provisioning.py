@@ -7,11 +7,21 @@ Vapi US number; when you productionize reputation management, swap
 """
 from __future__ import annotations
 
+import re
+
 from .channels.voice import create_vapi_number
 from .config import Settings
 from .db import get_session
 from .models import Organization
 from .phone import normalize_phone
+
+# Vapi's own E.164 validator is stricter than normalize_phone()'s "good
+# enough to dedupe on" bar — normalize_phone() will happily return
+# +1XXXXXXXXXX for literally any 10-digit run it finds in a messy string,
+# which passed the old startswith("+") check here but still wasn't a real
+# number and still got rejected. Require the exact US shape before trusting
+# it as a fallback destination.
+_E164_US = re.compile(r"^\+1\d{10}$")
 
 # Vapi requires numberDesiredAreaCode or sipUri on every create-number
 # request — omitting both is a hard 400, and the app has never collected an
@@ -52,8 +62,8 @@ def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
             with _Session(s.bind) as _s2:
                 raw_phone = ((_load_org_profile_data(_s2, org_id).get("practice") or {}).get("phone") or "").strip()
             fallback = normalize_phone(raw_phone) if raw_phone else None
-            if fallback and not fallback.startswith("+"):
-                fallback = None  # normalize_phone() couldn't confidently E.164-ify it — omit rather than send garbage
+            if fallback and not _E164_US.match(fallback):
+                fallback = None  # not a real, strictly-valid US E.164 number — omit rather than send garbage
         except Exception:
             pass
 

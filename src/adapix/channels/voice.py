@@ -93,14 +93,8 @@ def create_vapi_number(
     the owner's real office/cell phone if we have one on file."""
     if not settings.vapi_api_key:
         return NumberProvisionResult(None, None, "Vapi is not configured (VAPI_API_KEY missing)")
-    body: dict = {"provider": "vapi"}
-    if area_code:
-        body["numberDesiredAreaCode"] = str(area_code)[:3]
-    if name:
-        body["name"] = name[:40]
-    if fallback_number:
-        body["fallbackDestination"] = {"type": "number", "number": fallback_number}
-    try:
+
+    def _post(body: dict) -> NumberProvisionResult:
         req = urlrequest.Request(
             VAPI_NUMBER_URL,
             data=json.dumps(body).encode(),
@@ -113,8 +107,31 @@ def create_vapi_number(
         if pid:
             return NumberProvisionResult(pid, data.get("number") or "")
         return NumberProvisionResult(None, None, f"Vapi accepted the request but returned no number id: {data!r}"[:300])
+
+    body: dict = {"provider": "vapi"}
+    if area_code:
+        body["numberDesiredAreaCode"] = str(area_code)[:3]
+    if name:
+        body["name"] = name[:40]
+    if fallback_number:
+        body["fallbackDestination"] = {"type": "number", "number": fallback_number}
+
+    try:
+        return _post(body)
     except HTTPError as e:
         detail = e.read().decode(errors="replace")[:300]
+        # A rejected fallback destination (bad/unparseable owner phone number
+        # slipping past our own validation) shouldn't block getting a working
+        # calling line at all — retry once without it. A missing callback
+        # route is a real but minor gap; no number is a much bigger one.
+        if fallback_number and "fallbackDestination" in detail:
+            try:
+                return _post({k: v for k, v in body.items() if k != "fallbackDestination"})
+            except HTTPError as e2:
+                detail2 = e2.read().decode(errors="replace")[:300]
+                return NumberProvisionResult(None, None, f"Vapi HTTP {e2.code} (retry without fallback number): {detail2}")
+            except (URLError, TimeoutError) as e2:
+                return NumberProvisionResult(None, None, f"Could not reach Vapi (retry without fallback number): {e2}")
         return NumberProvisionResult(None, None, f"Vapi HTTP {e.code}: {detail}")
     except (URLError, TimeoutError) as e:
         return NumberProvisionResult(None, None, f"Could not reach Vapi: {e}")
