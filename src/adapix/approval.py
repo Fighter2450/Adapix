@@ -393,6 +393,15 @@ class ApprovalManager:
             # by a generic pronunciation model doesn't always land right.
             biz_spoken = biz
             pronunciation_note = ""
+            # Everything the owner has taught Adapix (description, services &
+            # pricing, FAQ knowledge) — the SMS/email composer and the inbound
+            # classifier both get this via practice.py's fragments, but the
+            # call's system prompt was built from scratch here and never
+            # included any of it. Confirmed live: this made a real call sound
+            # like it knew nothing, even with a fully populated business
+            # profile (e.g. from a website import) — every other channel had
+            # the knowledge, calls alone didn't.
+            knowledge_block = ""
             if org_id:
                 try:
                     from .api.app_routes import _load_org_profile_data
@@ -407,6 +416,18 @@ class ApprovalManager:
                         )
                 except Exception:
                     pass
+                try:
+                    from .practice import load_profile
+                    profile = load_profile(org_id)
+                    parts = [f for f in (
+                        profile.description_fragment(),
+                        profile.services_fragment(),
+                        profile.knowledge_fragment(),
+                    ) if f]
+                    if parts:
+                        knowledge_block = "\n\n" + "\n\n".join(parts)
+                except Exception:
+                    pass
             system_prompt = (
                 f"You are a warm, professional voice assistant calling on behalf of "
                 f"{biz}. Here is what you're trying to accomplish "
@@ -416,8 +437,10 @@ class ApprovalManager:
                 "You already disclosed you're an AI in your opening line. If they ask "
                 "something you can't answer or want a person, warmly offer a callback and "
                 "end politely."
+                f"{knowledge_block}"
                 f"{pronunciation_note}"
             )
+            print(f"[adapix] call system_prompt for org={org_id}:\n{system_prompt}\n[/adapix]")
             result = voice.place_call(
                 to=patient.phone or "",
                 system_prompt=system_prompt,
