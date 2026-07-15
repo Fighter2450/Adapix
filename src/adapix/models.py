@@ -148,6 +148,12 @@ class Patient(Base):
     status: Mapped[str] = mapped_column(
         String(64), default=PatientStatus.consulted_not_started.value, index=True
     )
+    # What Adapix has learned about THIS specific person from talking to
+    # them — distinct from memory.py's org-level memory (facts about how
+    # the business operates). List of {id, text, category, source, ts}.
+    # Fed back into every future message/call to this contact so a
+    # preference or detail mentioned once doesn't have to be re-asked.
+    memory_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     # TCPA: once a contact opts out (STOP or explicit decline), NOTHING may be
     # sent to them on ANY channel. Checked at enrollment, drafting, and send.
     opted_out: Mapped[bool] = mapped_column(Boolean, default=False)

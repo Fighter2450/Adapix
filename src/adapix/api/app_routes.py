@@ -3258,6 +3258,38 @@ def api_patient_delete(patient_id: int, _user: str = Depends(verify_admin)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Per-contact memory — what Adapix has learned about THIS customer from
+# actually talking to them (see patient_memory.py). Distinct from the
+# owner-written Notes field: this is extracted automatically from real
+# conversations and feeds back into every future message/call to them.
+# ---------------------------------------------------------------------------
+@router.get("/api/v1/patients/{patient_id}/memory")
+def api_patient_memory_list(patient_id: int, _user: str = Depends(verify_admin)):
+    with get_session() as s:
+        p = s.query(Patient).filter(Patient.id == patient_id, Patient.practice_id == _user).first()
+        if not p:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        facts = sorted(p.memory_json or [], key=lambda f: f.get("ts") or "", reverse=True)
+        return {"facts": facts}
+
+
+@router.delete("/api/v1/patients/{patient_id}/memory/{fact_id}")
+def api_patient_memory_delete(patient_id: int, fact_id: str, _user: str = Depends(verify_admin)):
+    """Owner can prune a wrong or stale fact — same editability as the
+    org-level memory taught through /chat."""
+    with get_session() as s:
+        p = s.query(Patient).filter(Patient.id == patient_id, Patient.practice_id == _user).first()
+        if not p:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        before = len(p.memory_json or [])
+        p.memory_json = [f for f in (p.memory_json or []) if f.get("id") != fact_id]
+        if len(p.memory_json) == before:
+            raise HTTPException(status_code=404, detail="Fact not found")
+        s.commit()
+    return {"ok": True}
+
+
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")
 def api_agent_document(slug: str, filename: str, _user: str = Depends(verify_admin)):
     import os

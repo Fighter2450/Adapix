@@ -310,6 +310,10 @@ class CampaignRunner:
             parts.append(f"Preferred channel: {p.preferred_channel}")
         if p.notes:
             parts.append(f"Notes from consult: {p.notes}")
+        from .patient_memory import format_memory
+        mem = format_memory(p.memory_json or [])
+        if mem:
+            parts.append(mem)
         return "\n".join(parts)
 
     @staticmethod

@@ -118,6 +118,16 @@ class InboundProcessor:
             s.add(inbound)
             s.flush()  # so inbound.id is populated
 
+            # What did the customer just reveal about THEMSELVES, distinct
+            # from routing the message (below) — runs regardless of
+            # escalation category, since even an escalated question can
+            # carry a fact worth keeping ("the noise is bothering my baby").
+            try:
+                from .patient_memory import remember_from_message
+                remember_from_message(patient, body)
+            except Exception:
+                pass
+
             history = self._conversation_history(s, campaign.id, exclude_message_id=inbound.id)
             from .practice import load_profile
             profile = load_profile(patient.practice_id)
@@ -217,6 +227,16 @@ class InboundProcessor:
             )
             s.add(rec)
             s.flush()
+
+            # A full call transcript usually carries much more about the
+            # customer than a text ever would — same per-contact memory as
+            # process_sms().
+            try:
+                from .patient_memory import remember_from_message
+                if text.strip():
+                    remember_from_message(patient, text)
+            except Exception:
+                pass
 
             # Classify what happened on the call (same engine as inbound SMS).
             from .practice import load_profile
@@ -347,7 +367,10 @@ class InboundProcessor:
             return InboundResult(status="escalated", classification=classification)
         practice = load_practice(campaign.practice_id)
         agent = AdapixAgent(workflow=workflow, practice=practice, settings=self.settings)
-        plan = agent.respond_to_inbound(inbound_body, history)
+        from .patient_memory import format_memory
+        plan = agent.respond_to_inbound(
+            inbound_body, history, patient_memory=format_memory(patient.memory_json or [])
+        )
         self._send_and_log(session, campaign, patient, plan.body, "agent_reply")
         return InboundResult(
             status="responded",

@@ -99,6 +99,8 @@ PRACTICE CONTEXT
 ADDITIONAL PRACTICE KNOWLEDGE
 {additional_knowledge}
 
+{patient_memory}
+
 VOICE & TONE
 - Warmth: {warmth}
 - Formality: {formality}
@@ -190,6 +192,8 @@ class AdapixAgent:
         self,
         inbound_text: str,
         conversation_history: list[dict[str, Any]] | None = None,
+        *,
+        patient_memory: str = "",
     ) -> MessagePlan:
         """Compose an SMS reply to an inbound message.
 
@@ -198,8 +202,12 @@ class AdapixAgent:
         questions). Clinical questions, callbacks, declines, and emergencies are
         handled by the inbound processor with templated acknowledgments and do
         NOT pass through this method.
+
+        patient_memory: formatted block of what's been learned about THIS
+        contact specifically (patient_memory.format_memory) — separate from
+        additional_knowledge, which is about the business, not the customer.
         """
-        system = self._reply_system_prompt()
+        system = self._reply_system_prompt(patient_memory=patient_memory)
         messages: list[dict[str, Any]] = list(conversation_history or [])
         messages.append({"role": "user", "content": inbound_text})
 
@@ -242,7 +250,7 @@ class AdapixAgent:
             escalation_rules=escalation_lines,
         )
 
-    def _reply_system_prompt(self) -> str:
+    def _reply_system_prompt(self, *, patient_memory: str = "") -> str:
         voice = self.workflow.voice or {}
         forbidden = voice.get("forbidden_phrases") or []
         return REPLY_SYSTEM_TEMPLATE.format(
@@ -255,6 +263,7 @@ class AdapixAgent:
             treatment_duration=self.practice.typical_treatment_duration or "varies by case",
             financing_options=self._financing_str(),
             additional_knowledge=self._additional_knowledge_str(),
+            patient_memory=patient_memory,
             warmth=voice.get("warmth", "medium"),
             formality=voice.get("formality", "medium"),
             audience=voice.get("audience", "patient or parent"),

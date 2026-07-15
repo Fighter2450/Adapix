@@ -776,6 +776,12 @@ textarea.sform-input{resize:vertical}
 .thread-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
 .thread-meta .st-ch{display:inline-flex;align-items:center;gap:3px}
 .thread-empty{text-align:center;padding:40px 20px;color:var(--ink-2);font-size:13.5px}
+.thread-memory{padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;max-height:160px;overflow-y:auto}
+.thread-memory-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:8px}
+.thread-memory-fact{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--ink-2);padding:4px 0}
+.thread-memory-fact .cat{flex-shrink:0;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--cyan);padding:2px 6px;border-radius:4px;background:rgba(34,211,238,.1);margin-top:1px}
+.thread-memory-fact .del{flex-shrink:0;margin-left:auto;background:none;border:none;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.thread-memory-fact .del:hover{color:#fda4af}
 
 /* ================================================================
    VOICE OVERLAY
@@ -3007,12 +3013,40 @@ body::after{
           <h2>${escapeHTML(patientName || 'Conversation')}</h2>
           <button class="thread-modal-close" data-close>&times;</button>
         </div>
+        <div class="thread-memory" id="thread-memory" hidden></div>
         <div class="thread-modal-body" id="thread-body"><div class="thread-empty">Loading conversation…</div></div>
       </div>`;
     document.body.appendChild(backdrop);
     const close = () => backdrop.remove();
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
     backdrop.querySelector('[data-close]').addEventListener('click', close);
+
+    // What Adapix has learned about this contact — separate fetch, doesn't
+    // block the conversation from loading if it fails.
+    const memEl = backdrop.querySelector('#thread-memory');
+    async function loadMemory(){
+      try {
+        const mj = await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory');
+        const facts = mj.facts || [];
+        if (!facts.length){ memEl.hidden = true; return; }
+        memEl.hidden = false;
+        memEl.innerHTML = `<div class="thread-memory-title">What Adapix has learned</div>` + facts.map(f => `
+          <div class="thread-memory-fact" data-fact-id="${escapeAttr(f.id)}">
+            <span class="cat">${escapeHTML(f.category || 'detail')}</span>
+            <span>${escapeHTML(f.text || '')}</span>
+            <button class="del" data-fact-del="${escapeAttr(f.id)}" title="Remove">&times;</button>
+          </div>`).join('');
+        memEl.querySelectorAll('[data-fact-del]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            try {
+              await api('/api/v1/patients/' + encodeURIComponent(patientId) + '/memory/' + encodeURIComponent(btn.dataset.factDel), {method:'DELETE'});
+              loadMemory();
+            } catch(_){ toast('Could not remove', true); }
+          });
+        });
+      } catch(_){ memEl.hidden = true; }
+    }
+    loadMemory();
 
     const body = backdrop.querySelector('#thread-body');
     try {

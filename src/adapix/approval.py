@@ -311,6 +311,10 @@ class ApprovalManager:
             bits.append(f"Quote: ${patient.treatment_plan_amount:,.0f}")
         if patient.notes:
             bits.append(f"Notes: {patient.notes}")
+        from .patient_memory import format_memory
+        mem = format_memory(patient.memory_json or [])
+        if mem:
+            bits.append(mem)
         return "\n".join(bits)
 
     def _send_one(

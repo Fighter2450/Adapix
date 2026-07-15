@@ -65,6 +65,7 @@ _ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
     "patients": [
         ("opted_out", "BOOLEAN DEFAULT FALSE"),
         ("opted_out_at", "TIMESTAMP"),
+        ("memory_json", "JSON DEFAULT '[]'"),
     ],
     "automations": [
         ("org_id", "VARCHAR(64)"),
