@@ -44,12 +44,11 @@ def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
         except Exception:
             pass
         result = create_vapi_number(settings, area_code=area_code, name=org.name, fallback_number=fallback)
-        if not result:
+        if not result.phone_number_id:
             org.phone_status = "failed"
-            return {"ok": False, "reason": "provision_failed"}
+            return {"ok": False, "reason": "provision_failed", "detail": result.error}
 
-        pid, number = result
-        org.vapi_phone_number_id = pid
-        org.phone_number = number
+        org.vapi_phone_number_id = result.phone_number_id
+        org.phone_number = result.number
         org.phone_status = "provisioned"
-        return {"ok": True, "status": "provisioned", "number": number}
+        return {"ok": True, "status": "provisioned", "number": result.number}

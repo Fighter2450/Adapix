@@ -73,19 +73,26 @@ def extract_recording_url(call_or_report: dict) -> str:
     )
 
 
+@dataclass
+class NumberProvisionResult:
+    phone_number_id: str | None
+    number: str | None
+    error: str | None = None
+
+
 def create_vapi_number(
     settings: Settings, *, area_code: str | None = None, name: str | None = None,
     fallback_number: str | None = None,
-) -> tuple[str, str] | None:
-    """Buy a free Vapi US number for a business. Returns (phone_number_id, number)
-    or None on failure. Swap this for a Twilio buy+import when you productionize
-    reputation management (Twilio gives A-level attestation + CNAM control).
+) -> NumberProvisionResult:
+    """Buy a free Vapi US number for a business. Swap this for a Twilio
+    buy+import when you productionize reputation management (Twilio gives
+    A-level attestation + CNAM control).
 
     fallback_number: where an INBOUND call to this number goes — without it,
     a customer calling back after a missed-call text hits dead air. Route to
     the owner's real office/cell phone if we have one on file."""
     if not settings.vapi_api_key:
-        return None
+        return NumberProvisionResult(None, None, "Vapi is not configured (VAPI_API_KEY missing)")
     body: dict = {"provider": "vapi"}
     if area_code:
         body["numberDesiredAreaCode"] = str(area_code)[:3]
@@ -104,10 +111,15 @@ def create_vapi_number(
             data = json.loads(resp.read().decode())
         pid = data.get("id")
         if pid:
-            return pid, data.get("number") or ""
-    except Exception:
-        return None
-    return None
+            return NumberProvisionResult(pid, data.get("number") or "")
+        return NumberProvisionResult(None, None, f"Vapi accepted the request but returned no number id: {data!r}"[:300])
+    except HTTPError as e:
+        detail = e.read().decode(errors="replace")[:300]
+        return NumberProvisionResult(None, None, f"Vapi HTTP {e.code}: {detail}")
+    except (URLError, TimeoutError) as e:
+        return NumberProvisionResult(None, None, f"Could not reach Vapi: {e}")
+    except Exception as e:  # noqa: BLE001 — surface any client error as a result
+        return NumberProvisionResult(None, None, str(e))
 
 
 @dataclass
