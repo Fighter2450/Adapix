@@ -73,7 +73,7 @@ Adapix itself** — the product doing its own outreach is the demo.
 > nothing sends until you tap approve. One contractor's "let me think
 > about it" becomes a booked job while you're on a ladder.
 >
-> It's free for 14 days, no card, 5-minute setup: adapixai.com
+> It's free for 14 days ($0 today), 5-minute setup: adapixai.com
 >
 > I'm local (Birmingham). Happy to set it up for you on a 10-minute call.
 > — {founder name}, Adapix
@@ -90,7 +90,7 @@ Adapix itself** — the product doing its own outreach is the demo.
 > prices. Your front desk approves every message before it sends, so
 > nothing goes out you wouldn't say yourself.
 >
-> Free 14 days, no card, nothing to install: adapixai.com
+> Free 14 days, nothing to install: adapixai.com
 >
 > We're Birmingham-based — I'll come set it up in person if you want.
 > — {founder name}, Adapix
