@@ -48,6 +48,12 @@ Nobody gives a solo plumber an AI that CALLS customers for $99 — the $400/mo
 incumbents don't do it. This is the "wait, it does WHAT?" moment. Always show
 it, never bury it. Pair with: transcripts land in the dashboard, and the owner
 approves the call plan before any call is placed.
+Every business gets this dedicated number free and instantly at signup — never
+shared with anyone else on Adapix. There's also an optional $1.50/mo upgrade
+to a real carrier-purchased number (vs. the free default), which cuts down on
+"Spam Likely" flagging. Don't oversell the upgrade — it's a nice-to-have
+add-on, not the headline; the free dedicated number is what closes the "wait,
+it does WHAT?" moment on its own.
 
 ### 4. "Nothing sends without your OK" — the trust moat
 Every draft waits in the Inbox. The owner reads it, edits it (click the text,
@@ -100,6 +106,11 @@ customer's OWN numbers whenever possible (their average job value), not ours.
   customer for a Google review.
 - **ROI calculator on the pricing page** — their job value × their quiet
   quotes = what they're leaving on the table.
+- **Business name on caller ID (not just a number)** — the bigger prize on
+  top of the $1.50/mo dedicated-number upgrade (hook #3). Requires the
+  business to submit real legal details for carrier verification and takes
+  a few business days to clear, same as with any provider — do not market
+  this as instant. Not live yet; the dashboard shows "Coming soon" for it.
 
 ---
 
