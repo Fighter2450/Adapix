@@ -345,6 +345,18 @@ async def stripe_webhook(request: Request):
         if org_id:
             find_subscription_by_org(org_id)  # records sub + status
             print(f"[adapix] stripe checkout completed for org {org_id}")
+            # One free trial per CARD — same card fingerprint on a second
+            # account ends that account's trial immediately and voids any
+            # referral attribution (see _void_referral_if_duplicate).
+            try:
+                from ..billing import enforce_one_trial_per_card
+                r = enforce_one_trial_per_card(org_id)
+                if r.get("duplicate_of"):
+                    print(f"[adapix] duplicate card: org {org_id} shares a card with {r['duplicate_of']}"
+                          f"{' — trial ended now' if r.get('trial_ended') else ''}")
+                    _void_referral_attribution(org_id)
+            except Exception as e:
+                print(f"[adapix] one-trial-per-card check error: {e}")
         return {"ok": True}
 
     if org_id and status:
@@ -355,6 +367,24 @@ async def stripe_webhook(request: Request):
         if status == "active":
             _maybe_reward_referrer(org_id)
     return {"ok": True}
+
+
+def _void_referral_attribution(org_id: str) -> None:
+    """A duplicate-card account can never mint a referral reward — clearing
+    the attribution (and setting referral_rewarded so nothing retries) is
+    what makes self-referral with the same card structurally impossible."""
+    try:
+        from ..db import get_session
+        from ..models import Organization
+
+        with get_session() as s:
+            org = s.get(Organization, org_id)
+            if org is not None and org.referred_by_code and not org.referral_rewarded:
+                print(f"[adapix] voiding referral attribution for duplicate-card org {org_id} (code {org.referred_by_code})")
+                org.referred_by_code = None
+                org.referral_rewarded = True  # terminal: never re-attributable
+    except Exception as e:
+        print(f"[adapix] referral void error: {e}")
 
 
 def _maybe_reward_referrer(referred_org_id: str) -> None:

@@ -189,6 +189,43 @@ def refresh_status(org_id: str) -> str:
         return rec.get("status") or "none"
 
 
+def enforce_one_trial_per_card(org_id: str) -> dict:
+    """One free trial per CARD, not per email. Stripe fingerprints every
+    card (same physical card -> same fingerprint across customers), so a
+    second account created just to harvest another free trial or a referral
+    reward is caught the moment the card is typed in.
+
+    Policy on a duplicate: the new account keeps working but its trial ends
+    NOW (billing starts immediately) and it can never trigger a referral
+    reward. A legit owner with two real businesses on one card can still
+    pay for both — they just don't get a second free ride.
+    """
+    rec = get_billing(org_id)
+    sub_id = rec.get("subscription_id")
+    if not (sub_id and configured()):
+        return {"ok": False, "reason": "no subscription"}
+    try:
+        sub = _call("GET", f"/subscriptions/{sub_id}?expand[]=default_payment_method")
+        pm = sub.get("default_payment_method") or {}
+        fp = ((pm.get("card") or {}).get("fingerprint")) or ""
+        if not fp:
+            return {"ok": True, "fingerprint": None}
+        # Any OTHER org already on this exact card?
+        duplicate_of = None
+        for other_id, other in _load().items():
+            if other_id != org_id and other.get("card_fingerprint") == fp:
+                duplicate_of = other_id
+                break
+        set_billing(org_id, {"card_fingerprint": fp})
+        if duplicate_of and sub.get("status") == "trialing":
+            _call("POST", f"/subscriptions/{sub_id}", {"trial_end": "now"})
+            set_billing(org_id, {"duplicate_card_of": duplicate_of})
+            return {"ok": True, "fingerprint": fp, "duplicate_of": duplicate_of, "trial_ended": True}
+        return {"ok": True, "fingerprint": fp, "duplicate_of": duplicate_of}
+    except Exception as e:
+        return {"ok": False, "reason": str(e)}
+
+
 def apply_referral_credit(referrer_org_id: str, amount_cents: int = 9900) -> bool:
     """Give the referrer one free month as a Stripe customer-balance credit
     (offsets their next invoice). Returns False when there's no Stripe
