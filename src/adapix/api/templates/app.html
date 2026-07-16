@@ -1777,6 +1777,7 @@ body::after{
         gapsEl.querySelectorAll('.setup-bubble').forEach(btn => {
           btn.addEventListener('click', () => {
             const g = gaps[Number(btn.dataset.gapIdx)];
+            if (g.billing_page) { window.location.href = '/app/billing'; return; }
             if (g.notifications) { goView('settings'); goSettingsView('notifications'); }
             else if (g.website_import || g.website_import_start) { goView('settings'); goSettingsView('profile'); }
             else if (g.channels) { goView('settings'); goSettingsView('channels'); }
@@ -1795,6 +1796,16 @@ body::after{
         if (state.view !== 'home') return;
         if (j.status === 'ready'){
           gaps.push({label: 'Review what Adapix read from your website', website_import: true});
+          paintGaps();
+        }
+      }).catch(() => {});
+
+      // No card = nothing sends (the free trial starts at checkout) — this
+      // is the one gap that blocks the whole product, so it goes FIRST.
+      api('/api/v1/billing/status').then(b => {
+        if (state.view !== 'home') return;
+        if (b.configured && b.status !== 'trialing' && b.status !== 'active'){
+          gaps.unshift({label: 'Start your free trial — add your card ($0 today)', billing_page: true});
           paintGaps();
         }
       }).catch(() => {});
@@ -4878,7 +4889,7 @@ body::after{
           pay.textContent = 'Restart subscription';
           pay.style.display = '';
         } else {
-          box.innerHTML = 'You\'re on the <b style="color:var(--ink)">free trial</b> with no card on file. Add one so Adapix keeps working when the trial ends.';
+          box.innerHTML = 'No card on file — <b style="color:var(--ink)">your free trial hasn\'t started yet</b>. Add your card ($0 today) and Adapix starts working immediately.';
           pay.style.display = '';
         }
       } catch(_){ box.textContent = 'Could not load billing status.'; }

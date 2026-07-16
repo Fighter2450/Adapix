@@ -92,8 +92,9 @@ remaining honestly. When the 10 are gone, this hook retires — don't fake
 scarcity.
 
 ### 8. The math — "one job pays for months of it"
-$99/month, everything included, no tiers, no usage fees, 14-day trial with no
-card. A $1,500 water heater job recovered = 15 months of Adapix. Use the
+$99/month, everything included, no tiers, no usage fees, 14-day free trial
+(card up front, $0 charged today — NEVER claim "no card," that changed
+7/16). A $1,500 water heater job recovered = 15 months of Adapix. Use the
 customer's OWN numbers whenever possible (their average job value), not ours.
 
 ## Hooks coming soon (do not market until Rocco confirms they've shipped)

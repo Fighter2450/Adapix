@@ -255,11 +255,13 @@ def engine_allowed(org_id: str, org_created_at=None) -> tuple[bool, str]:
     """May the engine spend money (Claude/Twilio/Vapi) for this org?
 
     - Billing not configured (pre-launch): always yes.
-    - Subscription trialing/active: yes.
+    - Subscription trialing/active: yes (the 14-day trial lives INSIDE the
+      Stripe subscription — card required up front, $0 charged until the
+      trial ends).
     - Subscription past_due/canceled/unpaid/incomplete: NO — a failed card
       must not keep consuming paid APIs for free.
-    - No subscription: yes during the 14-day app trial (+3 grace days from
-      org creation), no after that.
+    - No subscription at all: NO. There is no card-less trial — checkout
+      (card on file) is what starts the trial. Changed 7/16 per Rocco.
     """
     if not configured():
         return True, "billing not configured"
@@ -269,9 +271,4 @@ def engine_allowed(org_id: str, org_created_at=None) -> tuple[bool, str]:
         return True, status
     if status in ("past_due", "canceled", "unpaid", "incomplete", "incomplete_expired"):
         return False, status
-    if org_created_at is not None:
-        from datetime import datetime, timedelta
-        if datetime.utcnow() - org_created_at <= timedelta(days=17):
-            return True, "app trial"
-        return False, "trial over, no subscription"
-    return True, "unknown"
+    return False, "no card on file — the free trial starts at checkout"
