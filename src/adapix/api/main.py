@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
         asyncio.create_task(_automation_loop())
         asyncio.create_task(_digest_loop())
         asyncio.create_task(_scheduled_send_loop())
+        asyncio.create_task(_blooio_poll_loop())
 
     async def _campaign_loop() -> None:
         """Run campaigns every 5 minutes in the background."""
@@ -92,6 +93,22 @@ def create_app() -> FastAPI:
                     log.info(f"Scheduled-send sweep: {sent} message(s)/call(s) dispatched.")
             except Exception as exc:
                 log.error(f"Scheduled-send scheduler error: {exc}")
+            await asyncio.sleep(120)
+
+    async def _blooio_poll_loop() -> None:
+        """Poll Blooio for inbound texts every 2 minutes — the safety net
+        under their webhooks, which were observed (7/16) not delivering
+        real inbound events at all. Idempotent vs. the webhook path via
+        Message.provider_id dedupe."""
+        await asyncio.sleep(60)  # offset from the other loops
+        while True:
+            try:
+                from ..blooio_poll import poll_blooio_inbound
+                n = await asyncio.to_thread(poll_blooio_inbound)
+                if n:
+                    log.info(f"Blooio poll: {n} inbound message(s) processed.")
+            except Exception as exc:
+                log.error(f"Blooio poll error: {exc}")
             await asyncio.sleep(120)
 
     async def _automation_loop() -> None:

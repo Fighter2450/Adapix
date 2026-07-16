@@ -48,6 +48,20 @@ def list_channels(settings: Settings) -> list[dict]:
     return _blooio_get(settings, BLOOIO_CHANNELS_URL).get("data") or []
 
 
+def list_chats(settings: Settings) -> list[dict]:
+    if not settings.blooio_api_key:
+        return []
+    return _blooio_get(settings, "https://api.blooio.com/v4/chats").get("data") or []
+
+
+def list_chat_messages(settings: Settings, chat_id: str) -> list[dict]:
+    return _blooio_get(settings, f"https://api.blooio.com/v4/chats/{chat_id}/messages").get("data") or []
+
+
+def get_contact(settings: Settings, contact_id: str) -> dict:
+    return _blooio_get(settings, f"https://api.blooio.com/v4/contacts/{contact_id}")
+
+
 def register_webhook(settings: Settings, url: str) -> dict:
     """Register the inbound-events webhook (message.received) with Blooio.
     Returns the created webhook object INCLUDING its signing_secret — capture
