@@ -25,6 +25,46 @@ from dataclasses import dataclass
 from ..config import Settings
 
 BLOOIO_MESSAGES_URL = "https://api.blooio.com/v4/messages"
+BLOOIO_CHANNELS_URL = "https://api.blooio.com/v4/channels"
+BLOOIO_WEBHOOKS_URL = "https://api.blooio.com/v4/webhooks"
+
+_BLOOIO_HEADERS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Adapix/1.0"
+
+
+def _blooio_get(settings: Settings, url: str) -> dict:
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {settings.blooio_api_key}",
+        "User-Agent": _BLOOIO_HEADERS_UA,
+    })
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8") or "{}")
+
+
+def list_channels(settings: Settings) -> list[dict]:
+    """All texting lines on the platform Blooio account. Each entry has
+    id (ch_...), display_address (+1...), status, capabilities."""
+    if not settings.blooio_api_key:
+        return []
+    return _blooio_get(settings, BLOOIO_CHANNELS_URL).get("data") or []
+
+
+def register_webhook(settings: Settings, url: str) -> dict:
+    """Register the inbound-events webhook (message.received) with Blooio.
+    Returns the created webhook object INCLUDING its signing_secret — capture
+    it and set BLOOIO_WEBHOOK_SECRET, it is not retrievable later."""
+    payload = {"url": url, "event_types": ["message.received"]}
+    req = urllib.request.Request(
+        BLOOIO_WEBHOOKS_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {settings.blooio_api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": _BLOOIO_HEADERS_UA,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8") or "{}")
 
 
 @dataclass

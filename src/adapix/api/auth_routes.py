@@ -41,9 +41,11 @@ async def api_signup(
     email: str = Form(...),
     password: str = Form(...),
     business_name: str = Form(...),
+    ref: str = Form(""),
 ):
     email = email.lower().strip()
     business_name = business_name.strip()
+    ref = ref.strip().upper()[:16]
 
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
@@ -58,6 +60,12 @@ async def api_signup(
             raise HTTPException(status_code=400, detail="An account with this email already exists")
 
         org = Organization(id=str(uuid.uuid4()), name=business_name, plan="trial")
+        # Referral capture: only store codes that actually belong to another
+        # org — a typo'd or made-up code must never create a phantom reward.
+        if ref:
+            referrer = s.query(Organization).filter(Organization.referral_code == ref).first()
+            if referrer is not None and referrer.id != org.id:
+                org.referred_by_code = ref
         s.add(org)
         s.flush()
 

@@ -69,9 +69,13 @@ class InboundProcessor:
             q = s.query(Patient).filter(Patient.phone == (normalize_phone(from_number) or from_number))
             if to_number:
                 from .models import Organization
+                # The customer may have texted either the org's calling
+                # number (Twilio inbound) or its dedicated iMessage line
+                # (Blooio inbound) — both identify the same business.
                 org = (
                     s.query(Organization)
-                    .filter(Organization.phone_number == to_number)
+                    .filter((Organization.phone_number == to_number)
+                            | (Organization.imessage_number == to_number))
                     .first()
                 )
                 if org is not None:

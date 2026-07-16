@@ -32,6 +32,10 @@ def price_id() -> str:
     return os.environ.get("STRIPE_PRICE_ID", "").strip()
 
 
+def dedicated_line_price_id() -> str:
+    return os.environ.get("STRIPE_DEDICATED_LINE_PRICE_ID", "").strip()
+
+
 def configured() -> bool:
     return bool(_key() and price_id())
 
@@ -183,6 +187,68 @@ def refresh_status(org_id: str) -> str:
         return status
     except Exception:
         return rec.get("status") or "none"
+
+
+def apply_referral_credit(referrer_org_id: str, amount_cents: int = 9900) -> bool:
+    """Give the referrer one free month as a Stripe customer-balance credit
+    (offsets their next invoice). Returns False when there's no Stripe
+    customer to credit yet — caller should leave the reward pending."""
+    rec = get_billing(referrer_org_id)
+    customer_id = rec.get("customer_id")
+    if not (customer_id and configured()):
+        return False
+    try:
+        _call("POST", f"/customers/{customer_id}/balance_transactions", {
+            "amount": str(-abs(amount_cents)),   # negative = credit
+            "currency": "usd",
+            "description": "Referral reward — 1 free month (give a month, get a month)",
+        })
+        return True
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Add-ons — extra recurring line items on top of the base subscription (e.g.
+# the $1.50/mo dedicated-calling-line upgrade). Each add-on is its own Stripe
+# subscription item so it can be removed independently of the base plan.
+# ---------------------------------------------------------------------------
+def add_subscription_addon(org_id: str, price: str, *, key: str) -> dict:
+    """Attach a recurring add-on price to the org's existing subscription.
+    Requires an active/trialing subscription already on file — there's
+    nothing to attach a paid add-on to otherwise. `key` names the field the
+    resulting subscription-item id is stored under (e.g.
+    'dedicated_line_item_id'), so it can be found again to remove later."""
+    if not price:
+        raise ValueError("add-on price not configured")
+    rec = get_billing(org_id)
+    sub_id = rec.get("subscription_id")
+    if not sub_id:
+        sub = find_subscription_by_org(org_id)
+        sub_id = sub.get("id") if sub else None
+    if not sub_id:
+        raise ValueError("no active subscription — set up billing first")
+    item = _call("POST", "/subscription_items", {
+        "subscription": sub_id,
+        "price": price,
+        "quantity": "1",
+    })
+    set_billing(org_id, {key: item.get("id")})
+    return item
+
+
+def remove_subscription_addon(org_id: str, *, key: str) -> None:
+    """Undo add_subscription_addon — stops the recurring charge. Safe to call
+    even if the add-on was never added (no-op)."""
+    rec = get_billing(org_id)
+    item_id = rec.get(key)
+    if not item_id:
+        return
+    try:
+        _call("DELETE", f"/subscription_items/{item_id}")
+    except Exception:
+        pass  # already removed (e.g. subscription itself was canceled)
+    set_billing(org_id, {key: None})
 
 
 def engine_allowed(org_id: str, org_created_at=None) -> tuple[bool, str]:

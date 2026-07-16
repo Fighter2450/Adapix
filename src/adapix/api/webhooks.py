@@ -121,6 +121,80 @@ async def twilio_inbound_sms(request: Request):
     return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
 
 
+def _verify_blooio(raw_body: bytes, signature_header: str) -> bool:
+    """Blooio signs each delivery: X-Blooio-Signature: t=<ts>,v1=<hmac>,
+    where hmac = HMAC-SHA256("{ts}.{raw_body}", signing_secret). The secret
+    was captured once at webhook registration (BLOOIO_WEBHOOK_SECRET)."""
+    import hashlib
+    import hmac as _hmac
+    import os as _os
+
+    secret = _os.environ.get("BLOOIO_WEBHOOK_SECRET", "").strip()
+    if not secret:
+        # Fail CLOSED — an unverifiable inbound channel would let anyone
+        # forge customer replies (including fake STOPs).
+        return False
+    try:
+        parts = dict(p.split("=", 1) for p in signature_header.split(","))
+        ts, given = parts["t"], parts["v1"]
+        expected = _hmac.new(secret.encode(), f"{ts}.{raw_body.decode('utf-8')}".encode(), hashlib.sha256).hexdigest()
+        return _hmac.compare_digest(expected, given)
+    except Exception:
+        return False
+
+
+@router.post("/blooio")
+async def blooio_inbound(request: Request):
+    """Inbound iMessage/SMS/RCS replies from the org's Blooio line — routed
+    into the same pipeline as Twilio inbound so classification, STOP
+    handling, and per-customer memory all just work."""
+    raw = await request.body()
+    if not _verify_blooio(raw, request.headers.get("X-Blooio-Signature", "")):
+        print("[adapix] blooio webhook signature verification FAILED")
+        raise HTTPException(status_code=403, detail="Invalid Blooio signature")
+
+    import json as _json
+    try:
+        envelope = _json.loads(raw.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad payload")
+    data = envelope.get("data") or {}
+    event_type = envelope.get("type") or envelope.get("event_type") or ""
+    if event_type and event_type != "message.received":
+        return {"ok": True, "ignored": f"event {event_type}"}
+    if data.get("direction") and data.get("direction") != "inbound":
+        return {"ok": True, "ignored": "outbound echo"}
+    sender = data.get("sender") or ""
+    text = data.get("text") or ""
+    recipient = data.get("recipient") or ""
+    if not sender or not text:
+        return {"ok": True, "ignored": "empty"}
+
+    # Same never-lose-a-reply raw persist as the Twilio route.
+    try:
+        import os as _os
+        import time as _time
+        from pathlib import Path as _Path
+        rawlog = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
+        with rawlog.open("a", encoding="utf-8") as f:
+            f.write(_json.dumps({"t": int(_time.time()), "from": sender, "to": recipient,
+                                 "body": text, "sid": data.get("message_id"), "via": "blooio"}) + chr(10))
+    except Exception:
+        pass
+
+    try:
+        processor = InboundProcessor()
+        result = processor.process_sms(
+            from_number=sender, body=text,
+            provider_id=data.get("message_id"), to_number=recipient or None,
+        )
+        print(f"[adapix] blooio inbound from={sender} status={result.status}")
+    except Exception as e:
+        print(f"[adapix] blooio inbound error: {e}")
+        raise HTTPException(status_code=500, detail="inbound processing failed")
+    return {"ok": True}
+
+
 @router.post("/vapi")
 async def vapi_call_events(request: Request):
     import os as _os
@@ -275,7 +349,41 @@ async def stripe_webhook(request: Request):
 
     if org_id and status:
         set_billing(org_id, {"status": status,
-                             "subscription_id": obj.get("id") if etype.startswith("customer.subscription.") else None} 
+                             "subscription_id": obj.get("id") if etype.startswith("customer.subscription.") else None}
                     if etype.startswith("customer.subscription.") else {"status": status})
         print(f"[adapix] stripe {etype}: org {org_id} -> {status}")
+        if status == "active":
+            _maybe_reward_referrer(org_id)
     return {"ok": True}
+
+
+def _maybe_reward_referrer(referred_org_id: str) -> None:
+    """Give a month, get a month: the referrer's $99 credit lands the first
+    time the referred business's subscription turns ACTIVE (i.e. they became
+    a real paying customer, not just a trial signup). referral_rewarded makes
+    webhook retries harmless."""
+    try:
+        from ..billing import apply_referral_credit
+        from ..db import get_session
+        from ..models import Organization
+
+        with get_session() as s:
+            org = s.get(Organization, referred_org_id)
+            if org is None or not org.referred_by_code or org.referral_rewarded:
+                return
+            referrer = (
+                s.query(Organization)
+                .filter(Organization.referral_code == org.referred_by_code)
+                .first()
+            )
+            if referrer is None:
+                return
+            if apply_referral_credit(referrer.id):
+                org.referral_rewarded = True
+                print(f"[adapix] referral reward: org {referrer.id} credited for referring {referred_org_id}")
+            else:
+                # Referrer has no Stripe customer yet — leave unrewarded so a
+                # later subscription event retries the credit.
+                print(f"[adapix] referral reward PENDING: referrer {referrer.id} has no Stripe customer yet")
+    except Exception as e:
+        print(f"[adapix] referral reward error: {e}")

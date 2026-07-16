@@ -338,23 +338,24 @@ class ApprovalManager:
             # shape as connected-Gmail over the shared Resend sender. Each
             # business texts from its OWN line, never a shared one.
             result = None
-            # Provider order: Claw Messenger (platform line, cheapest),
-            # then a per-org Blooio line if one exists, then Twilio SMS.
-            from .channels import ClawChannel
-            claw = ClawChannel(self.settings, dry_run=self.dry_run)
-            if self.settings.prefer_imessage and claw.is_configured():
-                r = claw.send(patient.phone or "", message.body)
-                md = dict(message.metadata_json or {})
-                if r.status != "failed":
-                    result = r
-                    md["transport"] = "imessage-claw"
-                else:
-                    md["imessage_error"] = r.error
-                message.metadata_json = md
-            if result is None:
+            # First-touch opt-out disclosure applies to the MESSAGE, not the
+            # transport — an iMessage first touch needs "Reply STOP" exactly
+            # as much as a carrier SMS one (our STOP handling works on every
+            # inbound path). Appending here also makes sms.send()'s own
+            # check a no-op, so no double footer on the Twilio fallback.
+            body_text = message.body
+            if first_touch and "stop" not in (body_text or "").lower():
+                from .channels.sms import SmsChannel
+                body_text = (body_text or "").rstrip() + SmsChannel.STOP_FOOTER
+            # Provider order: the org's OWN Blooio line first (its brand
+            # identity — the number customers learn and can reply to via the
+            # Blooio inbound webhook), then the shared Claw platform line,
+            # then Twilio SMS. Any iMessage failure falls through so the
+            # message still goes out.
+            if self.settings.prefer_imessage and org_blooio_channel_id:
                 imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
-                if self.settings.prefer_imessage and imsg.is_configured(org_blooio_channel_id):
-                    r = imsg.send(patient.phone or "", message.body, channel_id=org_blooio_channel_id)
+                if imsg.is_configured(org_blooio_channel_id):
+                    r = imsg.send(patient.phone or "", body_text, channel_id=org_blooio_channel_id)
                     md = dict(message.metadata_json or {})
                     if r.status != "failed":
                         result = r
@@ -363,7 +364,19 @@ class ApprovalManager:
                         md["imessage_error"] = r.error
                     message.metadata_json = md
             if result is None:
-                result = sms.send(patient.phone or "", message.body, first_touch=first_touch)
+                from .channels import ClawChannel
+                claw = ClawChannel(self.settings, dry_run=self.dry_run)
+                if self.settings.prefer_imessage and claw.is_configured():
+                    r = claw.send(patient.phone or "", body_text)
+                    md = dict(message.metadata_json or {})
+                    if r.status != "failed":
+                        result = r
+                        md["transport"] = "imessage-claw"
+                    else:
+                        md["imessage_error"] = r.error
+                    message.metadata_json = md
+            if result is None:
+                result = sms.send(patient.phone or "", body_text, first_touch=first_touch)
         elif message.channel == "email":
             subject = message.subject or "A note from your practice"
             # If the org connected their own Gmail/Outlook, send AS them.

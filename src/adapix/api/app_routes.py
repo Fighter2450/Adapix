@@ -90,6 +90,117 @@ def api_stats_daily(days: int = 30, _user: str = Depends(verify_admin)):
     return {"days": out}
 
 
+@router.get("/api/v1/referrals")
+def api_referrals(org_id: str = Depends(verify_admin)):
+    """The Referrals page: this org's share code/link plus every business
+    that signed up with it and where each stands (trial vs paying vs
+    reward already earned)."""
+    import secrets as _secrets
+
+    from ..billing import get_billing
+    from ..models import Organization
+
+    with get_session() as s:
+        org = s.get(Organization, org_id)
+        if org is None:
+            raise HTTPException(status_code=404, detail="no org")
+        if not org.referral_code:
+            # Human-friendly 8-char code, collision-checked (space is tiny
+            # but the check is one query).
+            alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O/1/I/L
+            for _ in range(10):
+                code = "".join(_secrets.choice(alphabet) for _ in range(8))
+                if not s.query(Organization).filter(Organization.referral_code == code).first():
+                    org.referral_code = code
+                    break
+        referred = (
+            s.query(Organization)
+            .filter(Organization.referred_by_code == org.referral_code)
+            .order_by(Organization.created_at.desc())
+            .all()
+        )
+        out = []
+        for r in referred:
+            status = "rewarded" if r.referral_rewarded else (
+                "paying" if (get_billing(r.id).get("status") == "active") else "trial")
+            out.append({
+                "name": r.name,
+                "signed_up": r.created_at.isoformat() if r.created_at else None,
+                "status": status,
+            })
+        return {
+            "code": org.referral_code,
+            "link": f"https://app.adapixai.com/signup?ref={org.referral_code}",
+            "referrals": out,
+            "months_earned": sum(1 for r in out if r["status"] == "rewarded"),
+        }
+
+
+@router.get("/api/v1/analytics")
+def api_analytics(days: int = 30, _user: str = Depends(verify_admin)):
+    """The Analytics page: per-channel volume, reply rate, iMessage share,
+    call outcomes, and a daily series — all real counts from the messages
+    table, no derived or invented metrics."""
+    from collections import defaultdict
+    from datetime import datetime, timedelta
+
+    days = max(7, min(90, days))
+    cutoff = datetime.utcnow() - timedelta(days=days - 1)
+    cutoff = datetime(cutoff.year, cutoff.month, cutoff.day)
+    with get_session() as s:
+        rows = (
+            s.query(Message.created_at, Message.direction, Message.status,
+                    Message.channel, Message.metadata_json)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == _user, Message.created_at >= cutoff)
+            .all()
+        )
+
+    SENT_STATUSES = ("sent", "delivered", "replied")
+    daily_sent: dict[str, int] = defaultdict(int)
+    daily_replies: dict[str, int] = defaultdict(int)
+    ch: dict[str, dict[str, int]] = {
+        "sms": {"out": 0, "in": 0}, "email": {"out": 0, "in": 0}, "call": {"out": 0, "in": 0},
+    }
+    imessage_out = failed = 0
+    for created, direction, status, channel, md in rows:
+        day = created.date().isoformat()
+        bucket = ch.get(channel or "sms")
+        if direction == "outbound" and status in SENT_STATUSES:
+            daily_sent[day] += 1
+            if bucket: bucket["out"] += 1
+            if channel == "sms" and ((md or {}).get("transport") or "").startswith("imessage"):
+                imessage_out += 1
+        elif direction == "inbound":
+            daily_replies[day] += 1
+            if bucket: bucket["in"] += 1
+        elif status == "failed":
+            failed += 1
+
+    today = datetime.utcnow().date()
+    series = []
+    for i in range(days - 1, -1, -1):
+        day = (today - timedelta(days=i)).isoformat()
+        series.append({"date": day, "sent": daily_sent.get(day, 0), "replies": daily_replies.get(day, 0)})
+
+    total_out = sum(b["out"] for b in ch.values())
+    total_in = sum(b["in"] for b in ch.values())
+    return {
+        "days": days,
+        "series": series,
+        "channels": ch,
+        "imessage_out": imessage_out,
+        "totals": {
+            "sent": total_out,
+            "received": total_in,
+            # Replies as a share of outbound — the number an owner actually
+            # asks about ("do people answer these?").
+            "reply_rate": round(total_in / total_out * 100) if total_out else None,
+            "failed": failed,
+        },
+    }
+
+
 @router.get("/app/billing", response_class=HTMLResponse)
 def billing_page(request: Request):
     from fastapi.responses import RedirectResponse
@@ -120,7 +231,10 @@ def api_billing_checkout(request: Request, _user: str = Depends(verify_admin)):
         email = owner.email if owner else ""
         org = s.get(Organization, _user)
         used = (datetime.utcnow() - org.created_at).days if org and org.created_at else 14
-        trial_days = max(0, 14 - used)
+        # Referred signups get their side of "give a month, get a month":
+        # 30 extra free days on top of the standard 14-day trial.
+        trial_total = 44 if (org and org.referred_by_code) else 14
+        trial_days = max(0, trial_total - used)
     base = (Settings().public_base_url or f"{request.url.scheme}://{request.url.netloc}").rstrip("/")
     try:
         url = create_checkout_session(_user, email, base, trial_days=trial_days)
@@ -1216,6 +1330,8 @@ def api_messages_list(
                     "body": m.body,
                     "recording_url": (m.metadata_json or {}).get("recording_url"),
                     "send_error": (m.metadata_json or {}).get("send_error"),
+                    # 'imessage' / 'imessage-claw' when the text went blue-bubble
+                    "transport": (m.metadata_json or {}).get("transport"),
                     "contact_name": f"{patient.first_name} {patient.last_name}".strip(),
                     "contact_phone": patient.phone,
                     "contact_email": patient.email,
@@ -1247,6 +1363,7 @@ def api_messages_list(
                 "contact_name": f"{patient.first_name} {patient.last_name}".strip() if patient else "Unknown",
                 "contact_phone": patient.phone if patient else None,
                 "contact_email": patient.email if patient else None,
+                "transport": (m.metadata_json or {}).get("transport"),
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             })
         return {"messages": out}
@@ -1519,7 +1636,7 @@ def service_worker():
     We do NOT cache the JSON API — escalations must always be fresh.
     """
     sw = """
-const CACHE = 'adapix-shell-v4';
+const CACHE = 'adapix-shell-v5';
 const SHELL = ['/app', '/app/manifest.json', '/app/icon-192.png', '/app/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -2388,12 +2505,14 @@ def api_email_status(org_id: str = Depends(verify_admin)):
         if st.get(prov, {}).get("connected"):
             connected_provider = prov
             break
+    from ..oauth import verified_reply_email
     return {
         "configured": True,
         "oauth_configured": oauth_configured,
         "connected": connected_provider is not None,
         "provider": connected_provider,
         "email": st.get(connected_provider, {}).get("email") if connected_provider else None,
+        "verified_email": verified_reply_email(org_id),
     }
 
 
@@ -2439,6 +2558,138 @@ def api_email_disconnect(org_id: str = Depends(verify_admin)):
     from ..oauth import disconnect
     if not disconnect(org_id):
         raise HTTPException(status_code=404, detail="not connected")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Verified reply-to email — the no-connection middle tier. Proving ownership
+# of an address does NOT let us send AS it (DMARC would junk that as
+# spoofing); it lets us put the owner's business name on the shared sender
+# and route customer replies to the verified inbox. OAuth/SMTP stays the
+# real "send as them" path and always wins when connected.
+# ---------------------------------------------------------------------------
+class EmailVerifyStartBody(BaseModel):
+    email: str
+
+
+@router.post("/api/v1/email/verify/start")
+def api_email_verify_start(body: EmailVerifyStartBody, org_id: str = Depends(verify_admin)):
+    """Email a 6-digit code to the address the owner typed."""
+    import secrets as _secrets
+    import time as _time
+
+    from ..channels import EmailChannel
+    from ..config import Settings
+
+    email = body.email.strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Enter a valid email address")
+
+    with get_session() as s:
+        data = _load_org_profile_data(s, org_id)
+        pending = data.get("email_verify_pending") or {}
+        # Light rate limit: one code per 60s, so the endpoint can't be used
+        # to spray codes at someone else's inbox.
+        if pending.get("sent_at") and _time.time() - pending["sent_at"] < 60:
+            raise HTTPException(status_code=429, detail="Code already sent — check that inbox (and spam), or retry in a minute")
+        code = f"{_secrets.randbelow(1000000):06d}"
+        data["email_verify_pending"] = {
+            "email": email, "code": code,
+            "sent_at": int(_time.time()),
+            "expires_at": int(_time.time()) + 15 * 60,
+            "attempts": 0,
+        }
+        _save_org_profile_data(s, org_id, data)
+
+    r = EmailChannel(Settings()).send(
+        email,
+        "Your Adapix verification code",
+        f"Your verification code is: {code}\n\n"
+        "Enter it in Adapix (Settings -> SMS & Email) to confirm this is your "
+        "address. It expires in 15 minutes. If you didn't request this, you "
+        "can ignore this email.",
+    )
+    if r.status != "sent":
+        raise HTTPException(status_code=502, detail=r.error or "Could not send the code right now")
+    return {"ok": True}
+
+
+class EmailVerifyConfirmBody(BaseModel):
+    code: str
+
+
+@router.post("/api/v1/email/verify/confirm")
+def api_email_verify_confirm(body: EmailVerifyConfirmBody, org_id: str = Depends(verify_admin)):
+    import time as _time
+
+    code = body.code.strip()
+    with get_session() as s:
+        data = _load_org_profile_data(s, org_id)
+        pending = data.get("email_verify_pending") or {}
+        if not pending.get("code"):
+            raise HTTPException(status_code=400, detail="No code was requested — start over")
+        if _time.time() > pending.get("expires_at", 0):
+            raise HTTPException(status_code=400, detail="That code expired — request a new one")
+        if pending.get("attempts", 0) >= 5:
+            raise HTTPException(status_code=429, detail="Too many wrong attempts — request a new code")
+        if code != pending["code"]:
+            pending["attempts"] = pending.get("attempts", 0) + 1
+            data["email_verify_pending"] = pending
+            _save_org_profile_data(s, org_id, data)
+            raise HTTPException(status_code=400, detail="That code doesn't match")
+        data["verified_reply_email"] = pending["email"]
+        data.pop("email_verify_pending", None)
+        _save_org_profile_data(s, org_id, data)
+        return {"ok": True, "email": data["verified_reply_email"]}
+
+
+@router.post("/api/v1/texting/connect")
+def api_texting_connect(org_id: str = Depends(verify_admin)):
+    """Attach an unclaimed Blooio texting line to this business. The line
+    itself is purchased manually on blooio.com (real recurring cost, owner
+    action) — this endpoint only CLAIMS an already-paid-for line, it never
+    buys one, so there's no spend risk in exposing it self-serve. First
+    unclaimed line wins; one line can only ever belong to one org."""
+    from ..channels.imessage import list_channels
+    from ..config import Settings
+    from ..models import Organization
+
+    with get_session() as s:
+        org = s.get(Organization, org_id)
+        if org is None:
+            raise HTTPException(status_code=404, detail="no org")
+        if org.blooio_channel_id:
+            return {"ok": True, "already": True, "number": org.imessage_number}
+
+        try:
+            channels = list_channels(Settings())
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Could not reach Blooio: {e}")
+        if not channels:
+            raise HTTPException(status_code=404, detail="No texting lines exist on the platform account yet")
+
+        claimed = {
+            cid for (cid,) in s.query(Organization.blooio_channel_id)
+            .filter(Organization.blooio_channel_id.isnot(None)).all()
+        }
+        free = [c for c in channels
+                if c.get("id") not in claimed and c.get("status") == "active"]
+        if not free:
+            raise HTTPException(status_code=409, detail="Every texting line is already claimed by another business")
+
+        chosen = free[0]
+        org.blooio_channel_id = chosen["id"]
+        org.imessage_number = chosen.get("display_address") or None
+        return {"ok": True, "number": org.imessage_number}
+
+
+@router.post("/api/v1/email/verify/remove")
+def api_email_verify_remove(org_id: str = Depends(verify_admin)):
+    with get_session() as s:
+        data = _load_org_profile_data(s, org_id)
+        data.pop("verified_reply_email", None)
+        data.pop("email_verify_pending", None)
+        _save_org_profile_data(s, org_id, data)
     return {"ok": True}
 
 
@@ -2879,6 +3130,7 @@ def api_patients_list(q: str = "", _user: str = Depends(verify_admin)):
 def api_phone_get(org_id: str = Depends(verify_admin)):
     """The org's dedicated calling number + provisioning status (Settings UI)."""
     from ..models import Organization
+    from ..provisioning import DEDICATED_LINE_PRICE_DISPLAY
 
     with get_session() as s:
         org = s.get(Organization, org_id)
@@ -2888,6 +3140,10 @@ def api_phone_get(org_id: str = Depends(verify_admin)):
             "has_number": bool(org.vapi_phone_number_id),
             "status": org.phone_status,
             "number": org.phone_number,
+            "tier": org.phone_tier,
+            "cnam_status": org.cnam_status,
+            "rcs_status": org.rcs_status,
+            "upgrade_cost": DEDICATED_LINE_PRICE_DISPLAY,
         }
 
 
@@ -2901,6 +3157,90 @@ def api_phone_provision(body: ProvisionBody, org_id: str = Depends(verify_admin)
     from ..provisioning import ensure_org_number
 
     return ensure_org_number(org_id, area_code=(body.area_code.strip() or None))
+
+
+@router.post("/api/v1/phone/upgrade")
+def api_phone_upgrade(body: ProvisionBody, org_id: str = Depends(verify_admin)):
+    """Owner-confirmed upgrade from the free number to a real, carrier-purchased
+    Twilio number, billed to the customer via a Stripe subscription add-on.
+    The frontend must show the cost and get an explicit click before calling
+    this — it is never triggered automatically."""
+    from ..provisioning import upgrade_to_dedicated_line
+
+    return upgrade_to_dedicated_line(org_id, area_code=(body.area_code.strip() or None))
+
+
+class CnamBody(BaseModel):
+    legal_business_name: str = ""
+    business_type: str = ""
+    ein: str = ""
+    industry: str = ""
+    website_url: str = ""
+    rep_first_name: str = ""
+    rep_last_name: str = ""
+    rep_email: str = ""
+    rep_phone: str = ""
+    rep_job_title: str = ""
+    address_street: str = ""
+    address_city: str = ""
+    address_region: str = ""
+    address_postal_code: str = ""
+    cnam_display_name: str = ""
+
+
+@router.post("/api/v1/phone/cnam")
+def api_phone_cnam_submit(body: CnamBody, org_id: str = Depends(verify_admin)):
+    """Submit the business's real details to Twilio for CNAM (caller-ID-name)
+    review. A real compliance submission, not instant — Twilio's review
+    typically takes a few business days; see /api/v1/phone/cnam/status."""
+    from ..cnam import submit_cnam_registration
+
+    return submit_cnam_registration(org_id, body.model_dump())
+
+
+@router.get("/api/v1/phone/cnam/status")
+def api_phone_cnam_status(org_id: str = Depends(verify_admin)):
+    """Re-check Twilio for a verdict on an already-submitted CNAM registration."""
+    from ..cnam import refresh_cnam_status
+
+    return refresh_cnam_status(org_id)
+
+
+class RcsBody(BaseModel):
+    legal_business_name: str = ""
+    business_type: str = ""
+    ein: str = ""
+    industry: str = ""
+    website_url: str = ""
+    rep_first_name: str = ""
+    rep_last_name: str = ""
+    rep_email: str = ""
+    rep_phone: str = ""
+    rep_job_title: str = ""
+    address_street: str = ""
+    address_city: str = ""
+    address_region: str = ""
+    address_postal_code: str = ""
+    brand_display_name: str = ""
+    monthly_message_volume: str = ""
+
+
+@router.post("/api/v1/phone/rcs")
+def api_phone_rcs_submit(body: RcsBody, org_id: str = Depends(verify_admin)):
+    """Submit the business for RCS branded texting (business name + logo on
+    Android texts) — a real compliance submission, not instant. See
+    docs/RCS_REGISTRATION.md for what this actually files with Twilio."""
+    from ..rcs import submit_rcs_registration
+
+    return submit_rcs_registration(org_id, body.model_dump())
+
+
+@router.get("/api/v1/phone/rcs/status")
+def api_phone_rcs_status(org_id: str = Depends(verify_admin)):
+    """Re-check Twilio for a verdict on an already-submitted RCS registration."""
+    from ..rcs import refresh_rcs_status
+
+    return refresh_rcs_status(org_id)
 
 
 # ---------------------------------------------------------------------------

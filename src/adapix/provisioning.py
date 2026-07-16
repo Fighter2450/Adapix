@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from .channels.voice import create_vapi_number
+from .channels.voice import buy_and_import_twilio_number, create_vapi_number
 from .config import Settings
 from .db import get_session
 from .models import Organization
@@ -86,3 +86,74 @@ def ensure_org_number(org_id: str, *, area_code: str | None = None) -> dict:
         org.phone_number = result.number
         org.phone_status = "provisioned"
         return {"ok": True, "status": "provisioned", "number": result.number}
+
+
+# What the CUSTOMER is billed for the upgrade — deliberately higher than our
+# actual Twilio cost (~$1.15/mo) so the add-on isn't run at a loss. Keep this
+# in sync with the Stripe Price's actual unit_amount (STRIPE_DEDICATED_LINE_PRICE_ID).
+DEDICATED_LINE_PRICE_DISPLAY = "$1.50/mo"
+DEDICATED_LINE_ADDON_KEY = "dedicated_line_item_id"
+
+
+def upgrade_to_dedicated_line(org_id: str, *, area_code: str | None = None) -> dict:
+    """Upgrade an org from its free Vapi number to a REAL purchased Twilio
+    number — better carrier attestation (less "Spam Likely") and a
+    prerequisite for CNAM registration. Billed to the customer at
+    DEDICATED_LINE_PRICE_DISPLAY via a Stripe subscription add-on.
+
+    This spends real money the moment it's called — only invoke it from a
+    request the org owner has explicitly confirmed after seeing the cost
+    (see /api/v1/phone/upgrade), never automatically or on a schedule.
+    """
+    from . import billing
+
+    settings = Settings()
+    with get_session(settings) as s:
+        org = s.get(Organization, org_id)
+        if org is None:
+            return {"ok": False, "reason": "no_org"}
+        if org.phone_tier == "dedicated":
+            return {"ok": True, "already": True, "number": org.phone_number}
+        if not (settings.twilio_account_sid and settings.twilio_auth_token and settings.vapi_api_key):
+            return {"ok": False, "reason": "not_configured"}
+
+        # Nothing to bill the add-on to without an active subscription — and
+        # we don't give away a real paid number for free just because
+        # billing happens to be unconfigured in this environment.
+        if billing.configured():
+            status = billing.refresh_status(org_id)
+            if status not in ("trialing", "active"):
+                return {"ok": False, "reason": "billing_required",
+                        "detail": "Set up billing before upgrading your calling line."}
+
+        resolved_area_code = area_code
+        if not resolved_area_code and org.phone_number:
+            m = _E164_US.match(org.phone_number)
+            if m:
+                resolved_area_code = org.phone_number[2:5]
+        if not resolved_area_code:
+            resolved_area_code = _DEFAULT_AREA_CODE
+
+        result = buy_and_import_twilio_number(settings, area_code=resolved_area_code, name=org.name)
+        if not result.phone_number_id:
+            # If a number was bought but Vapi import failed, the error text
+            # carries the Twilio SID so it isn't silently paid for and lost.
+            return {"ok": False, "reason": "upgrade_failed", "detail": result.error}
+
+        if billing.configured():
+            try:
+                billing.add_subscription_addon(org_id, billing.dedicated_line_price_id(), key=DEDICATED_LINE_ADDON_KEY)
+            except Exception as e:
+                # Charging the customer failed — release the number rather
+                # than leave it silently running on Adapix's own dime.
+                from .channels.voice import release_twilio_number
+                release_twilio_number(settings, result.twilio_sid)
+                return {"ok": False, "reason": "billing_failed", "detail": str(e)}
+
+        old_number_id = org.vapi_phone_number_id
+        org.vapi_phone_number_id = result.phone_number_id
+        org.phone_number = result.number
+        org.phone_status = "provisioned"
+        org.phone_tier = "dedicated"
+        org.twilio_phone_sid = result.twilio_sid
+        return {"ok": True, "status": "dedicated", "number": result.number, "replaced_number_id": old_number_id}

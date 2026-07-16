@@ -35,6 +35,36 @@ class Organization(Base):
     vapi_phone_number_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     phone_number: Mapped[str | None] = mapped_column(String(32), nullable=True)  # +1… for display
     phone_status: Mapped[str] = mapped_column(String(32), default="none")  # none | provisioned | registered
+    # Set once the org upgrades from a free Vapi number to a real purchased
+    # Twilio number (better carrier attestation + required for CNAM). Kept so
+    # the number can be released from Twilio if the org ever cancels.
+    twilio_phone_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    phone_tier: Mapped[str] = mapped_column(String(16), default="free")  # free | dedicated
+    # CNAM = the business's actual NAME (not just number) shown on caller ID.
+    # Requires a Twilio Trust Hub business-identity submission, reviewed by
+    # Twilio over days, not something any code path can make instant.
+    cnam_status: Mapped[str] = mapped_column(String(24), default="none")  # none | submitted | approved | rejected
+    # Twilio Trust Hub SIDs for the CNAM submission, kept so status can be
+    # re-checked later without resubmitting.
+    cnam_customer_profile_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cnam_trust_product_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    # RCS branded texting — business name + logo on Android texts (separate
+    # from CNAM, which is calls-only). Three chained Trust Hub submissions;
+    # SIDs kept so status can be re-checked without resubmitting.
+    rcs_status: Mapped[str] = mapped_column(String(24), default="none")  # none | submitted | approved | rejected
+    rcs_google_trust_product_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    rcs_core_trust_product_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    rcs_us_trust_product_sid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    # Referral program — give a month, get a month. referral_code is this
+    # org's shareable code (generated on first visit to the Referrals page);
+    # referred_by_code is who sent them here (captured at signup from ?ref=).
+    # referral_rewarded flips once the referrer's $99 credit has been applied
+    # so a webhook retry can't double-pay.
+    referral_code: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    referred_by_code: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    referral_rewarded: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # iMessage: same principle — each org texts from its OWN dedicated Blooio
     # line (blue bubble on Apple devices), provisioned per business under

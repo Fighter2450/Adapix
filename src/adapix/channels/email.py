@@ -31,7 +31,13 @@ class EmailChannel:
         resend.api_key = self.settings.resend_api_key
         self._configured = True
 
-    def send(self, to: str, subject: str, body: str) -> EmailResult:
+    def send(self, to: str, subject: str, body: str, *,
+             reply_to: str | None = None, from_name: str | None = None) -> EmailResult:
+        """Send via the shared Resend sender. from_name puts the BUSINESS's
+        name in the inbox list ("Mike's Plumbing <hello@adapix...>"); reply_to
+        routes the customer's reply to the owner's real inbox instead of the
+        shared address. Both are how the fallback path still reads as the
+        business rather than as Adapix."""
         if not to:
             return EmailResult(provider_id=None, status="failed", error="missing recipient email")
         if self.dry_run:
@@ -40,14 +46,21 @@ class EmailChannel:
         try:
             self._configure()
             import resend
-            response = resend.Emails.send(
-                {
-                    "from": self.settings.resend_from_email,
-                    "to": [to],
-                    "subject": subject,
-                    "text": body,
-                }
-            )
+            sender = self.settings.resend_from_email
+            if from_name:
+                # Strip characters that would break the "Name <addr>" header.
+                clean = from_name.replace('"', "").replace("<", "").replace(">", "").strip()
+                if clean:
+                    sender = f"{clean} <{self.settings.resend_from_email}>"
+            payload = {
+                "from": sender,
+                "to": [to],
+                "subject": subject,
+                "text": body,
+            }
+            if reply_to:
+                payload["reply_to"] = [reply_to]
+            response = resend.Emails.send(payload)
             return EmailResult(provider_id=response.get("id") if isinstance(response, dict) else None, status="sent")
         except Exception as e:
             return EmailResult(provider_id=None, status="failed", error=str(e))

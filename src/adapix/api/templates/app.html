@@ -27,7 +27,7 @@
   --bg:#0b0b1c;
   --bg-2:#17142e;
   --bg-3:#211c3d;
-  --sidebar-bg:#0c0a1d;
+  --sidebar-bg:#081226; /* deep navy — sidebar went blue per Rocco 7/15 (Blooio-inspired) */
   --border:rgba(124,58,237,.18);
   --border-2:rgba(255,255,255,.05);
   --ink:#ece9ff;
@@ -86,8 +86,64 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',
   width:30px;height:30px;flex-shrink:0;object-fit:contain;
 }
 .sidebar-wordmark{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
-.sidebar-section{flex:1;padding:10px 10px 0;overflow-y:auto}
-.sidebar-bottom{padding:10px 10px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.sidebar-section{flex:1;padding:2px 10px 0;overflow-y:auto}
+.sidebar-bottom{padding:10px 10px 12px;border-top:1px solid var(--border);flex-shrink:0}
+
+/* ── Sidebar: section labels ── */
+.sidebar-label{
+  font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);padding:16px 10px 6px;user-select:none;
+}
+.sidebar-label:first-child{padding-top:10px}
+
+/* ── Sidebar: global search (Ctrl+K) ── */
+.sidebar-search{
+  position:relative;display:flex;align-items:center;gap:8px;
+  margin:12px 10px 4px;padding:7px 10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;
+}
+.sidebar-search i{width:14px;height:14px;color:var(--ink-3);flex-shrink:0}
+.sidebar-search input{
+  flex:1;min-width:0;background:none;border:none;outline:none;
+  color:var(--ink);font-family:inherit;font-size:13px;
+}
+.sidebar-search input::placeholder{color:var(--ink-3)}
+.sidebar-search kbd{
+  font-family:ui-monospace,monospace;font-size:10px;color:var(--ink-3);
+  border:1px solid var(--border);border-radius:5px;padding:2px 5px;flex-shrink:0;
+}
+.gs-results{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;
+  background:var(--bg-2);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 12px 32px rgba(0,0,0,.5);overflow:hidden;max-height:320px;overflow-y:auto;
+}
+.gs-item{
+  display:flex;align-items:center;gap:9px;width:100%;
+  padding:9px 12px;background:none;border:none;cursor:pointer;text-align:left;
+  color:var(--ink-2);font-size:13px;font-family:inherit;
+}
+.gs-item:hover{background:rgba(59,130,246,.14);color:var(--ink)}
+.gs-item i{width:14px;height:14px;flex-shrink:0;color:var(--ink-3)}
+.gs-item .gs-sub{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.gs-empty{padding:12px;font-size:12.5px;color:var(--ink-3);text-align:center}
+
+/* ── Sidebar: account chip ── */
+.sidebar-account{
+  display:flex;align-items:center;gap:10px;width:100%;
+  margin-top:8px;padding:8px 10px;border-radius:9px;
+  background:none;border:1px solid var(--border);cursor:pointer;
+  font-family:inherit;text-align:left;
+}
+.sidebar-account:hover{background:rgba(255,255,255,.05)}
+.sb-avatar{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#2563eb,#22d3ee);
+  color:#fff;font-size:13px;font-weight:700;
+}
+.sb-account-text{display:flex;flex-direction:column;min-width:0}
+.sb-account-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-account-sub{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---- Sidebar nav items ---- */
 .nav-item{
@@ -101,9 +157,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',
 }
 .nav-item:hover{background:rgba(255,255,255,.05);color:var(--ink-2)}
 .nav-item.on{
-  background:rgba(124,106,255,.12);
-  border-left:2px solid #7c6aff;
-  color:#a78bfa;
+  background:rgba(59,130,246,.12);
+  border-left:2px solid #3b82f6;
+  color:#93c5fd;
   padding-left:8px;
 }
 .nav-item i{width:16px;height:16px;flex-shrink:0}
@@ -860,9 +916,9 @@ body::after{
 
 /* ── Sidebar: deep gradient panel with glow seam ── */
 .sidebar{
-  background:linear-gradient(180deg,#0e0b22,#0a0818);
-  border-right:1px solid rgba(124,58,237,.22);
-  box-shadow:1px 0 24px rgba(124,58,237,.08);
+  background:linear-gradient(180deg,#0b1730,#060e1f);
+  border-right:1px solid rgba(59,130,246,.25);
+  box-shadow:1px 0 24px rgba(37,99,235,.1);
   position:sticky;top:0;z-index:2;
 }
 
@@ -872,23 +928,23 @@ body::after{
              color var(--dur-fast) var(--ease-out),
              transform var(--dur-fast) var(--ease-spring);
 }
-.nav-item:hover{background:rgba(124,58,237,.12);color:var(--ink);transform:translateX(3px)}
+.nav-item:hover{background:rgba(59,130,246,.14);color:var(--ink);transform:translateX(3px)}
 .nav-item:active{transform:translateX(1px) scale(.97)}
 .nav-item.on{
-  background:linear-gradient(135deg,rgba(124,58,237,.28),rgba(167,139,250,.14),rgba(34,211,238,.1));
+  background:linear-gradient(135deg,rgba(37,99,235,.32),rgba(96,165,250,.16),rgba(34,211,238,.1));
   background-size:200% 200%;
   animation:navSlideIn var(--dur-med) var(--ease-out) both, gradientShift 6s ease infinite;
   border-left:none;color:#fff;padding-left:10px;
-  box-shadow:inset 0 0 0 1px rgba(167,139,250,.3),0 4px 16px rgba(124,58,237,.28);
+  box-shadow:inset 0 0 0 1px rgba(96,165,250,.32),0 4px 16px rgba(37,99,235,.3);
 }
 .nav-item.on::before{
   content:'';position:absolute;left:0;top:18%;bottom:18%;width:3px;border-radius:3px;
-  background:linear-gradient(180deg,#c4b5fd,#7c3aed,#22d3ee);
-  box-shadow:0 0 12px rgba(124,58,237,.9);
+  background:linear-gradient(180deg,#93c5fd,#2563eb,#22d3ee);
+  box-shadow:0 0 12px rgba(37,99,235,.9);
 }
 .nav-item i{transition:transform var(--dur-fast) var(--ease-spring)}
 .nav-item:hover i{transform:scale(1.15)}
-.nav-item.on i{color:#c4b5fd}
+.nav-item.on i{color:#93c5fd}
 .nav-badge{background:linear-gradient(135deg,#f43f5e,#f472b6)}
 .nav-badge.hot{background:linear-gradient(135deg,#f43f5e,#f472b6);animation:pulseRing 1.8s ease-in-out infinite}
 
@@ -1130,6 +1186,16 @@ body::after{
 @keyframes bubbleIn{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.setup-bubble{animation:none}.setup-bubble .dot{animation:none}}
 
+/* Upsell variant — an opportunity, not a missing-setup warning. Violet/cyan
+   instead of amber, static sparkle instead of a blinking "fix me" dot. */
+.setup-bubble.upsell{
+  background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(34,211,238,.09));
+  border-color:rgba(167,139,250,.35);color:#ddd6fe;
+}
+.setup-bubble.upsell:hover{border-color:rgba(167,139,250,.6);box-shadow:0 8px 20px -8px rgba(124,58,237,.4)}
+.setup-bubble.upsell .dot{background:var(--cyan);animation:none}
+.setup-bubble.upsell .chev{color:#ddd6fe}
+
 /* ── Reduced motion ── */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
@@ -1148,8 +1214,19 @@ body::after{
       <img src="/static/adapix_mark.svg" alt="Adapix" class="sidebar-mark" />
       <span class="sidebar-wordmark">Adapix</span>
     </div>
+    <div class="sidebar-search" id="sidebar-search">
+      <i data-lucide="search"></i>
+      <input id="global-search" placeholder="Search" autocomplete="off" />
+      <kbd>Ctrl K</kbd>
+      <div class="gs-results" id="gs-results" hidden></div>
+    </div>
     <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
       <button class="nav-item" data-view="home"><i data-lucide="layout-dashboard"></i><span>Home</span></button>
+      <button class="nav-item" data-view="analytics"><i data-lucide="bar-chart-3"></i><span>Analytics</span></button>
+      <button class="nav-item" data-view="station"><i data-lucide="activity"></i><span>Activity</span></button>
+
+      <div class="sidebar-label">Messaging</div>
       <button class="nav-item" data-view="inbox">
         <i data-lucide="inbox"></i><span>Inbox</span>
         <span class="nav-badge" id="ct-inbox"></span>
@@ -1160,11 +1237,28 @@ body::after{
         <span class="nav-badge" id="ct-calls"></span>
       </button>
       <button class="nav-item" data-view="messages"><i data-lucide="send"></i><span>SMS &amp; Email</span></button>
+
+      <div class="sidebar-label">Your business</div>
+      <button class="nav-item" data-view="database"><i data-lucide="book-open"></i><span>Business knowledge</span></button>
+      <button class="nav-item" data-view="settings" data-settings="profile"><i data-lucide="store"></i><span>Business profile</span></button>
+
+      <div class="sidebar-label">Configuration</div>
+      <button class="nav-item" data-view="settings" data-settings="rules"><i data-lucide="sliders-horizontal"></i><span>Follow-up rules</span></button>
+      <button class="nav-item" data-view="settings" data-settings="notifications"><i data-lucide="bell"></i><span>Notifications</span></button>
+      <button class="nav-item" data-view="settings" data-settings="account"><i data-lucide="credit-card"></i><span>Billing</span></button>
+      <button class="nav-item" data-view="referrals"><i data-lucide="gift"></i><span>Referrals</span></button>
+      <button class="nav-item" data-view="settings"><i data-lucide="settings"></i><span>All settings</span></button>
     </div>
     <div class="sidebar-bottom">
-      <button class="nav-item" data-view="settings"><i data-lucide="settings"></i><span>Settings</span></button>
       <button class="sidebar-run-btn" id="run-campaigns">
         <i data-lucide="play"></i><span>Send follow-ups now</span>
+      </button>
+      <button class="sidebar-account" id="sidebar-account" data-view="settings" data-settings="account">
+        <span class="sb-avatar" id="sb-avatar">A</span>
+        <span class="sb-account-text">
+          <span class="sb-account-name" id="sb-account-name">Your business</span>
+          <span class="sb-account-sub" id="sb-account-sub"></span>
+        </span>
       </button>
     </div>
   </nav>
@@ -1311,7 +1405,8 @@ body::after{
   // -------- Render dispatch --------
   function render(){
     document.querySelectorAll('#leftnav button[data-view], #bn button').forEach(b=>{
-      b.classList.toggle('on', b.dataset.view === state.view);
+      b.classList.toggle('on', b.dataset.view === state.view &&
+        (!b.dataset.settings || b.dataset.settings === state.settingsPage));
     });
     const escCount = (state.feed && state.feed.escalations) ? state.feed.escalations.length : 0;
     const apprCount = (state.feed && state.feed.approvals) ? state.feed.approvals.length : 0;
@@ -1329,6 +1424,8 @@ body::after{
     else if (state.view === 'calls')     renderCallsView();
     else if (state.view === 'messages')  renderMessagesView();
     else if (state.view === 'station')   renderStationView();
+    else if (state.view === 'analytics') renderAnalyticsView();
+    else if (state.view === 'referrals') renderReferralsView();
     else if (state.view === 'team')      renderTeam();
     else if (state.view === 'database')  renderDatabaseView();
     else if (state.view === 'workshop')  renderWorkshop();
@@ -1675,7 +1772,7 @@ body::after{
         if (!gaps.length) { gapsEl.innerHTML = ''; return; }
         gapsEl.innerHTML = `
           <div class="setup-gaps">
-            ${gaps.map((g, i) => `<button class="setup-bubble" data-gap-idx="${i}"><span class="dot"></span>${escapeHTML(g.label)}<span class="chev">›</span></button>`).join('')}
+            ${gaps.map((g, i) => `<button class="setup-bubble${g.upsell ? ' upsell' : ''}" data-gap-idx="${i}"><span class="dot"></span>${escapeHTML(g.label)}<span class="chev">›</span></button>`).join('')}
           </div>`;
         gapsEl.querySelectorAll('.setup-bubble').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -1698,6 +1795,18 @@ body::after{
         if (state.view !== 'home') return;
         if (j.status === 'ready'){
           gaps.push({label: 'Review what Adapix read from your website', website_import: true});
+          paintGaps();
+        }
+      }).catch(() => {});
+
+      // Upsell, not a setup gap: once they already have a working calling
+      // line, nudge toward the dedicated/carrier-registered upgrade — a
+      // cheap, low-pressure ad for the feature, not a "you're missing
+      // something" warning (different bubble style on purpose).
+      api('/api/v1/phone').then(p => {
+        if (state.view !== 'home') return;
+        if (p.has_number && p.tier !== 'dedicated'){
+          gaps.push({label: `Get your business name on caller ID — ${p.upgrade_cost || '$1.50/mo'}`, channels: true, upsell: true});
           paintGaps();
         }
       }).catch(() => {});
@@ -2080,6 +2189,11 @@ body::after{
         <div class="sform-hint" style="margin-top:10px">Texts go out blue-bubble on Apple devices via Adapix's shared line today; your own dedicated number is available on request. Until either is set up, texts fall back to standard SMS.</div>
       </div>
 
+      <div class="scard" id="rcs-card">
+        <div class="scard-title">Business name on Android texts (RCS)</div>
+        <div id="rcs-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
+      </div>
+
       <div class="scard">
         <div class="scard-title">Write a message</div>
         <div class="mtabs">
@@ -2121,6 +2235,7 @@ body::after{
     `;
     renderLucide(main);
     loadEmailCard();
+    loadRcsCard();
 
     // Per-business iMessage line status (each org has its OWN Blooio line,
     // stored on the Organization row — never a shared sender).
@@ -2129,16 +2244,15 @@ body::after{
       const badge = document.getElementById('msg-imessage-badge');
       const btn = document.getElementById('msg-sms-connect');
       if (!val || !badge) return;
-      if (d.imessage_connected) {
-        if (d.imessage_dedicated) {
-          val.textContent = (d.imessage_number || 'Your dedicated line') + ' — texts go blue on Apple devices';
-          badge.textContent = 'Connected';
-        } else {
-          val.textContent = 'Shared Adapix line for now — texts go blue on Apple devices';
-          badge.textContent = 'Connected (shared)';
-        }
+      if (d.imessage_dedicated) {
+        val.textContent = (d.imessage_number || 'Your dedicated line') + ' — your own number; texts go blue on Apple devices';
+        badge.textContent = 'Connected';
         badge.classList.remove('off');
         if (btn) btn.style.display = 'none';
+      } else if (d.imessage_connected) {
+        val.textContent = 'Shared Adapix line for now — texts go blue on Apple devices';
+        badge.textContent = 'Connected (shared)';
+        badge.classList.remove('off');
       } else {
         val.textContent = 'No dedicated line yet — texts send as standard SMS';
         badge.textContent = 'Not set up';
@@ -2151,7 +2265,17 @@ body::after{
     });
 
     const smsConnect = document.getElementById('msg-sms-connect');
-    if (smsConnect) smsConnect.addEventListener('click', () => toast('Ask Adapix to provision your dedicated texting line — self-serve setup coming soon'));
+    if (smsConnect) smsConnect.addEventListener('click', async () => {
+      smsConnect.disabled = true; smsConnect.textContent = 'Connecting…';
+      try {
+        const r = await api('/api/v1/texting/connect', { method:'POST', body: JSON.stringify({}) });
+        toast(r.number ? ('Your texting line is ready: ' + r.number) : 'Texting line connected');
+        renderMessagesView();
+      } catch(e){
+        toast(e.message || 'No line available to connect yet', true);
+        smsConnect.disabled = false; smsConnect.textContent = 'Set up my line';
+      }
+    });
 
     const retryNum = document.getElementById('retry-calling-number');
     if (retryNum) retryNum.addEventListener('click', async (e) => {
@@ -2189,12 +2313,16 @@ body::after{
         const msgs = j.messages || [];
         listEl.innerHTML = msgs.length ? '<div class="rows">' + msgs.map(m => {
           const inbound = m.direction === 'inbound';
-          const icon = m.channel === 'email' ? 'mail' : 'message-square';
+          const isEmail = m.channel === 'email';
+          const blue = !isEmail && (m.transport || '').startsWith('imessage');
+          const icon = isEmail ? 'mail' : 'message-square';
+          const chColor = isEmail ? '#a78bfa' : (blue ? '#3b82f6' : '#22d3ee');
+          const chLabel = isEmail ? 'EMAIL' : (blue ? 'IMESSAGE' : 'TEXT');
           const when = m.created_at ? new Date(m.created_at).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
           const snippet = (m.subject ? m.subject + ' — ' : '') + (m.body || '').slice(0, 140);
           return `
           <div class="row-card">
-            <div style="flex:0 0 auto;color:var(--ink-3)"><i data-lucide="${icon}" style="width:16px;height:16px"></i></div>
+            <div style="flex:0 0 auto"><span class="st-ch" style="color:${chColor}"><i data-lucide="${icon}" style="width:14px;height:14px"></i>${chLabel}</span></div>
             <div class="text" style="flex:1"><b>${escapeHTML(m.contact_name)} ${inbound ? '→ you' : '← Adapix'}</b><span>${escapeHTML(snippet)}</span></div>
             <span class="pill ${m.status === 'pending_approval' ? 'hot' : ''}">${escapeHTML((m.status || '').replace('_', ' '))}</span>
             <span style="color:var(--ink-3);font-size:11.5px;flex:0 0 auto;white-space:nowrap">${when}</span>
@@ -2259,6 +2387,126 @@ body::after{
   // plus an Arrivals board for everything coming back in (replies, call
   // outcomes). Auto-refreshes every 15s while you're watching.
   let stationTimer = null;
+  // -------- REFERRALS view — give a month, get a month --------
+  function renderReferralsView(){
+    main.innerHTML = `
+      <div class="section-eyebrow">Referrals</div>
+      <h1 class="page-title" style="margin-bottom:6px">Give a month, get a month</h1>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:22px;max-width:640px">Know another business owner drowning in quiet quotes? Send them your link. When they become a paying customer, <b style="color:var(--ink)">you get a free month</b> (credited to your bill automatically) and <b style="color:var(--ink)">they get an extra free month</b> on top of the normal trial.</p>
+      <div class="scard">
+        <div class="scard-title">Your referral link</div>
+        <div id="rf-link-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input class="sform-input" id="rf-link" readonly value="Loading…" style="flex:1;min-width:260px;font-family:ui-monospace,monospace;font-size:13px" />
+          <button class="sform-save" id="rf-copy" style="flex-shrink:0">Copy link</button>
+        </div>
+        <div class="sform-hint" style="margin-top:10px">Your code is <b style="color:var(--ink)" id="rf-code">…</b> — they can also type it on the signup page.</div>
+      </div>
+      <div class="scard">
+        <div class="scard-title" style="display:flex;justify-content:space-between;align-items:baseline">Businesses you've referred
+          <span style="font-size:12px;font-weight:600;color:var(--good)" id="rf-earned"></span>
+        </div>
+        <div id="rf-list" style="font-size:13.5px;color:var(--ink-2)">Loading…</div>
+      </div>`;
+    renderLucide(main);
+
+    api('/api/v1/referrals').then(j => {
+      if (state.view !== 'referrals') return;
+      const linkEl = document.getElementById('rf-link');
+      linkEl.value = j.link || '';
+      document.getElementById('rf-code').textContent = j.code || '';
+      document.getElementById('rf-earned').textContent = j.months_earned ? (j.months_earned + ' free month' + (j.months_earned === 1 ? '' : 's') + ' earned') : '';
+      document.getElementById('rf-copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(linkEl.value); toast('Link copied'); }
+        catch(_){ linkEl.select(); document.execCommand('copy'); toast('Link copied'); }
+      });
+      const rows = j.referrals || [];
+      const statusLabel = {trial: 'On trial', paying: 'Paying — credit on the way', rewarded: 'Rewarded ✓'};
+      const statusColor = {trial: 'var(--ink-3)', paying: 'var(--warn)', rewarded: 'var(--good)'};
+      document.getElementById('rf-list').innerHTML = rows.length ? rows.map(r => `
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-2)">
+          <span style="color:var(--ink)">${escapeHTML(r.name || 'A business')}</span>
+          <span style="color:${statusColor[r.status] || 'var(--ink-3)'};font-weight:600;font-size:12.5px">${statusLabel[r.status] || r.status}</span>
+        </div>`).join('') :
+        '<div style="padding:16px 0;color:var(--ink-3)">No referrals yet — share your link with another owner who\'d want their quiet customers back.</div>';
+    }).catch(() => {
+      const el = document.getElementById('rf-list');
+      if (el) el.textContent = 'Could not load — try refreshing.';
+    });
+  }
+
+  // -------- ANALYTICS view — real per-channel numbers, no invented metrics --------
+  function renderAnalyticsView(){
+    const period = state.analyticsDays || 30;
+    main.innerHTML = `
+      <div class="section-eyebrow">Analytics</div>
+      <h1 class="page-title" style="margin-bottom:6px">How your follow-ups are doing</h1>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:18px;max-width:640px">Every number here is a real count from your own messages and calls — nothing modeled or estimated.</p>
+      <div style="display:flex;gap:8px;margin-bottom:18px">
+        ${[7,30,90].map(d => `<button class="mtab ${d===period?'active':''}" data-an-days="${d}">${d} days</button>`).join('')}
+      </div>
+      <div id="an-tiles" class="home-stat-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px"></div>
+      <div class="scard" style="margin-bottom:18px">
+        <div class="scard-title" style="display:flex;justify-content:space-between;align-items:baseline">Daily activity
+          <span style="font-size:11.5px;font-weight:500;color:var(--ink-3)"><span style="color:#8b5cf6">■</span> sent &nbsp;<span style="color:#0891b2">■</span> replies</span>
+        </div>
+        <div id="an-chart" class="home-chart" style="min-height:170px"></div>
+      </div>
+      <div class="scard">
+        <div class="scard-title">By channel</div>
+        <div id="an-channels" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>`;
+    renderLucide(main);
+    main.querySelectorAll('[data-an-days]').forEach(b => b.addEventListener('click', () => {
+      state.analyticsDays = Number(b.dataset.anDays);
+      renderAnalyticsView();
+    }));
+
+    api('/api/v1/analytics?days=' + period).then(j => {
+      if (state.view !== 'analytics') return;
+      const t = j.totals || {};
+      const tiles = [
+        {label: 'Follow-ups sent', val: t.sent ?? 0, sub: 'texts, emails & calls'},
+        {label: 'Replies received', val: t.received ?? 0, sub: 'from your customers'},
+        {label: 'Reply rate', val: t.reply_rate === null || t.reply_rate === undefined ? '—' : t.reply_rate + '%', sub: 'replies per send'},
+        {label: 'iMessage share', val: (j.channels?.sms?.out ? Math.round((j.imessage_out || 0) / j.channels.sms.out * 100) + '%' : '—'), sub: 'of texts went blue'},
+        {label: 'Failed sends', val: t.failed ?? 0, sub: 'see Calls / SMS & Email for why'},
+      ];
+      document.getElementById('an-tiles').innerHTML = tiles.map(x => `
+        <div class="scard" style="margin:0">
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">${x.label}</div>
+          <div style="font-size:26px;font-weight:800;color:var(--ink)">${x.val}</div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px">${x.sub}</div>
+        </div>`).join('');
+
+      drawHomeChart(document.getElementById('an-chart'), j.series || []);
+
+      const ch = j.channels || {};
+      const rows = [
+        {key:'sms', label:'Texts', color:'#22d3ee', extra: j.imessage_out ? `${j.imessage_out} as iMessage` : ''},
+        {key:'email', label:'Emails', color:'#a78bfa', extra:''},
+        {key:'call', label:'Calls', color:'#3b82f6', extra:''},
+      ];
+      const maxOut = Math.max(1, ...rows.map(r => (ch[r.key]?.out || 0) + (ch[r.key]?.in || 0)));
+      document.getElementById('an-channels').innerHTML = rows.map(r => {
+        const o = ch[r.key]?.out || 0, i2 = ch[r.key]?.in || 0;
+        return `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+            <b style="color:var(--ink)">${r.label}</b>
+            <span style="color:var(--ink-3)">${o} sent · ${i2} received${r.extra ? ' · ' + r.extra : ''}</span>
+          </div>
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.05)">
+            <div style="width:${(o/maxOut*100).toFixed(1)}%;background:${r.color}"></div>
+            <div style="width:${(i2/maxOut*100).toFixed(1)}%;background:${r.color};opacity:.4"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }).catch(() => {
+      const el = document.getElementById('an-tiles');
+      if (el) el.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--ink-3)">Could not load analytics — try refreshing.</div>';
+    });
+  }
+
   function renderStationView(){
     if (stationTimer) { clearInterval(stationTimer); stationTimer = null; }
     main.innerHTML = `
@@ -3070,7 +3318,8 @@ body::after{
         const out = m.direction === 'outbound';
         const ch = m.channel || 'sms';
         const when = m.created_at ? timeAgo(new Date(m.created_at)) : '';
-        const label = ch === 'call' ? (out ? 'call plan' : 'call outcome') : ch;
+        const blue = ch === 'sms' && (m.transport || '').startsWith('imessage');
+        const label = ch === 'call' ? (out ? 'call plan' : 'call outcome') : (blue ? 'iMessage' : ch);
         let text = m.subject && ch === 'email' ? `<b>${escapeHTML(m.subject)}</b>\n${escapeHTML(m.body||'')}` : escapeHTML(m.body || '(no content)');
         let extra = '';
         if (ch === 'call' && m.recording_url){
@@ -3082,7 +3331,7 @@ body::after{
         return `
         <div class="thread-msg ${out ? 'out' : 'in'}">
           <div class="thread-bubble">${text}${extra}</div>
-          <div class="thread-meta"><span class="st-ch" style="color:${chColor[ch]||'var(--ink-3)'}"><i data-lucide="${chIcon[ch]||'message-square'}" style="width:10px;height:10px"></i>${escapeHTML(label)}</span> · ${out ? 'sent' : 'received'} · ${when}</div>
+          <div class="thread-meta"><span class="st-ch" style="color:${blue ? '#3b82f6' : (chColor[ch]||'var(--ink-3)')}"><i data-lucide="${chIcon[ch]||'message-square'}" style="width:10px;height:10px"></i>${escapeHTML(label)}</span> · ${out ? 'sent' : 'received'} · ${when}</div>
         </div>`;
       }).join('');
       renderLucide(body);
@@ -4418,6 +4667,11 @@ body::after{
       { icon:'list-checks',  key:'rules',    title:'Follow-up rules',        sub:'Timing, tone, auto-approve thresholds' },
       { icon:'bell',         key:'notifications', title:'Notifications',     sub:'Pings on this device when a draft or customer needs you' },
       { icon:'credit-card',  key:'account',  title:'Account & billing',      sub:'Plan, usage, team members' },
+      // These live in the desktop sidebar; this hub is how PHONES reach
+      // them — the mobile bottom nav only has six slots.
+      { icon:'bar-chart-3',  key:'analytics', title:'Analytics',             sub:'Sends, replies, reply rate — by channel', view:'analytics' },
+      { icon:'activity',     key:'station',   title:'Activity',              sub:'Live feed of everything Adapix is doing', view:'station' },
+      { icon:'gift',         key:'referrals', title:'Referrals',             sub:'Give a month, get a month — your share link', view:'referrals' },
     ];
     main.innerHTML =
       '<div class="section-eyebrow">Settings</div>'
@@ -4702,6 +4956,109 @@ body::after{
   }
 
   // Settings → Your email connection card
+  // SMS & Email → "Business name on Android texts (RCS)" card.
+  async function loadRcsCard(){
+    const el = document.getElementById('rcs-card-body');
+    if (!el) return;
+    let data;
+    try { data = await api('/api/v1/phone'); }
+    catch(_){ el.textContent = 'Could not load status.'; return; }
+
+    if (data.tier !== 'dedicated'){
+      el.innerHTML = `<div class="sform-hint">Upgrade to a dedicated calling line first (Settings &rarr; Messaging &amp; channels) &mdash; RCS registration needs a real business phone number on file.</div>`;
+      return;
+    }
+    if (data.rcs_status === 'approved'){
+      el.innerHTML = `<div class="sform-hint"><b style="color:var(--ink)">Status:</b> Approved &mdash; your business name and logo now show on texts to Android users.</div>`;
+      return;
+    }
+
+    const rcsLabel = {none:'Not started', submitted:'Submitted — Twilio/Google review usually takes days, not hours', rejected:'Needs another look — see below'}[data.rcs_status] || 'Not started';
+    const showForm = data.rcs_status === 'none' || data.rcs_status === 'rejected';
+    el.innerHTML = `
+      <div class="sform-hint" style="margin-bottom:${showForm ? '10px' : '0'}"><b style="color:var(--ink)">Status:</b> ${escapeHTML(rcsLabel)}${data.rcs_status === 'submitted' ? ' <a href="#" id="rcs-check-status" style="color:var(--cyan)">check status</a>' : ''}</div>
+      ${showForm ? `
+      <button class="sch-connect" id="rcs-start-btn">Register for RCS branding</button>
+      <div id="rcs-form" style="display:none;margin-top:12px;flex-direction:column;gap:8px;max-width:480px">
+        <div class="sform-hint">This submits your real business details to Twilio and Google for a genuine compliance review — not instant, and not something any provider can skip. Uses the same logo/banner/screenshots/demo video already prepared.</div>
+        <input class="sform-input" id="rcs-brand-name" placeholder="Name shown to customers on texts" />
+        <input class="sform-input" id="rcs-legal-name" placeholder="Legal business name" />
+        <select class="sform-input" id="rcs-business-type">
+          <option value="sole_proprietor">Sole Proprietor</option>
+          <option value="llc">LLC</option>
+          <option value="corporation">Corporation</option>
+          <option value="partnership">Partnership</option>
+          <option value="nonprofit">Non-profit</option>
+        </select>
+        <input class="sform-input" id="rcs-ein" placeholder="EIN / business registration number (optional)" />
+        <input class="sform-input" id="rcs-industry" placeholder="Industry, e.g. Construction, Retail, Healthcare" />
+        <input class="sform-input" id="rcs-website" placeholder="Website (optional)" />
+        <input class="sform-input" id="rcs-volume" placeholder="Estimated monthly text volume, e.g. 500" inputmode="numeric" />
+        <div class="sform-hint" style="margin-top:4px">Business address</div>
+        <input class="sform-input" id="rcs-address-street" placeholder="Street address" />
+        <div class="sform-2col">
+          <input class="sform-input" id="rcs-address-city" placeholder="City" />
+          <input class="sform-input" id="rcs-address-region" placeholder="State" />
+        </div>
+        <input class="sform-input" id="rcs-address-zip" placeholder="ZIP code" />
+        <div class="sform-hint" style="margin-top:4px">Authorized representative (usually you, the owner)</div>
+        <div class="sform-2col">
+          <input class="sform-input" id="rcs-rep-first" placeholder="First name" />
+          <input class="sform-input" id="rcs-rep-last" placeholder="Last name" />
+        </div>
+        <input class="sform-input" id="rcs-rep-email" placeholder="Email" />
+        <input class="sform-input" id="rcs-rep-phone" placeholder="Phone" />
+        <input class="sform-input" id="rcs-rep-title" placeholder="Job title, e.g. Owner" />
+        <button class="sform-save" id="rcs-submit-btn" style="align-self:flex-start">Submit for approval</button>
+      </div>` : ''}`;
+
+    const rcsStartBtn = document.getElementById('rcs-start-btn');
+    if (rcsStartBtn) rcsStartBtn.addEventListener('click', () => {
+      rcsStartBtn.hidden = true;
+      document.getElementById('rcs-form').style.display = 'flex';
+    });
+    const rcsSubmitBtn = document.getElementById('rcs-submit-btn');
+    if (rcsSubmitBtn) rcsSubmitBtn.addEventListener('click', async () => {
+      const v = id => (document.getElementById(id).value || '').trim();
+      const payload = {
+        brand_display_name: v('rcs-brand-name'),
+        legal_business_name: v('rcs-legal-name'),
+        business_type: document.getElementById('rcs-business-type').value,
+        ein: v('rcs-ein'),
+        industry: v('rcs-industry'),
+        website_url: v('rcs-website'),
+        monthly_message_volume: v('rcs-volume'),
+        address_street: v('rcs-address-street'),
+        address_city: v('rcs-address-city'),
+        address_region: v('rcs-address-region'),
+        address_postal_code: v('rcs-address-zip'),
+        rep_first_name: v('rcs-rep-first'),
+        rep_last_name: v('rcs-rep-last'),
+        rep_email: v('rcs-rep-email'),
+        rep_phone: v('rcs-rep-phone'),
+        rep_job_title: v('rcs-rep-title'),
+      };
+      if (!payload.brand_display_name || !payload.legal_business_name || !payload.address_street || !payload.rep_first_name || !payload.rep_email) {
+        toast('Fill in the brand name, legal name, address, and representative info', true); return;
+      }
+      rcsSubmitBtn.disabled = true; rcsSubmitBtn.textContent = 'Submitting…';
+      try {
+        const r = await api('/api/v1/phone/rcs', { method:'POST', body: JSON.stringify(payload) });
+        if (r.ok) { toast('Submitted — Twilio/Google review takes days, not hours'); loadRcsCard(); }
+        else { toast(r.detail || 'Could not submit right now', true); rcsSubmitBtn.disabled = false; rcsSubmitBtn.textContent = 'Submit for approval'; }
+      } catch(e){ toast(e.message || 'Could not submit right now', true); rcsSubmitBtn.disabled = false; rcsSubmitBtn.textContent = 'Submit for approval'; }
+    });
+    const rcsCheckBtn = document.getElementById('rcs-check-status');
+    if (rcsCheckBtn) rcsCheckBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const r = await api('/api/v1/phone/rcs/status');
+        toast(r.status === 'approved' ? 'Approved!' : r.status === 'rejected' ? 'Rejected — see the form to try again' : 'Still in review');
+        loadRcsCard();
+      } catch(_){ toast('Could not check status', true); }
+    });
+  }
+
   async function loadEmailCard(){
     const el = document.getElementById('email-card-body');
     if (!el) return;
@@ -4754,8 +5111,68 @@ body::after{
             <div class="sform-row"><label class="sform-label">Port</label><input class="sform-input" id="smtp-port" type="number" value="587"></div>
           </div>
           <button class="sform-save" id="smtp-connect">Connect</button>
+        </div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+          ${data.verified_email ? `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <i data-lucide="badge-check" style="width:16px;height:16px;color:var(--cyan)"></i>
+            <span style="font-size:14px;font-weight:600;color:var(--ink)">Replies go to ${escapeHTML(data.verified_email)}</span>
+            <span class="sch-badge">Verified</span>
+          </div>
+          <div class="sform-hint">Follow-up emails go out under your business name through Adapix's sender, and customer replies land in this inbox. Connect a real inbox above any time to send fully as yourself instead.</div>
+          <div style="margin-top:10px"><button class="sch-connect" id="ev-remove">Remove</button></div>
+          ` : `
+          <div class="sform-hint" style="margin-bottom:10px"><b style="color:var(--ink)">Don't want to connect an inbox?</b> Verify your address instead — emails go out under your business name, and customer replies land in your real inbox.</div>
+          <div id="ev-step-email" style="display:flex;gap:8px;flex-wrap:wrap;max-width:440px">
+            <input class="sform-input" id="ev-email" type="email" placeholder="you@yourbusiness.com" style="flex:1;min-width:200px" />
+            <button class="sch-connect" id="ev-send" style="flex-shrink:0">Send code</button>
+          </div>
+          <div id="ev-step-code" style="display:none;gap:8px;flex-wrap:wrap;max-width:440px;margin-top:8px">
+            <input class="sform-input" id="ev-code" inputmode="numeric" maxlength="6" placeholder="6-digit code" style="flex:1;min-width:140px" />
+            <button class="sform-save" id="ev-confirm" style="flex-shrink:0">Verify</button>
+          </div>
+          <div class="sform-hint" id="ev-hint" style="margin-top:8px;display:none">Code sent — check that inbox (and spam). It expires in 15 minutes.</div>
+          `}
         </div>`;
       renderLucide(el);
+
+      const evSend = document.getElementById('ev-send');
+      if (evSend) evSend.addEventListener('click', async () => {
+        const email = (document.getElementById('ev-email').value || '').trim();
+        if (!email.includes('@')) { toast('Enter a valid email address', true); return; }
+        evSend.disabled = true; evSend.textContent = 'Sending…';
+        try {
+          await api('/api/v1/email/verify/start', { method:'POST', body: JSON.stringify({ email }) });
+          document.getElementById('ev-step-code').style.display = 'flex';
+          document.getElementById('ev-hint').style.display = 'block';
+          document.getElementById('ev-code').focus();
+          evSend.textContent = 'Resend code';
+          setTimeout(() => { evSend.disabled = false; }, 60000);
+        } catch(e){
+          toast(e.message || 'Could not send the code', true);
+          evSend.disabled = false; evSend.textContent = 'Send code';
+        }
+      });
+      const evConfirm = document.getElementById('ev-confirm');
+      if (evConfirm) evConfirm.addEventListener('click', async () => {
+        const code = (document.getElementById('ev-code').value || '').trim();
+        if (code.length !== 6) { toast('Enter the 6-digit code', true); return; }
+        evConfirm.disabled = true; evConfirm.textContent = 'Checking…';
+        try {
+          await api('/api/v1/email/verify/confirm', { method:'POST', body: JSON.stringify({ code }) });
+          toast('Email verified — replies now come to you');
+          loadEmailCard();
+        } catch(e){
+          toast(e.message || "That code didn't match", true);
+          evConfirm.disabled = false; evConfirm.textContent = 'Verify';
+        }
+      });
+      const evRemove = document.getElementById('ev-remove');
+      if (evRemove) evRemove.addEventListener('click', async () => {
+        evRemove.disabled = true;
+        try { await api('/api/v1/email/verify/remove', { method:'POST', body: JSON.stringify({}) }); toast('Removed'); loadEmailCard(); }
+        catch(_){ toast('Could not remove', true); evRemove.disabled = false; }
+      });
 
       const toggle = document.getElementById('smtp-toggle');
       if (toggle) toggle.addEventListener('click', () => {
@@ -4892,13 +5309,137 @@ body::after{
 
     if (data.has_number){
       const registered = data.status === 'registered';
+      const dedicated = data.tier === 'dedicated';
+      let upgradeBlock = '';
+      if (!dedicated) {
+        upgradeBlock = `
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <div id="phone-upgrade-pitch">
+              <div class="sform-hint" style="margin-bottom:10px">Want your business's actual name to show on caller ID (not just a number)? Upgrade to a dedicated, carrier-registered line.</div>
+              <button class="sch-connect" id="phone-upgrade-btn">Upgrade my line — ${escapeHTML(data.upgrade_cost || '$1.50/mo')}</button>
+            </div>
+            <div id="phone-upgrade-confirm" hidden>
+              <div class="sform-hint" style="margin-bottom:10px">This purchases a real phone number in your business's name (${escapeHTML(data.upgrade_cost || '$1.50/mo')}, cancel anytime) and replaces your current number. Your business name won't appear instantly — after this, Adapix will also ask for a few business details to submit for caller-ID-name approval, which carriers typically take a few days to process.</div>
+              <div style="display:flex;gap:8px">
+                <button class="sform-save" id="phone-upgrade-confirm-btn">Confirm &amp; purchase</button>
+                <button class="sch-connect" id="phone-upgrade-cancel-btn">Cancel</button>
+              </div>
+            </div>
+          </div>`;
+      } else if (data.cnam_status !== 'approved') {
+        const cnamLabel = {none:'Not started', submitted:'Submitted — usually a few business days', rejected:'Needs another look — see below'}[data.cnam_status] || 'Not started';
+        const showForm = data.cnam_status === 'none' || data.cnam_status === 'rejected';
+        upgradeBlock = `
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <div class="sform-hint" style="margin-bottom:${showForm ? '10px' : '0'}"><b style="color:var(--ink)">Business name on caller ID:</b> ${escapeHTML(cnamLabel)}${data.cnam_status === 'submitted' ? ' <a href="#" id="cnam-check-status" style="color:var(--cyan)">check status</a>' : ''}</div>
+            ${showForm ? `
+            <button class="sch-connect" id="cnam-start-btn">Register your business name</button>
+            <div id="cnam-form" style="display:none;margin-top:12px;flex-direction:column;gap:8px;max-width:480px">
+              <div class="sform-hint">This submits your real business details to the phone carriers for verification — usually a few business days, and it's a genuine compliance step, not something any provider can skip.</div>
+              <input class="sform-input" id="cnam-display-name" placeholder="Name to show on caller ID (max 15 characters)" maxlength="15" />
+              <input class="sform-input" id="cnam-legal-name" placeholder="Legal business name" />
+              <select class="sform-input" id="cnam-business-type">
+                <option value="sole_proprietor">Sole Proprietor</option>
+                <option value="llc">LLC</option>
+                <option value="corporation">Corporation</option>
+                <option value="partnership">Partnership</option>
+                <option value="nonprofit">Non-profit</option>
+              </select>
+              <input class="sform-input" id="cnam-ein" placeholder="EIN / business registration number (optional)" />
+              <input class="sform-input" id="cnam-industry" placeholder="Industry, e.g. Construction, Retail, Healthcare" />
+              <input class="sform-input" id="cnam-website" placeholder="Website (optional)" />
+              <div class="sform-hint" style="margin-top:4px">Business address</div>
+              <input class="sform-input" id="cnam-address-street" placeholder="Street address" />
+              <div class="sform-2col">
+                <input class="sform-input" id="cnam-address-city" placeholder="City" />
+                <input class="sform-input" id="cnam-address-region" placeholder="State" />
+              </div>
+              <input class="sform-input" id="cnam-address-zip" placeholder="ZIP code" />
+              <div class="sform-hint" style="margin-top:4px">Authorized representative (usually you, the owner)</div>
+              <div class="sform-2col">
+                <input class="sform-input" id="cnam-rep-first" placeholder="First name" />
+                <input class="sform-input" id="cnam-rep-last" placeholder="Last name" />
+              </div>
+              <input class="sform-input" id="cnam-rep-email" placeholder="Email" />
+              <input class="sform-input" id="cnam-rep-phone" placeholder="Phone" />
+              <input class="sform-input" id="cnam-rep-title" placeholder="Job title, e.g. Owner" />
+              <button class="sform-save" id="cnam-submit-btn" style="align-self:flex-start">Submit for approval</button>
+            </div>` : ''}
+          </div>`;
+      }
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <i data-lucide="phone" style="width:16px;height:16px;color:var(--cyan)"></i>
           <span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${escapeHTML(data.number || 'Assigned')}</span>
-          <span class="sch-badge${registered ? '' : ' off'}">${registered ? 'Registered' : 'Active'}</span>
+          <span class="sch-badge${registered ? '' : ' off'}">${dedicated ? 'Dedicated' : (registered ? 'Registered' : 'Active')}</span>
         </div>
-        <div class="sform-hint">This is the number Adapix calls your customers from — it shows your business name. ${registered ? '' : 'To stop it showing as “Spam Likely,” register it (free) at <a href="https://www.freecallerregistry.com" target="_blank" rel="noopener" style="color:var(--cyan)">freecallerregistry.com</a>.'}</div>`;
+        <div class="sform-hint">This is the number Adapix calls your customers from. ${dedicated ? '' : (registered ? '' : 'To stop it showing as “Spam Likely,” register it (free) at <a href="https://www.freecallerregistry.com" target="_blank" rel="noopener" style="color:var(--cyan)">freecallerregistry.com</a>.')}</div>
+        ${upgradeBlock}`;
+
+      const upBtn = document.getElementById('phone-upgrade-btn');
+      if (upBtn) upBtn.addEventListener('click', () => {
+        document.getElementById('phone-upgrade-pitch').hidden = true;
+        document.getElementById('phone-upgrade-confirm').hidden = false;
+      });
+      const cancelBtn = document.getElementById('phone-upgrade-cancel-btn');
+      if (cancelBtn) cancelBtn.addEventListener('click', () => {
+        document.getElementById('phone-upgrade-confirm').hidden = true;
+        document.getElementById('phone-upgrade-pitch').hidden = false;
+      });
+      const confirmBtn = document.getElementById('phone-upgrade-confirm-btn');
+      if (confirmBtn) confirmBtn.addEventListener('click', async () => {
+        confirmBtn.disabled = true; confirmBtn.textContent = 'Purchasing…';
+        try {
+          const r = await api('/api/v1/phone/upgrade', { method:'POST', body: JSON.stringify({}) });
+          if (r.ok) { toast('Upgraded to a dedicated line'); loadPhoneCard(); }
+          else { toast(r.detail || 'Could not upgrade right now', true); confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & purchase'; }
+        } catch(e){ toast(e.message || 'Could not upgrade right now', true); confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & purchase'; }
+      });
+
+      const cnamStartBtn = document.getElementById('cnam-start-btn');
+      if (cnamStartBtn) cnamStartBtn.addEventListener('click', () => {
+        cnamStartBtn.hidden = true;
+        document.getElementById('cnam-form').style.display = 'flex';
+      });
+      const cnamSubmitBtn = document.getElementById('cnam-submit-btn');
+      if (cnamSubmitBtn) cnamSubmitBtn.addEventListener('click', async () => {
+        const v = id => (document.getElementById(id).value || '').trim();
+        const payload = {
+          cnam_display_name: v('cnam-display-name'),
+          legal_business_name: v('cnam-legal-name'),
+          business_type: document.getElementById('cnam-business-type').value,
+          ein: v('cnam-ein'),
+          industry: v('cnam-industry'),
+          website_url: v('cnam-website'),
+          address_street: v('cnam-address-street'),
+          address_city: v('cnam-address-city'),
+          address_region: v('cnam-address-region'),
+          address_postal_code: v('cnam-address-zip'),
+          rep_first_name: v('cnam-rep-first'),
+          rep_last_name: v('cnam-rep-last'),
+          rep_email: v('cnam-rep-email'),
+          rep_phone: v('cnam-rep-phone'),
+          rep_job_title: v('cnam-rep-title'),
+        };
+        if (!payload.cnam_display_name || !payload.legal_business_name || !payload.address_street || !payload.rep_first_name || !payload.rep_email) {
+          toast('Fill in the business name, address, and representative info', true); return;
+        }
+        cnamSubmitBtn.disabled = true; cnamSubmitBtn.textContent = 'Submitting…';
+        try {
+          const r = await api('/api/v1/phone/cnam', { method:'POST', body: JSON.stringify(payload) });
+          if (r.ok) { toast('Submitted — Twilio usually takes a few business days to review'); loadPhoneCard(); }
+          else { toast(r.detail || 'Could not submit right now', true); cnamSubmitBtn.disabled = false; cnamSubmitBtn.textContent = 'Submit for approval'; }
+        } catch(e){ toast(e.message || 'Could not submit right now', true); cnamSubmitBtn.disabled = false; cnamSubmitBtn.textContent = 'Submit for approval'; }
+      });
+      const cnamCheckBtn = document.getElementById('cnam-check-status');
+      if (cnamCheckBtn) cnamCheckBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          const r = await api('/api/v1/phone/cnam/status');
+          toast(r.status === 'approved' ? 'Approved!' : r.status === 'rejected' ? 'Rejected — see the form to try again' : 'Still in review');
+          loadPhoneCard();
+        } catch(_){ toast('Could not check status', true); }
+      });
     } else {
       el.innerHTML = `
         <div style="margin-bottom:12px;line-height:1.55">Adapix calls your customers from a dedicated number that shows your business name — no phone setup on your end.</div>
@@ -5289,20 +5830,29 @@ body::after{
     if (calls) state.calls = calls;
   }
 
+  function syncNav(){
+    // Settings sub-links (data-settings) only light when THEIR sub-page is
+    // open; the plain "All settings" item lights for any settings view.
+    document.querySelectorAll('#leftnav button[data-view], #bn button[data-view]').forEach(b => {
+      const on = b.dataset.view === state.view &&
+                 (!b.dataset.settings || b.dataset.settings === state.settingsPage);
+      b.classList.toggle('on', on);
+    });
+  }
+
   function goView(name){
     state.view = name;
     state._userNavigated = true;
     state.settingsPage = null;
     state.contactsPage = null;
-    document.querySelectorAll('#leftnav button, #bn button').forEach(b => {
-      b.classList.toggle('on', b.dataset.view === name);
-    });
+    syncNav();
     render();
     if (name === 'inbox') refreshFeed();
   }
 
   function goSettingsView(page){
     state.settingsPage = page;
+    syncNav();
     renderSettingsLink();
     if (page === 'notifications') setTimeout(initNotifPage, 50);
     if (page === 'account') setTimeout(initAccountBilling, 50);
@@ -5316,7 +5866,9 @@ body::after{
     // buttons are painted — a click can never land on an unbound button.
     document.addEventListener('click', (e) => {
       const b = e.target.closest('#leftnav button[data-view], #bn button[data-view]');
-      if (b) goView(b.dataset.view);
+      if (!b) return;
+      goView(b.dataset.view);
+      if (b.dataset.settings) goSettingsView(b.dataset.settings);
     });
 
     const runBtn = document.getElementById('run-campaigns');
@@ -5347,9 +5899,98 @@ body::after{
     });
   }
 
+  // ── Sidebar: global search palette (Ctrl+K) + account chip ──
+  const GS_DESTS = [
+    {label:'Home', icon:'layout-dashboard', view:'home'},
+    {label:'Activity', icon:'activity', view:'station'},
+    {label:'Inbox', icon:'inbox', view:'inbox'},
+    {label:'Contacts', icon:'users', view:'contacts'},
+    {label:'Calls', icon:'phone', view:'calls'},
+    {label:'SMS & Email', icon:'send', view:'messages'},
+    {label:'Business knowledge', icon:'book-open', view:'database'},
+    {label:'Business profile', icon:'store', view:'settings', settings:'profile'},
+    {label:'Messaging & channels', icon:'plug', view:'settings', settings:'channels'},
+    {label:'Follow-up rules', icon:'sliders-horizontal', view:'settings', settings:'rules'},
+    {label:'Notifications', icon:'bell', view:'settings', settings:'notifications'},
+    {label:'Billing', icon:'credit-card', view:'settings', settings:'account'},
+  ];
+  let gsPatients = null;
+  function initSidebarExtras(){
+    const input = document.getElementById('global-search');
+    const box = document.getElementById('gs-results');
+    if (!input || !box) return;
+
+    function gsClose(){ box.hidden = true; }
+    function gsOpen(){ box.hidden = false; }
+
+    async function gsRender(){
+      const q = (input.value || '').trim().toLowerCase();
+      if (!q){ gsClose(); return; }
+      const navHits = GS_DESTS.filter(d => d.label.toLowerCase().includes(q)).slice(0, 6);
+      if (gsPatients === null){
+        gsPatients = [];
+        api('/api/v1/patients').then(d => { gsPatients = d.patients || []; gsRender(); }).catch(() => {});
+      }
+      const contactHits = (gsPatients || []).filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.phone || '').includes(q) || (p.email || '').toLowerCase().includes(q)
+      ).slice(0, 5);
+      if (!navHits.length && !contactHits.length){
+        box.innerHTML = '<div class="gs-empty">Nothing matches</div>';
+        gsOpen(); return;
+      }
+      box.innerHTML =
+        navHits.map((d, i) => `<button class="gs-item" data-gs-nav="${i}"><i data-lucide="${d.icon}"></i>${escapeHTML(d.label)}<span class="gs-sub">page</span></button>`).join('') +
+        contactHits.map(p => `<button class="gs-item" data-gs-contact="${escapeHTML(p.name || '')}"><i data-lucide="user"></i>${escapeHTML(p.name || p.phone || '')}<span class="gs-sub">contact</span></button>`).join('');
+      renderLucide(box);
+      box.querySelectorAll('[data-gs-nav]').forEach(el => el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const d = navHits[Number(el.dataset.gsNav)];
+        input.value = ''; gsClose(); input.blur();
+        goView(d.view);
+        if (d.settings) goSettingsView(d.settings);
+      }));
+      box.querySelectorAll('[data-gs-contact]').forEach(el => el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        state.contactsSearch = el.dataset.gsContact;
+        input.value = ''; gsClose(); input.blur();
+        goView('contacts');
+      }));
+      gsOpen();
+    }
+
+    input.addEventListener('input', gsRender);
+    input.addEventListener('focus', gsRender);
+    input.addEventListener('blur', () => setTimeout(gsClose, 150));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){ input.value = ''; gsClose(); input.blur(); }
+      if (e.key === 'Enter'){
+        const first = box.querySelector('.gs-item');
+        if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
+        e.preventDefault(); input.focus(); input.select();
+      }
+    });
+
+    // Account chip: the business's name + connected email, click -> Billing.
+    api('/api/v1/database').then(d => {
+      const name = (d.business_name || '').trim() || 'Your business';
+      const nameEl = document.getElementById('sb-account-name');
+      const subEl = document.getElementById('sb-account-sub');
+      const avEl = document.getElementById('sb-avatar');
+      if (nameEl) nameEl.textContent = name;
+      if (subEl) subEl.textContent = d.email_address || '';
+      if (avEl) avEl.textContent = (name[0] || 'A').toUpperCase();
+    }).catch(() => {});
+  }
+
   (async function init(){
     state._bootedAt = Date.now();
     bindNav();
+    initSidebarExtras();
     if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': '1.75' } });
     await loadFeed();
     document.getElementById('loader')?.remove();

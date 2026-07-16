@@ -79,6 +79,7 @@ class NumberProvisionResult:
     phone_number_id: str | None
     number: str | None
     error: str | None = None
+    twilio_sid: str | None = None  # set only by buy_and_import_twilio_number()
 
 
 def create_vapi_number(
@@ -149,6 +150,104 @@ def create_vapi_number(
         except Exception as e:  # noqa: BLE001 — surface any client error as a result
             return NumberProvisionResult(None, None, str(e))
     return NumberProvisionResult(None, None, last_error or "Vapi rejected the request repeatedly")
+
+
+def buy_and_import_twilio_number(
+    settings: Settings, *, area_code: str | None = None, name: str | None = None,
+) -> NumberProvisionResult:
+    """Buy a REAL Twilio number (real recurring cost, ~$1.15/mo) and import it
+    into Vapi for calling. Unlike create_vapi_number() (a free Vapi-owned
+    number), a real carrier number gets proper STIR/SHAKEN attestation —
+    meaningfully less likely to show as "Spam Likely" — and is a prerequisite
+    for CNAM (business name on caller ID), which only works on numbers Twilio
+    actually owns.
+
+    This is a real-money action: only call it from a path the org owner has
+    explicitly confirmed (see /api/v1/phone/upgrade), never automatically.
+    """
+    if not (settings.twilio_account_sid and settings.twilio_auth_token):
+        return NumberProvisionResult(None, None, "Twilio is not configured (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN missing)")
+    try:
+        from twilio.rest import Client
+    except ImportError as e:
+        return NumberProvisionResult(None, None, f"twilio package not installed: {e}")
+
+    client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+
+    # 1. Find and buy an available local number.
+    try:
+        candidates = client.available_phone_numbers("US").local.list(
+            area_code=(area_code[:3] if area_code else None), voice_enabled=True, limit=1,
+        )
+        if not candidates:
+            # No inventory in that area code — fall back to any US local number
+            # rather than fail the upgrade outright.
+            candidates = client.available_phone_numbers("US").local.list(voice_enabled=True, limit=1)
+        if not candidates:
+            return NumberProvisionResult(None, None, "No Twilio numbers available to purchase right now")
+        bought = client.incoming_phone_numbers.create(
+            phone_number=candidates[0].phone_number,
+            friendly_name=(name or "Adapix business line")[:64],
+        )
+    except Exception as e:  # noqa: BLE001 — surface Twilio's real error text
+        return NumberProvisionResult(None, None, f"Twilio purchase failed: {e}")
+
+    bought_number = bought.phone_number
+    bought_sid = bought.sid
+
+    # 2. Import the newly-purchased number into Vapi so calls route through it.
+    body = {
+        "provider": "twilio",
+        "number": bought_number,
+        "twilioAccountSid": settings.twilio_account_sid,
+        "twilioAuthToken": settings.twilio_auth_token,
+    }
+    if name:
+        body["name"] = name[:40]
+    try:
+        req = urlrequest.Request(
+            VAPI_NUMBER_URL,
+            data=json.dumps(body).encode(),
+            method="POST",
+            headers={"Authorization": f"Bearer {settings.vapi_api_key}", **_VAPI_HEADERS_BASE},
+        )
+        with urlrequest.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+        pid = data.get("id")
+        if not pid:
+            # Number was bought successfully but Vapi rejected it — surface the
+            # Twilio SID in the error so it can be released manually rather
+            # than silently left as an orphaned recurring charge.
+            return NumberProvisionResult(
+                None, bought_number,
+                f"Bought {bought_number} (Twilio SID {bought_sid}) but Vapi import failed: {data!r}"[:400],
+            )
+        return NumberProvisionResult(pid, data.get("number") or bought_number, twilio_sid=bought_sid)
+    except HTTPError as e:
+        detail = e.read().decode(errors="replace")[:300]
+        return NumberProvisionResult(
+            None, bought_number,
+            f"Bought {bought_number} (Twilio SID {bought_sid}) but Vapi import failed: HTTP {e.code}: {detail}",
+        )
+    except (URLError, TimeoutError) as e:
+        return NumberProvisionResult(None, bought_number, f"Bought {bought_number} but could not reach Vapi: {e}")
+    except Exception as e:  # noqa: BLE001
+        return NumberProvisionResult(None, bought_number, f"Bought {bought_number} but Vapi import failed: {e}")
+
+
+def release_twilio_number(settings: Settings, twilio_sid: str) -> bool:
+    """Release a purchased Twilio number back to the pool (stops the
+    recurring charge). Used to roll back a number purchase if the matching
+    Stripe charge to the customer fails right after — never leave them
+    paying Twilio for a number the customer wasn't actually billed for."""
+    if not (settings.twilio_account_sid and settings.twilio_auth_token and twilio_sid):
+        return False
+    try:
+        from twilio.rest import Client
+        Client(settings.twilio_account_sid, settings.twilio_auth_token).incoming_phone_numbers(twilio_sid).delete()
+        return True
+    except Exception:
+        return False
 
 
 @dataclass

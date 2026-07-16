@@ -593,13 +593,31 @@ def _flag_needs_reauth(org_id: str, provider: str) -> None:
 
 
 def owner_email(org_id: str) -> str | None:
-    """The business owner's real email — the reply-to for fallback sends."""
+    """The business owner's real email — the reply-to for fallback sends.
+    Prefers a connected inbox's address; falls back to a code-verified
+    address (Settings -> SMS & Email -> verify your email) so even owners
+    who never connect an inbox get replies in their own mailbox."""
     tk = load_tokens(org_id)
     for prov in ("google", "microsoft"):
         e = (tk.get(prov) or {}).get("email")
         if e:
             return e
-    return (tk.get("smtp") or {}).get("username") or None
+    e = (tk.get("smtp") or {}).get("username")
+    if e:
+        return e
+    return verified_reply_email(org_id)
+
+
+def verified_reply_email(org_id: str) -> str | None:
+    """The org's code-verified reply-to address, if any (stored in the org
+    profile blob by /api/v1/email/verify/confirm)."""
+    try:
+        from .api.app_routes import _load_org_profile_data
+        from .db import get_session
+        with get_session() as s:
+            return (_load_org_profile_data(s, org_id).get("verified_reply_email") or "").strip() or None
+    except Exception:
+        return None
 
 
 def send_email_for_org(org_id: str, to: str, subject: str, body: str,

@@ -263,6 +263,7 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
       <div class="err" id="err" role="alert" aria-live="assertive"></div>
 
       <form id="form" novalidate>
+        <input type="hidden" name="ref" id="ref-field" value="">
         <div class="field">
           <label for="business_name">Business name</label>
           <input id="business_name" type="text" name="business_name"
@@ -323,6 +324,11 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
     errEl.innerHTML = ERROR_MAP[msg] || escapeHtml(msg) || 'Something went wrong. Please try again.';
     errEl.classList.add('visible');
     document.getElementById('business_name').focus();
+    // Referral capture: ?ref=CODE from a share link rides along with signup.
+    try {
+      var refCode = new URLSearchParams(window.location.search).get('ref');
+      if (refCode) document.getElementById('ref-field').value = refCode.toUpperCase().slice(0, 16);
+    } catch(_){}
   }
 
   function setLoading(on) {
