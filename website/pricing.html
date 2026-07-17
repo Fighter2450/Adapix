@@ -519,6 +519,36 @@ a[aria-current="page"]{color:#fff !important}
       <div style="font-weight:800;color:var(--ink);margin-bottom:6px">Founding customer deal</div>
       <p style="font-size:15px;color:var(--ink-2);margin:0">The first 10 businesses get Adapix for <b style="color:#fff">$49/month, locked for a year</b> &mdash; in exchange for honest feedback and, if it earns it, a testimonial. Use code <code style="background:rgba(255,255,255,.08);padding:2px 7px;border-radius:5px;color:#fff">FOUNDING</code> at checkout.</p>
     </div>
+
+    <div class="reveal" style="margin-top:26px;border:1px solid var(--border);border-radius:16px;padding:24px;background:rgba(23,20,46,.5)">
+      <div style="font-weight:800;color:var(--ink);margin-bottom:4px">What are quiet quotes costing you?</div>
+      <p style="font-size:14px;color:var(--ink-3);margin:0 0 18px">Your numbers, not ours.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <label style="font-size:13px;color:var(--ink-2)">Average job value
+          <input id="roi-job" type="number" min="0" value="800" inputmode="numeric"
+                 style="width:100%;margin-top:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:#fff;font-size:16px;font-family:inherit" />
+        </label>
+        <label style="font-size:13px;color:var(--ink-2)">Quotes that go quiet each month
+          <input id="roi-quotes" type="number" min="0" value="5" inputmode="numeric"
+                 style="width:100%;margin-top:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:#fff;font-size:16px;font-family:inherit" />
+        </label>
+      </div>
+      <div id="roi-result" style="font-size:15px;color:var(--ink-2);line-height:1.6"></div>
+    </div>
+    <script>
+    (function(){
+      var job = document.getElementById('roi-job'), quotes = document.getElementById('roi-quotes'), out = document.getElementById('roi-result');
+      function calc(){
+        var j = Math.max(0, Number(job.value) || 0), q = Math.max(0, Number(quotes.value) || 0);
+        var table = j * q;
+        if (!table){ out.innerHTML = 'Enter your numbers above.'; return; }
+        var months = j > 0 ? (j / 99) : 0;
+        out.innerHTML = 'That’s <b style="color:#fff;font-size:20px">$' + table.toLocaleString() + '/month</b> sitting in quotes nobody chased. '
+          + 'Winning back <b style="color:#fff">just one</b> covers ' + (months >= 1 ? Math.floor(months) + ' month' + (Math.floor(months) === 1 ? '' : 's') : 'part') + ' of Adapix.';
+      }
+      job.addEventListener('input', calc); quotes.addEventListener('input', calc); calc();
+    })();
+    </script>
   </div>
 </section>
 
