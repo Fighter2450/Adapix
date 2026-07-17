@@ -2345,6 +2345,129 @@ def api_calls_queue(body: QueueCallBody, org_id: str = Depends(verify_admin)):
         return {"ok": True, "id": msg.id}
 
 
+@router.get("/api/v1/contacts/{patient_id}/suggest")
+def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Depends(verify_admin)):
+    """A ready-to-edit starter draft for this contact, personalized from what
+    the database remembers about them (job, quote, notes, learned facts).
+    Used by the compose forms the moment a contact is picked — sms/email get
+    a message body (email also a subject), call gets a suggested call goal.
+    Claude writes it; if that fails, a plain template still gives the user
+    something personal rather than an empty box."""
+    channel = (channel or "sms").lower()
+    if channel not in ("sms", "email", "call"):
+        raise HTTPException(status_code=400, detail="channel must be sms, email, or call")
+
+    with get_session() as s:
+        p = s.query(Patient).filter(
+            Patient.id == patient_id, Patient.practice_id == org_id
+        ).first()
+        if p is None:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        if p.opted_out:
+            raise HTTPException(status_code=400, detail="This contact opted out — nothing can be sent to them.")
+        first = (p.first_name or "").strip()
+        job = (p.treatment_type or "").strip()
+        amount = p.treatment_plan_amount
+        status = (p.status or "").replace("_", " ")
+        notes = (p.notes or "").strip()
+        facts = [f.get("text", "").strip() for f in (p.memory_json or []) if f.get("text", "").strip()]
+        data = _load_org_profile_data(s, org_id)
+
+    practice = data.get("practice") or {}
+    business = (practice.get("name") or "").strip()
+    owner = (practice.get("owner") or practice.get("doctor") or "").strip()
+
+    # Plain-template fallback — used if the Claude call fails, and as the
+    # floor of quality: always personal, never the banned "just checking in".
+    intro = f"Hi {first}, it's {owner} from {business}".strip().rstrip(",")
+    if not owner and not business:
+        intro = f"Hi {first}"
+    about = f" about the {job.lower()}" if job else ""
+    quote_bit = f" — the ${amount:,.0f} quote" if amount else ""
+    fallback_body = (
+        f"{intro}. Wanted to follow up{about}{quote_bit}. "
+        f"Happy to answer any questions — want me to hold a time for you?"
+    )
+    fallback_subject = (f"Your {job} quote" if job else "Following up") + (f" from {business}" if business else "")
+    fallback_goal = (
+        f"Follow up on their {job or 'quote'}{f' (${amount:,.0f})' if amount else ''}, "
+        f"answer any questions, and offer to book a time to move forward."
+    )
+
+    ctx_lines = [f"Customer first name: {first or '(unknown)'}"]
+    if job:
+        ctx_lines.append(f"Job/quote they were interested in: {job}")
+    if amount:
+        ctx_lines.append(f"Quote amount: ${amount:,.0f}")
+    if status:
+        ctx_lines.append(f"Where they are: {status}")
+    if notes:
+        ctx_lines.append(f"Notes: {notes[:400]}")
+    if facts:
+        ctx_lines.append("Things learned about this customer from earlier conversations:")
+        ctx_lines.extend(f"  - {t}" for t in facts[:10])
+    ctx_lines.append(f"Business: {business or '(unnamed)'}" + (f", owner {owner}" if owner else ""))
+    context = "\n".join(ctx_lines)
+
+    if channel == "call":
+        system = (
+            "You write a short GOAL for an AI assistant that is about to place a "
+            "phone call on behalf of a small business owner. One or two sentences, "
+            "imperative, third person about the customer ('Follow up on their...'). "
+            "Use the customer's actual job, quote amount, and any learned details "
+            "when they help. Output ONLY the goal text — no preamble, no quotes."
+        )
+    elif channel == "email":
+        system = (
+            "You write ONE short follow-up email from a small business owner to a "
+            "customer whose quote went quiet. Warm, plain-spoken, personal — open "
+            "with 'Hi <name>,' and mention their actual job and quote. Weave in a "
+            "learned detail naturally if one fits (never recite it back verbatim). "
+            "Under 110 words, no fluff, never the phrase 'just checking in'. End by "
+            "making it easy to reply or book. Output EXACTLY this format:\n"
+            "Subject: <subject line>\n\n<email body>"
+        )
+    else:
+        system = (
+            "You write ONE short, personal follow-up text message (SMS) from a "
+            "small business owner to a customer whose quote went quiet. Under 320 "
+            "characters. Open with 'Hi <name>, it's <owner> from <business>' (or a "
+            "natural variant with what's available). Mention their actual job and "
+            "quote; weave in a learned detail naturally if one fits. Never the "
+            "phrase 'just checking in'. Output ONLY the message text."
+        )
+
+    subject, body_text, source = None, None, "basic"
+    try:
+        from anthropic import Anthropic
+        from ..config import Settings
+        settings = Settings()
+        client = Anthropic(api_key=settings.anthropic_api_key)
+        resp = client.messages.create(
+            model=settings.adapix_model,
+            max_tokens=400,
+            system=system,
+            messages=[{"role": "user", "content": f"CUSTOMER CONTEXT\n{context}\n\nWrite it now."}],
+        )
+        raw = "".join(b.text for b in resp.content if hasattr(b, "text")).strip()
+        if raw:
+            if channel == "email" and raw.lower().startswith("subject:"):
+                head, _, rest = raw.partition("\n")
+                subject = head.split(":", 1)[1].strip()
+                body_text = rest.strip()
+            else:
+                body_text = raw
+            source = "ai"
+    except Exception as e:
+        print(f"[suggest] draft failed (org={org_id}, channel={channel}): {e}")
+
+    if not body_text:
+        body_text = fallback_goal if channel == "call" else fallback_body
+    if channel == "email" and not subject:
+        subject = fallback_subject
+    return {"channel": channel, "subject": subject, "body": body_text, "source": source}
+
+
 # ---------------------------------------------------------------------------
 # Dynamic dashboard — the widgets Adapix has decided to show.
 # ---------------------------------------------------------------------------

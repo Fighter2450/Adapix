@@ -2326,6 +2326,31 @@ body::after{
       toEl.value = val;
       document.getElementById('msg-contact-name').value = pickedContact.name || '';
       toHint.innerHTML = `Sending to <b style="color:var(--ink)">${escapeHTML(pickedContact.name || val)}</b> — type to pick someone else.`;
+      suggestDraft();
+    }
+
+    // The moment a contact is picked, pre-fill a personal starter draft from
+    // what the database remembers about them (job, quote, learned details).
+    // It never stomps text the user actually typed — only an empty box, or
+    // our own untouched suggestion (e.g. when they switch SMS ↔ Email).
+    let suggestSeq = 0, lastSuggested = '';
+    async function suggestDraft(){
+      if (!pickedContact || !pickedContact.id) return;
+      const bodyEl = document.getElementById('msg-body');
+      const subjEl = document.getElementById('msg-subject');
+      if (bodyEl.value.trim() && bodyEl.value !== lastSuggested) return;
+      const seq = ++suggestSeq;
+      const origPh = 'Write your message…';
+      bodyEl.placeholder = 'Drafting a personal message from what Adapix remembers about them…';
+      try {
+        const r = await api(`/api/v1/contacts/${pickedContact.id}/suggest?channel=${channel === 'email' ? 'email' : 'sms'}`);
+        if (seq !== suggestSeq) return;                                    // picked someone else since
+        if (bodyEl.value.trim() && bodyEl.value !== lastSuggested) return; // they typed meanwhile
+        bodyEl.value = r.body || '';
+        lastSuggested = bodyEl.value;
+        if (channel === 'email' && subjEl && r.subject && !subjEl.value.trim()) subjEl.value = r.subject;
+      } catch(_){ /* an empty box is a fine fallback */ }
+      if (seq === suggestSeq) bodyEl.placeholder = origPh;
     }
 
     function renderToResults(){
@@ -2946,10 +2971,6 @@ body::after{
     }
     const callable = state.patients.filter(p => p.phone);
 
-    const contactOptions = callable.length
-      ? callable.map(p => `<option value="${p.id}">${escapeHTML((p.first_name||'')+' '+(p.last_name||''))} — ${escapeHTML(p.phone)}</option>`).join('')
-      : '<option value="">No contacts with a phone number yet</option>';
-
     const pendingRows = calls.pending.length
       ? calls.pending.map(c => `
         <div class="row-card" data-call-id="${c.id}">
@@ -3021,7 +3042,12 @@ body::after{
         <div class="scard-title">Queue a call</div>
         <div class="sform-row">
           <label class="sform-label">Who to call</label>
-          <select class="sform-input sform-select" id="cv-contact">${contactOptions}</select>
+          <div style="position:relative">
+            <input class="sform-input" id="cv-contact-search" autocomplete="off" placeholder="${callable.length ? 'Search your contacts by name…' : 'No contacts with a phone number yet — add one in Contacts'}" ${callable.length ? '' : 'disabled'} />
+            <div class="gs-results" id="cv-contact-results" hidden style="top:calc(100% + 4px)"></div>
+          </div>
+          <input type="hidden" id="cv-contact" value="" />
+          <div class="sform-hint" id="cv-contact-hint">Start typing a name — only contacts with a phone number on file can be called.</div>
         </div>
         <div class="sform-row">
           <label class="sform-label">What should the call accomplish?</label>
@@ -3084,11 +3110,67 @@ body::after{
       });
     });
 
+    // Who-to-call is a contact search (same pattern as the SMS/Email compose
+    // picker) — and picking someone pre-fills a suggested call goal from what
+    // the database remembers about them. Presets and typing still override it.
+    const cvSearch = main.querySelector('#cv-contact-search');
+    const cvResults = main.querySelector('#cv-contact-results');
+    const cvHidden = main.querySelector('#cv-contact');
+    const cvHint = main.querySelector('#cv-contact-hint');
+    const cvName = p => ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || p.name || p.phone || 'Unnamed';
+    let cvSuggestSeq = 0, cvLastSuggested = '';
+
+    function cvRenderResults(){
+      const q = (cvSearch.value || '').trim().toLowerCase();
+      const hits = (q.length >= 1
+        ? callable.filter(p => cvName(p).toLowerCase().includes(q) || (p.phone || '').includes(q))
+        : callable
+      ).slice(0, 6);
+      if (!hits.length){ cvResults.hidden = true; return; }
+      cvResults.innerHTML = hits.map((p, i) => `
+        <button class="gs-item" data-pick="${i}"><i data-lucide="user"></i>${escapeHTML(cvName(p))}
+          <span class="gs-sub">${escapeHTML(p.phone || '')}</span>
+        </button>`).join('');
+      renderLucide(cvResults);
+      cvResults.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        cvPick(hits[Number(el.dataset.pick)]);
+      }));
+      cvResults.hidden = false;
+    }
+
+    async function cvPick(p){
+      cvResults.hidden = true;
+      cvHidden.value = p.id;
+      cvSearch.value = cvName(p);
+      cvHint.innerHTML = `Calling <b style="color:var(--ink)">${escapeHTML(cvName(p))}</b> at ${escapeHTML(p.phone || '')} — type to pick someone else.`;
+      // Suggested goal — never stomps a goal the user wrote themselves.
+      if (goalTextarea.value.trim() && goalTextarea.value !== cvLastSuggested) return;
+      const seq = ++cvSuggestSeq;
+      goalTextarea.hidden = false;
+      goalTextarea.placeholder = 'Drafting a suggested goal from what Adapix remembers about them…';
+      main.querySelectorAll('#cv-goal-presets .stone-opt').forEach(b => b.classList.remove('active'));
+      try {
+        const r = await api(`/api/v1/contacts/${p.id}/suggest?channel=call`);
+        if (seq !== cvSuggestSeq) return;
+        if (goalTextarea.value.trim() && goalTextarea.value !== cvLastSuggested) return;
+        goalTextarea.value = r.body || '';
+        cvLastSuggested = goalTextarea.value;
+      } catch(_){ /* presets still work */ }
+      if (seq === cvSuggestSeq) goalTextarea.placeholder = 'e.g. Follow up on their quote, answer questions, and offer to book a time.';
+    }
+
+    if (cvSearch){
+      cvSearch.addEventListener('input', () => { cvHidden.value = ''; cvHint.textContent = 'Start typing a name — only contacts with a phone number on file can be called.'; cvRenderResults(); });
+      cvSearch.addEventListener('focus', cvRenderResults);
+      cvSearch.addEventListener('blur', () => setTimeout(() => { cvResults.hidden = true; }, 150));
+    }
+
     main.querySelector('#cv-queue').addEventListener('click', async () => {
       const patientId = main.querySelector('#cv-contact').value;
       const goal = main.querySelector('#cv-goal').value.trim();
       const scheduledAt = main.querySelector('#cv-schedule').value || null;
-      if (!patientId) { toast('Add a contact with a phone number first', true); return; }
+      if (!patientId) { toast('Search and pick a contact first', true); return; }
       if (!goal) { toast('Describe what the call should accomplish', true); return; }
       const btn = main.querySelector('#cv-queue');
       btn.disabled = true; btn.textContent = 'Queuing…';
@@ -3105,7 +3187,7 @@ body::after{
     main.querySelector('#cv-call-now').addEventListener('click', async () => {
       const patientId = main.querySelector('#cv-contact').value;
       const goal = main.querySelector('#cv-goal').value.trim();
-      if (!patientId) { toast('Add a contact with a phone number first', true); return; }
+      if (!patientId) { toast('Search and pick a contact first', true); return; }
       if (!goal) { toast('Describe what the call should accomplish', true); return; }
       const btn = main.querySelector('#cv-call-now');
       btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Calling…';
