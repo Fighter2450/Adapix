@@ -99,8 +99,13 @@ customer's OWN numbers whenever possible (their average job value), not ours.
 
 ## Hooks coming soon (do not market until Rocco confirms they've shipped)
 
-- **Missed-call text-back** — instant "saw I missed you" text when the owner
-  can't answer. When it ships, it likely becomes hook #2.
+- **Missed-call text-back** — instant "saw I missed you" text when a caller
+  doesn't get a real conversation. BUILT 7/17 (inbound call to the business's
+  Adapix line that ends with no conversation → drafts a "sorry we missed your
+  call" text to the caller, pending approval like everything else; unknown
+  callers become a new lead automatically). NOT yet verified against real
+  live calls — do live call tests with Rocco before marketing. When
+  confirmed, it likely becomes hook #2.
 - **Weekly money email** — "This week: 12 follow-ups, 4 replies, 1 job won
   ($1,850)." BUILT 7/16 (Mondays 9am ET to the owner's email, only when the
   week had activity; first real send lands next Monday) — awaiting Rocco's

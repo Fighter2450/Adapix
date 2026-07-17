@@ -92,7 +92,7 @@ class InboundProcessor:
                     # Ad-hoc call plans and review requests create bookkeeping
                     # campaigns with no loadable workflow — an SMS reply must
                     # never route there.
-                    Campaign.workflow_id.notin_(("voice_call", "review_request")),
+                    Campaign.workflow_id.notin_(("voice_call", "review_request", "missed_call_textback")),
                 )
                 .order_by(Campaign.started_at.desc())
                 .first()

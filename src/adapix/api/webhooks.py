@@ -264,6 +264,15 @@ async def vapi_call_events(request: Request):
             print(f"[adapix]   call outcome: status={result.status} category={cat}")
         except Exception as e:
             print(f"[adapix]   call-outcome processing error: {e}")
+
+        # Missed-call text-back: an inbound call that never became a real
+        # conversation drafts a "sorry we missed you" text (pending approval).
+        from ..missed_call import maybe_textback
+        tb = maybe_textback(
+            call=call, caller_number=number or None,
+            transcript=transcript, ended_reason=ended,
+        )
+        print(f"[adapix]   missed-call text-back: {tb}")
     else:
         print(f"[adapix] vapi event: {event or '(unknown)'}")
 
