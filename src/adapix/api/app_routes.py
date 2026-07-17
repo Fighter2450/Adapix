@@ -2443,6 +2443,23 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
             "Output ONLY the message text."
         )
 
+    def _strip_placeholders(text: str | None) -> str | None:
+        """Drop any sentence containing a bracketed placeholder like
+        [booking link] — prompt tells the model not to, this guarantees it.
+        A draft the owner edits must never be able to send '[link]' verbatim."""
+        import re as _re
+        if not text or "[" not in text:
+            return text
+        kept_lines = []
+        for line in text.split("\n"):
+            if _re.search(r"\[[^\]\n]+\]", line):
+                sentences = _re.split(r"(?<=[.!?])\s+", line)
+                line = " ".join(x for x in sentences if not _re.search(r"\[[^\]\n]+\]", x)).strip()
+                if not line:
+                    continue
+            kept_lines.append(line)
+        return _re.sub(r"\n{3,}", "\n\n", "\n".join(kept_lines)).strip()
+
     subject, body_text, source = None, None, "basic"
     try:
         from anthropic import Anthropic
@@ -2467,6 +2484,8 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
     except Exception as e:
         print(f"[suggest] draft failed (org={org_id}, channel={channel}): {e}")
 
+    body_text = _strip_placeholders(body_text)
+    subject = _strip_placeholders(subject)
     if not body_text:
         body_text = fallback_goal if channel == "call" else fallback_body
     if channel == "email" and not subject:
