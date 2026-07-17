@@ -395,7 +395,40 @@ class InboundProcessor:
         body: str,
         kind: str,
     ) -> None:
-        result = self.sms.send(patient.phone or "", body)
+        # Same transport order as ApprovalManager._send_one: the org's OWN
+        # Blooio line first, then the shared Claw line, then Twilio SMS.
+        # This matters most here of anywhere — the customer just texted a
+        # specific number, and an answer sent from a DIFFERENT number lands
+        # in a different thread on their phone (or not at all). The reply
+        # must go back out the same line the question came in on.
+        result = None
+        md: dict = {"kind": kind}
+        from .models import Organization
+        org = session.get(Organization, campaign.practice_id)
+        if self.settings.prefer_imessage and org is not None and org.blooio_channel_id:
+            from .channels import IMessageChannel
+            imsg = IMessageChannel(self.settings, dry_run=self.dry_run)
+            if imsg.is_configured(org.blooio_channel_id):
+                r = imsg.send(patient.phone or "", body, channel_id=org.blooio_channel_id)
+                if r.status != "failed":
+                    result = r
+                    md["transport"] = "imessage"
+                else:
+                    md["imessage_error"] = r.error
+        if result is None:
+            from .channels import ClawChannel
+            claw = ClawChannel(self.settings, dry_run=self.dry_run)
+            if self.settings.prefer_imessage and claw.is_configured():
+                r = claw.send(patient.phone or "", body)
+                if r.status != "failed":
+                    result = r
+                    md["transport"] = "imessage-claw"
+                else:
+                    md["imessage_error"] = r.error
+        if result is None:
+            result = self.sms.send(patient.phone or "", body)
+        if result.error:
+            md["error"] = result.error
         session.add(
             Message(
                 campaign_id=campaign.id,
@@ -404,9 +437,7 @@ class InboundProcessor:
                 body=body,
                 status=result.status,
                 provider_id=result.provider_id,
-                metadata_json={"kind": kind, "error": result.error}
-                if result.error
-                else {"kind": kind},
+                metadata_json=md,
             )
         )
 
