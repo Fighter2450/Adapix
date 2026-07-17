@@ -77,6 +77,13 @@ def create_app() -> FastAPI:
                     log.info(f"Daily digest: sent to {sent} org(s).")
             except Exception as exc:
                 log.error(f"Digest scheduler error: {exc}")
+            try:
+                from ..weekly_email import run_weekly_emails
+                sent = await asyncio.to_thread(run_weekly_emails)
+                if sent:
+                    log.info(f"Weekly money email: sent to {sent} org(s).")
+            except Exception as exc:
+                log.error(f"Weekly email scheduler error: {exc}")
             await asyncio.sleep(3600)
 
     async def _scheduled_send_loop() -> None:
