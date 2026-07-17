@@ -123,6 +123,41 @@ class InboundProcessor:
             s.add(inbound)
             s.flush()  # so inbound.id is populated
 
+            # Abuse guards — BEFORE any Claude call, but AFTER the inbound
+            # is logged, so a flood is still fully auditable.
+            from datetime import datetime as _dt, timedelta as _td
+            from .ai_guard import contact_reply_throttled, record_ai_event
+            if contact_reply_throttled(s, patient.id):
+                # One contact getting 10+ replies inside an hour is a bot, a
+                # loop, or a conversation a human should take over. Stop
+                # spending on them; tell the owner exactly once per burst.
+                already_flagged = (
+                    s.query(Message)
+                    .filter(
+                        Message.campaign_id == campaign.id,
+                        Message.direction == "inbound",
+                        Message.status == "received_throttled",
+                        Message.created_at >= _dt.utcnow() - _td(hours=1),
+                    )
+                    .count()
+                )
+                inbound.status = "received_throttled"
+                if already_flagged == 0:
+                    try:
+                        from .notifications import push_notification
+                        who = f"{patient.first_name} {patient.last_name}".strip() or "A contact"
+                        push_notification(
+                            title=f"{who} is texting very rapidly",
+                            body="Adapix paused auto-replies to them for now — jump into the conversation from your Inbox if it's real.",
+                            url="/app", tag="adapix-throttle", org_id=patient.practice_id,
+                        )
+                    except Exception:
+                        pass
+                return InboundResult(status="throttled", reason="per-contact reply cooldown")
+            if not record_ai_event(patient.practice_id, "inbound"):
+                inbound.status = "received_budget_paused"
+                return InboundResult(status="throttled", reason="org daily AI budget reached")
+
             # What did the customer just reveal about THEMSELVES, distinct
             # from routing the message (below) — runs regardless of
             # escalation category, since even an escalated question can

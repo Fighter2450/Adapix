@@ -353,6 +353,26 @@ def api_chat_history(org_id: str = Depends(verify_admin)):
     }
 
 
+def _ai_guard(org_id: str) -> None:
+    """Gate for the interactive AI endpoints (chat, draft suggestions):
+    requires a real plan (trialing/active — same rule as sending) and a
+    per-org burst limit, so an abandoned free signup or a hammering script
+    can't burn Claude tokens. Sends are already gated elsewhere; this
+    closes the token-only paths."""
+    from ..ai_guard import allow_request, record_ai_event
+    from ..billing import engine_allowed
+    from ..models import Organization as _Org
+    with get_session() as _s:
+        _org = _s.get(_Org, org_id)
+    ok, why = engine_allowed(org_id, _org.created_at if _org else None)
+    if not ok:
+        raise HTTPException(status_code=402, detail=f"AI features are paused ({why}) — check Settings → Account & billing.")
+    if not allow_request(org_id):
+        raise HTTPException(status_code=429, detail="Too many requests — give it a few seconds and try again.")
+    if not record_ai_event(org_id, "interactive"):
+        raise HTTPException(status_code=429, detail="This account hit its daily AI limit — it resets at midnight UTC.")
+
+
 class OpenerBody(BaseModel):
     onboarding: bool = False
 
@@ -363,6 +383,7 @@ def api_chat_opener(body: OpenerBody | None = None, _user: str = Depends(verify_
     Pass {"onboarding": true} the first time after the welcome wizard so
     Adapix knows she's interviewing the practice (rather than the regular
     'hi, how can I help' opener)."""
+    _ai_guard(_user)
     from ..chat import generate_opener
     try:
         return generate_opener(onboarding=bool(body and body.onboarding), org_id=_user)
@@ -423,6 +444,7 @@ async def api_chat_send(
     _user: str = Depends(verify_admin),
 ):
     """User sent a message → return Adapix's reply + any new suggestions."""
+    _ai_guard(_user)
     from ..chat import reply_to
     text = (message or "").strip()
     attachments = await _parse_attachments(files)
@@ -2357,6 +2379,17 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
     if channel not in ("sms", "email", "call"):
         raise HTTPException(status_code=400, detail="channel must be sms, email, or call")
 
+    # Same plan + burst gates as chat; over the daily budget this endpoint
+    # degrades to the plain template instead of failing (ai_ok below).
+    from ..ai_guard import allow_request, record_ai_event
+    from ..billing import engine_allowed
+    ok, why = engine_allowed(org_id)
+    if not ok:
+        raise HTTPException(status_code=402, detail=f"AI features are paused ({why}) — check Settings → Account & billing.")
+    if not allow_request(org_id):
+        raise HTTPException(status_code=429, detail="Too many requests — give it a few seconds and try again.")
+    ai_ok = record_ai_event(org_id, "suggest")
+
     with get_session() as s:
         p = s.query(Patient).filter(
             Patient.id == patient_id, Patient.practice_id == org_id
@@ -2462,6 +2495,8 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
 
     subject, body_text, source = None, None, "basic"
     try:
+        if not ai_ok:
+            raise RuntimeError("daily AI budget reached — using template")
         from anthropic import Anthropic
         from ..config import Settings
         settings = Settings()
