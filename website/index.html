@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>
+// Returning customers skip the sales pitch: if this browser still has a
+// valid app session, bounce straight into the dashboard. ?stay=1 opts out
+// (so a signed-in owner can still read the homepage on purpose).
+(function(){
+  try { if (new URLSearchParams(location.search).has('stay')) return; } catch(_){}
+  fetch('https://app.adapixai.com/api/v1/session/ping', {credentials:'include'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d && d.authed) window.location.replace('https://app.adapixai.com/app'); })
+    .catch(function(){});
+})();
+</script>
 <title>Adapix — The AI teammate that follows up so you don't have to</title>
 <meta name="description" content="Adapix follows up with the customers who went quiet — the missed appointments, the “let me think about it” people, the leads that never booked — by call, text, and email from your own number and inbox. Nothing sends until you approve it. 14-day free trial — cancel anytime." />
 <link rel="canonical" href="https://adapixai.com/" />

@@ -24,6 +24,36 @@ from .auth import (
 router = APIRouter(tags=["auth"])
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
+# Marketing-site origins allowed to ask "is this browser signed in?" —
+# adapixai.com and app.adapixai.com are the same site, so the session
+# cookie (SameSite=Lax) rides along on the fetch; CORS headers below are
+# what lets the homepage script actually read the yes/no answer.
+_PING_ORIGINS = ("https://adapixai.com", "https://www.adapixai.com")
+
+
+@router.get("/api/v1/session/ping")
+def session_ping(request: Request):
+    """Signed-in check for the marketing homepage: returning visitors who
+    still have a valid session get bounced straight into the app instead
+    of seeing the sales page again. Never errors — an unauthenticated or
+    expired browser just gets authed:false."""
+    from .auth import _decode_token
+    authed = False
+    token = request.cookies.get(COOKIE_NAME)
+    if token:
+        try:
+            _decode_token(token)
+            authed = True
+        except Exception:
+            authed = False
+    resp = JSONResponse({"authed": authed})
+    origin = request.headers.get("origin", "")
+    if origin in _PING_ORIGINS:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        resp.headers["Vary"] = "Origin"
+    return resp
+
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page():
