@@ -89,9 +89,10 @@ class InboundProcessor:
                 .filter(
                     Campaign.patient_id == patient.id,
                     Campaign.status == CampaignStatus.active.value,
-                    # Ad-hoc call plans create bookkeeping campaigns with no
-                    # loadable workflow — an SMS reply must never route there.
-                    Campaign.workflow_id != "voice_call",
+                    # Ad-hoc call plans and review requests create bookkeeping
+                    # campaigns with no loadable workflow — an SMS reply must
+                    # never route there.
+                    Campaign.workflow_id.notin_(("voice_call", "review_request")),
                 )
                 .order_by(Campaign.started_at.desc())
                 .first()

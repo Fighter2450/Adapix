@@ -1104,6 +1104,7 @@ class DatabaseUpdateBody(BaseModel):
     business_type_id: str | None = None
     business_type_label: str | None = None
     pronunciation: str | None = None
+    review_link: str | None = None
 
 
 @router.get("/api/v1/database")
@@ -1152,6 +1153,7 @@ def api_database(org_id: str = Depends(verify_admin)):
             "tone": data.get("tone") or "warm_professional",
             "description": data.get("description") or "",
             "pronunciation": data.get("pronunciation") or "",
+            "review_link": data.get("review_link") or "",
             "services": data.get("services") or [],
             "workflows": workflows,
             "escalations": escalations,
@@ -1205,6 +1207,8 @@ def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_a
             data["description"] = body.description.strip()
         if body.pronunciation is not None:
             data["pronunciation"] = body.pronunciation.strip()
+        if body.review_link is not None:
+            data["review_link"] = body.review_link.strip()
         if body.business_type_id is not None:
             data["practice_type"] = body.business_type_id.strip()
             data["practice_type_label"] = (body.business_type_label or "").strip()
@@ -3290,8 +3294,44 @@ def api_win_mark(body: WinBody, org_id: str = Depends(verify_admin)):
             for m in s.query(Message).filter(Message.campaign_id == c.id,
                                              Message.status.in_(("pending_approval", "approved"))).all():
                 m.status = "rejected"
+
+        # Review request: a happy, just-won customer is the best moment to
+        # ask for a Google review. Drafted into the Inbox like everything
+        # else — the owner reads and approves it, nothing auto-sends. Only
+        # fires when a review link is on file, and only once per contact.
+        review_drafted = False
+        review_link = (data.get("review_link") or "").strip()
+        if review_link and (p.phone or p.email):
+            already = (
+                s.query(Campaign)
+                .filter(Campaign.patient_id == p.id, Campaign.workflow_id == "review_request")
+                .first()
+            )
+            if already is None:
+                practice = data.get("practice") or {}
+                biz = practice.get("name") or "our team"
+                owner = practice.get("owner") or ""
+                first = (p.first_name or "").strip() or "there"
+                channel = "sms" if p.phone else "email"
+                intro = f"it's {owner} from {biz}" if owner else f"it's {biz}"
+                body_text = (
+                    f"Hi {first}, {intro} — really glad we could get you taken care of! "
+                    f"If you have 30 seconds, a quick Google review would mean a lot to us: {review_link}"
+                )
+                rc = Campaign(practice_id=org_id, workflow_id="review_request", patient_id=p.id)
+                s.add(rc)
+                s.flush()
+                s.add(Message(
+                    campaign_id=rc.id,
+                    direction="outbound",
+                    channel=channel,
+                    subject="Quick favor?" if channel == "email" else None,
+                    body=body_text,
+                    status="pending_approval",
+                ))
+                review_drafted = True
         s.commit()
-    return {"ok": True, "amount": float(amount or 0)}
+    return {"ok": True, "amount": float(amount or 0), "review_drafted": review_drafted}
 
 
 @router.post("/api/v1/digest/test")

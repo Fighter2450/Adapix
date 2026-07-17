@@ -104,7 +104,9 @@ customer's OWN numbers whenever possible (their average job value), not ours.
 - **Weekly money email** — "This week: 12 follow-ups, 4 replies, 1 job won
   ($1,850)."
 - **Review request after a won job** — tap Won ✓, Adapix asks the happy
-  customer for a Google review.
+  customer for a Google review. BUILT & verified 7/16 (needs the owner's
+  Google review link in Business profile; draft waits for approval like
+  everything else) — awaiting Rocco's confirmation to market.
 - **ROI calculator on the pricing page** — their job value × their quiet
   quotes = what they're leaving on the table.
 - **Business name on caller ID (not just a number)** — the bigger prize on

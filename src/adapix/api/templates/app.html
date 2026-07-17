@@ -2197,7 +2197,7 @@ body::after{
           <span class="sch-badge off" id="msg-imessage-badge">…</span>
           <button class="sch-connect" id="msg-sms-connect">Set up my line</button>
         </div>
-        <div class="sform-hint" style="margin-top:10px">Texts go out blue-bubble on Apple devices via Adapix's shared line today; your own dedicated number is available on request. Until either is set up, texts fall back to standard SMS.</div>
+        <div class="sform-hint" style="margin-top:10px" id="msg-imessage-hint">Texts go out blue-bubble on Apple devices via Adapix's shared line today. Until a line is set up, texts fall back to standard SMS.</div>
       </div>
 
       <div class="scard" id="rcs-card">
@@ -2212,8 +2212,12 @@ body::after{
           <button class="mtab" data-channel="email">Email</button>
         </div>
         <div class="sform-row">
-          <label class="sform-label" id="msg-to-label">Phone number</label>
-          <input class="sform-input" id="msg-to" placeholder="(555) 000-0000" />
+          <label class="sform-label" id="msg-to-label">To</label>
+          <div style="position:relative">
+            <input class="sform-input" id="msg-to" autocomplete="off" placeholder="Search your contacts, or type a phone number" />
+            <div class="gs-results" id="msg-to-results" hidden style="top:calc(100% + 4px)"></div>
+          </div>
+          <div class="sform-hint" id="msg-to-hint">Start typing a contact's name to pick them, or enter a new number/address directly.</div>
         </div>
         <div class="sform-row" id="msg-name-row">
           <label class="sform-label">Contact name (if new)</label>
@@ -2255,11 +2259,13 @@ body::after{
       const badge = document.getElementById('msg-imessage-badge');
       const btn = document.getElementById('msg-sms-connect');
       if (!val || !badge) return;
+      const hintEl = document.getElementById('msg-imessage-hint');
       if (d.imessage_dedicated) {
         val.textContent = (d.imessage_number || 'Your dedicated line') + ' — your own number; texts go blue on Apple devices';
         badge.textContent = 'Connected';
         badge.classList.remove('off');
         if (btn) btn.style.display = 'none';
+        if (hintEl) hintEl.textContent = 'This line is exclusively yours — customers can text it back and their replies land in your Inbox. If an iMessage ever fails, the text still goes out as standard SMS automatically.';
       } else if (d.imessage_connected) {
         val.textContent = 'Shared Adapix line for now — texts go blue on Apple devices';
         badge.textContent = 'Connected (shared)';
@@ -2298,11 +2304,64 @@ body::after{
       } catch(_){ toast('Could not retry', true); retryNum.disabled = false; retryNum.textContent = 'Retry'; }
     });
 
-    // Channel tabs swap the "To" field's meaning and toggle the subject line.
+    // Channel tabs swap what "To" means; the To field doubles as a contact
+    // search — type a name to pick an existing contact, or type a raw
+    // number/address for someone new.
     const toEl = document.getElementById('msg-to');
     const toLabel = document.getElementById('msg-to-label');
+    const toHint = document.getElementById('msg-to-hint');
+    const toResults = document.getElementById('msg-to-results');
     const subjectRow = document.getElementById('msg-subject-row');
     let channel = 'sms';
+    let pickedContact = null;
+    let composeContacts = null;
+
+    function applyPicked(){
+      if (!pickedContact) return;
+      const val = channel === 'email' ? (pickedContact.email || '') : (pickedContact.phone || '');
+      if (!val){
+        toast(`${pickedContact.name || 'That contact'} has no ${channel === 'email' ? 'email address' : 'phone number'} on file — add one in Contacts, or switch channel`, true);
+        toEl.value = ''; return;
+      }
+      toEl.value = val;
+      document.getElementById('msg-contact-name').value = pickedContact.name || '';
+      toHint.innerHTML = `Sending to <b style="color:var(--ink)">${escapeHTML(pickedContact.name || val)}</b> — type to pick someone else.`;
+    }
+
+    function renderToResults(){
+      const q = (toEl.value || '').trim().toLowerCase();
+      // Raw numbers/addresses aren't searches — only offer contacts while
+      // the text still looks like a name.
+      if (!q || q.length < 2 || /^[\d\s()+.-]+$/.test(q) || q.includes('@')){
+        toResults.hidden = true; return;
+      }
+      if (composeContacts === null){
+        composeContacts = [];
+        api('/api/v1/patients').then(d => { composeContacts = d.patients || []; renderToResults(); }).catch(() => {});
+      }
+      const hits = (composeContacts || []).filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.email || '').toLowerCase().includes(q)
+      ).slice(0, 6);
+      if (!hits.length){ toResults.hidden = true; return; }
+      toResults.innerHTML = hits.map((p, i) => `
+        <button class="gs-item" data-pick="${i}"><i data-lucide="user"></i>${escapeHTML(p.name || '')}
+          <span class="gs-sub">${escapeHTML((channel === 'email' ? p.email : p.phone) || ('no ' + (channel === 'email' ? 'email' : 'phone')))}</span>
+        </button>`).join('');
+      renderLucide(toResults);
+      toResults.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        pickedContact = hits[Number(el.dataset.pick)];
+        toResults.hidden = true;
+        applyPicked();
+      }));
+      toResults.hidden = false;
+    }
+
+    toEl.addEventListener('input', () => { pickedContact = null; toHint.textContent = "Start typing a contact's name to pick them, or enter a new number/address directly."; renderToResults(); });
+    toEl.addEventListener('focus', renderToResults);
+    toEl.addEventListener('blur', () => setTimeout(() => { toResults.hidden = true; }, 150));
+
     main.querySelectorAll('.mtab').forEach(btn => {
       btn.addEventListener('click', () => {
         main.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
@@ -2310,9 +2369,11 @@ body::after{
         channel = btn.dataset.channel;
         const isEmail = channel === 'email';
         subjectRow.hidden = !isEmail;
-        toLabel.textContent = isEmail ? 'Email address' : 'Phone number';
-        toEl.placeholder = isEmail ? 'you@customer.com' : '(555) 000-0000';
-        toEl.value = ''; // switching channels means switching what "To" even means
+        toEl.placeholder = isEmail ? 'Search your contacts, or type an email address' : 'Search your contacts, or type a phone number';
+        // A picked contact survives the switch — their email/phone swaps in
+        // automatically. Raw typed input is cleared (it meant the other channel).
+        if (pickedContact) applyPicked();
+        else toEl.value = '';
       });
     });
 
@@ -2411,6 +2472,22 @@ body::after{
           <button class="sform-save" id="rf-copy" style="flex-shrink:0">Copy link</button>
         </div>
         <div class="sform-hint" style="margin-top:10px">Your code is <b style="color:var(--ink)" id="rf-code">…</b> — they can also type it on the signup page.</div>
+      </div>
+      <div class="scard">
+        <div class="scard-title">How it works</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          ${[
+            ['Copy your link above', 'It’s yours permanently — the same link works for every business you ever refer.'],
+            ['Send it to another business owner', 'Text it, email it, or just tell them the code — anyone drowning in quiet quotes is a good fit.'],
+            ['They sign up through your link', 'They start the normal 14-day free trial, plus an extra free month on top because you sent them.'],
+            ['They become a paying customer', 'The moment their first payment goes through, a free month is credited to YOUR bill — automatically, nothing to claim.'],
+            ['Watch it here', 'Every business you refer shows below with its live status: On trial → Paying → Rewarded ✓. Repeat as often as you like — every referral is another free month.'],
+          ].map((s, i) => `
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="flex:0 0 26px;height:26px;border-radius:50%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);color:#93c5fd;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</span>
+            <div style="font-size:13.5px;line-height:1.5"><b style="color:var(--ink)">${s[0]}</b><br><span style="color:var(--ink-2)">${s[1]}</span></div>
+          </div>`).join('')}
+        </div>
       </div>
       <div class="scard">
         <div class="scard-title" style="display:flex;justify-content:space-between;align-items:baseline">Businesses you've referred
@@ -3197,8 +3274,10 @@ body::after{
         const amount = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
         btn.disabled = true;
         try {
-          await api('/api/v1/wins', {method:'POST', body: JSON.stringify({patient_id: Number(btn.dataset.id), amount: isNaN(amount) ? null : amount})});
-          toast('Logged \u2014 ' + btn.dataset.name.trim() + ' marked as won' + (isNaN(amount) ? '' : ' \u00b7 $' + Math.round(amount).toLocaleString()));
+          const r = await api('/api/v1/wins', {method:'POST', body: JSON.stringify({patient_id: Number(btn.dataset.id), amount: isNaN(amount) ? null : amount})});
+          toast('Logged \u2014 ' + btn.dataset.name.trim() + ' marked as won' + (isNaN(amount) ? '' : ' \u00b7 $' + Math.round(amount).toLocaleString())
+            + (r.review_drafted ? ' \u00b7 review request drafted \u2014 approve it in your Inbox' : ''));
+          if (r.review_drafted) refreshFeed();
           renderPatientsView();
         } catch(_){ toast('Could not log the win', true); btn.disabled = false; }
       });
@@ -4725,6 +4804,7 @@ body::after{
       set('bp-hours-sat', d.hours_saturday);
       set('bp-hours-sun', d.hours_sunday);
       set('bp-pronunciation', d.pronunciation);
+      set('bp-review-link', d.review_link);
       if (window.stypePreset) window.stypePreset(d.business_type_id, d.business_type);
     } catch(_){ /* leave blank — better than blocking the page */ }
 
@@ -4742,6 +4822,7 @@ body::after{
           hours_saturday: val('bp-hours-sat'),
           hours_sunday: val('bp-hours-sun'),
           pronunciation: val('bp-pronunciation'),
+          review_link: val('bp-review-link'),
           business_type_id: stypeEl ? (stypeEl.dataset.selId || '') : '',
           business_type_label: stypeEl ? stypeEl.value : '',
         })});
@@ -5530,6 +5611,11 @@ body::after{
             <div class="sform-row"><label class="sform-label">Website</label><input class="sform-input" id="bp-website" placeholder="yourbusiness.com" /></div>
           </div>
           <div class="sform-row"><label class="sform-label">Address</label><textarea class="sform-input" id="bp-address" rows="2" placeholder="123 Main St, Suite 1, City, State 00000" style="resize:vertical"></textarea></div>
+          <div class="sform-row">
+            <label class="sform-label">Google review link <span style="font-weight:400;color:var(--ink-3)">(optional)</span></label>
+            <input class="sform-input" id="bp-review-link" placeholder="https://g.page/r/… (from your Google Business Profile)" />
+            <div class="sform-hint">With this on file, every time you mark a job <b style="color:var(--ink)">Won ✓</b>, Adapix drafts a review request to that happy customer — it waits in your Inbox for your OK like everything else.</div>
+          </div>
         </div>
         <div class="scard">
           <div class="scard-title">Business hours</div>
