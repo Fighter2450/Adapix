@@ -110,9 +110,9 @@ customer's OWN numbers whenever possible (their average job value), not ours.
   Google review link in Business profile; draft waits for approval like
   everything else) — awaiting Rocco's confirmation to market.
 - **ROI calculator on the pricing page** — their job value × their quiet
-  quotes = what they're leaving on the table. BUILT & LIVE 7/16 on
-  adapixai.com/pricing ("What are quiet quotes costing you?") — this one's
-  public-facing already, safe to reference.
+  quotes = what they're leaving on the table. BUILT & LIVE 7/16, moved to
+  the HOMEPAGE per Rocco (big glowing card after "the leak" section, "How
+  much is walking away from you?") — public-facing, safe to reference.
 - **Business name on caller ID (not just a number)** — the bigger prize on
   top of the $1.50/mo dedicated-number upgrade (hook #3). Requires the
   business to submit real legal details for carrier verification and takes
