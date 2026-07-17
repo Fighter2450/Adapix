@@ -2402,6 +2402,17 @@ body::after{
       });
     });
 
+    // Arrived via a contact profile's Text/Email button — pre-pick them,
+    // which also fires the personalized starter draft.
+    const pre = window.__composePrefill;
+    if (pre && pre.channel !== 'call'){
+      window.__composePrefill = null;
+      pickedContact = pre.patient;
+      if (pre.channel === 'email') main.querySelector(".mtab[data-channel='email']").click();
+      else applyPicked();
+      toEl.scrollIntoView({ block: 'center' });
+    }
+
     async function loadMessages(){
       const listEl = document.getElementById('msg-list');
       listEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink-3)">Loading…</div>';
@@ -3166,6 +3177,16 @@ body::after{
       cvSearch.addEventListener('blur', () => setTimeout(() => { cvResults.hidden = true; }, 150));
     }
 
+    // Arrived via a contact profile's Call button — pre-pick them, which
+    // also fires the suggested call goal.
+    const cvPre = window.__composePrefill;
+    if (cvPre && cvPre.channel === 'call'){
+      window.__composePrefill = null;
+      const preP = callable.find(x => x.id === cvPre.patient.id);
+      if (preP) cvPick(preP);
+      else toast(`${cvPre.patient.name || 'This contact'} has no phone number on file`, true);
+    }
+
     main.querySelector('#cv-queue').addEventListener('click', async () => {
       const patientId = main.querySelector('#cv-contact').value;
       const goal = main.querySelector('#cv-goal').value.trim();
@@ -3462,6 +3483,11 @@ body::after{
       <div class="auto-modal thread-modal">
         <div class="thread-modal-head">
           <h2>${escapeHTML(patientName || 'Conversation')}</h2>
+          <div style="display:flex;gap:6px;margin-left:auto;margin-right:10px" id="thread-actions">
+            <button class="btn btn-ghost" data-act="sms" style="padding:5px 11px;font-size:12px">Text</button>
+            <button class="btn btn-ghost" data-act="email" style="padding:5px 11px;font-size:12px">Email</button>
+            <button class="btn btn-ghost" data-act="call" style="padding:5px 11px;font-size:12px">Call</button>
+          </div>
           <button class="thread-modal-close" data-close>&times;</button>
         </div>
         <div class="thread-memory" id="thread-memory" hidden></div>
@@ -3471,6 +3497,25 @@ body::after{
     const close = () => backdrop.remove();
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
     backdrop.querySelector('[data-close]').addEventListener('click', close);
+
+    // Text / Email / Call jump straight into compose with this contact
+    // picked — which also kicks off the personalized starter draft there.
+    backdrop.querySelectorAll('#thread-actions [data-act]').forEach(b => b.addEventListener('click', async () => {
+      const pid = Number(patientId);   // dataset ids arrive as strings
+      let p = (state.patients || []).find(x => x.id === pid);
+      if (!p){
+        try { p = ((await api('/api/v1/patients')).patients || []).find(x => x.id === pid); } catch(_){}
+      }
+      if (!p){ toast('Could not load this contact', true); return; }
+      const act = b.dataset.act;
+      if (act === 'email' ? !p.email : !p.phone){
+        toast(`${p.name || 'This contact'} has no ${act === 'email' ? 'email address' : 'phone number'} on file`, true);
+        return;
+      }
+      window.__composePrefill = { patient: p, channel: act };
+      close();
+      goView(act === 'call' ? 'calls' : 'messages');
+    }));
 
     // What Adapix has learned about this contact — separate fetch, doesn't
     // block the conversation from loading if it fails.
