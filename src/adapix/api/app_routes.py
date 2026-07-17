@@ -2415,7 +2415,8 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
             "phone call on behalf of a small business owner. One or two sentences, "
             "imperative, third person about the customer ('Follow up on their...'). "
             "Use the customer's actual job, quote amount, and any learned details "
-            "when they help. Output ONLY the goal text — no preamble, no quotes."
+            "when they help. Never invent details not in the context. "
+            "Output ONLY the goal text — no preamble, no quotes."
         )
     elif channel == "email":
         system = (
@@ -2424,7 +2425,10 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
             "with 'Hi <name>,' and mention their actual job and quote. Weave in a "
             "learned detail naturally if one fits (never recite it back verbatim). "
             "Under 110 words, no fluff, never the phrase 'just checking in'. End by "
-            "making it easy to reply or book. Output EXACTLY this format:\n"
+            "making it easy to reply — asking them to reply to this email is enough. "
+            "NEVER include bracketed placeholders like [booking link] or [name], and "
+            "never invent links, prices, or details not in the context. "
+            "Output EXACTLY this format:\n"
             "Subject: <subject line>\n\n<email body>"
         )
     else:
@@ -2434,7 +2438,9 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
             "characters. Open with 'Hi <name>, it's <owner> from <business>' (or a "
             "natural variant with what's available). Mention their actual job and "
             "quote; weave in a learned detail naturally if one fits. Never the "
-            "phrase 'just checking in'. Output ONLY the message text."
+            "phrase 'just checking in', never bracketed placeholders like [link], "
+            "never invented links, prices, or details not in the context. "
+            "Output ONLY the message text."
         )
 
     subject, body_text, source = None, None, "basic"
