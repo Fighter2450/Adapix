@@ -16,6 +16,11 @@ from .config import Settings
 from .db import get_session
 from .models import Message, Organization
 
+# Messages already handled THIS container-lifetime, whatever the outcome.
+# The DB provider_id check only covers inbound that created a Message row;
+# ignored ones (unknown sender) would otherwise be re-pulled every pass.
+_seen_this_process: set[str] = set()
+
 
 def poll_blooio_inbound() -> int:
     """One pass: fetch every chat, process unseen inbound messages.
@@ -77,8 +82,9 @@ def poll_blooio_inbound() -> int:
         for m in msgs:
             mid = m.get("id")
             text = (m.get("text") or "").strip()
-            if not mid or mid in seen or not text:
+            if not mid or mid in seen or mid in _seen_this_process or not text:
                 continue
+            _seen_this_process.add(mid)
             try:
                 result = InboundProcessor().process_sms(
                     from_number=sender, body=text,
