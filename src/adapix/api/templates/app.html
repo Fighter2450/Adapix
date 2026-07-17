@@ -2364,13 +2364,15 @@ body::after{
         composeContacts = [];
         api('/api/v1/patients').then(d => { composeContacts = d.patients || []; renderToResults(); }).catch(() => {});
       }
+      const cname = p => (p.name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim());
       const hits = (composeContacts || []).filter(p =>
-        (p.name || '').toLowerCase().includes(q) ||
-        (p.email || '').toLowerCase().includes(q)
+        cname(p).toLowerCase().includes(q) ||
+        (p.email || '').toLowerCase().includes(q) ||
+        (p.phone || '').replace(/\D/g, '').includes(q.replace(/\D/g, '') || ' ')
       ).slice(0, 6);
       if (!hits.length){ toResults.hidden = true; return; }
       toResults.innerHTML = hits.map((p, i) => `
-        <button class="gs-item" data-pick="${i}"><i data-lucide="user"></i>${escapeHTML(p.name || '')}
+        <button class="gs-item" data-pick="${i}"><i data-lucide="user"></i>${escapeHTML(cname(p) || 'Unnamed contact')}
           <span class="gs-sub">${escapeHTML((channel === 'email' ? p.email : p.phone) || ('no ' + (channel === 'email' ? 'email' : 'phone')))}</span>
         </button>`).join('');
       renderLucide(toResults);

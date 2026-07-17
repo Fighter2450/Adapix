@@ -3258,6 +3258,7 @@ def api_patients_list(q: str = "", _user: str = Depends(verify_admin)):
             needs_attention = bool(active and lo and silent_days is not None and silent_days >= 9 and (not li or li < lo))
             out.append({
                 "id": p.id,
+                "name": f"{p.first_name or ''} {p.last_name or ''}".strip(),
                 "first_name": p.first_name,
                 "last_name": p.last_name,
                 "phone": p.phone,
