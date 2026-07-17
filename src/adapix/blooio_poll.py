@@ -24,7 +24,7 @@ def poll_blooio_inbound() -> int:
     if not (settings.blooio_api_key and settings.prefer_imessage):
         return 0
 
-    from .channels.imessage import get_contact, list_chat_messages, list_chats
+    from .channels.imessage import _blooio_get, list_chat_messages, list_chats
     from .inbound import InboundProcessor
     from .phone import normalize_phone
 
@@ -33,7 +33,17 @@ def poll_blooio_inbound() -> int:
         return 0
 
     processed = 0
+    # Contact identities come from the LIST endpoint — the per-contact
+    # detail endpoint wraps/omits identities (verified live 7/16), which
+    # silently starved the first version of this poller of every sender.
     contact_cache: dict[str, str] = {}
+    try:
+        for ct in _blooio_get(settings, "https://api.blooio.com/v4/contacts").get("data") or []:
+            idents = ct.get("identities") or []
+            if ct.get("id") and idents:
+                contact_cache[ct["id"]] = idents[0].get("identifier") or ""
+    except Exception:
+        pass
     with get_session(settings) as s:
         org_by_channel = {
             o.blooio_channel_id: o for o in
@@ -52,18 +62,8 @@ def poll_blooio_inbound() -> int:
             continue
 
         # Who is this chat with? The message rows carry sender=None in the
-        # chat-scoped listing, so resolve via the chat's contact identity.
-        sender = None
-        contact_id = chat.get("contact_id")
-        if contact_id:
-            if contact_id not in contact_cache:
-                try:
-                    contact = get_contact(settings, contact_id)
-                    idents = (contact.get("identities") or [])
-                    contact_cache[contact_id] = (idents[0].get("identifier") if idents else "") or ""
-                except Exception:
-                    contact_cache[contact_id] = ""
-            sender = contact_cache[contact_id] or None
+        # chat-scoped listing, so resolve via the contact-list identities.
+        sender = contact_cache.get(chat.get("contact_id") or "") or None
         if not sender:
             continue
         sender = normalize_phone(sender) or sender
