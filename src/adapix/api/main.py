@@ -18,6 +18,9 @@ from .auth import verify_admin
 from .auth_routes import router as auth_router
 from .webhooks import router as webhooks_router
 
+# Without this, every log.info() in the scheduler loops silently vanishes —
+# Python's last-resort handler only surfaces WARNING and above.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s — %(message)s")
 log = logging.getLogger("adapix.scheduler")
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -212,8 +215,15 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health():
-        """Railway healthcheck endpoint — returns 200 when the server is ready."""
-        return {"ok": True}
+        """Railway healthcheck — also reports the newest DB snapshot so
+        backup freshness is checkable from outside (no volume access needed)."""
+        last_backup = None
+        try:
+            from ..backup import latest_backup_name
+            last_backup = latest_backup_name()
+        except Exception:
+            pass
+        return {"ok": True, "last_backup": last_backup}
 
     return app
 
