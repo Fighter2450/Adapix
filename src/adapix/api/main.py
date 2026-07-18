@@ -63,6 +63,8 @@ def create_app() -> FastAPI:
                 log.info(f"Campaign pass complete — {total} messages composed.")
             except Exception as exc:
                 log.error(f"Campaign scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("campaign-loop", str(exc))
             await asyncio.sleep(300)
 
     async def _digest_loop() -> None:
@@ -77,6 +79,8 @@ def create_app() -> FastAPI:
                     log.info(f"Daily digest: sent to {sent} org(s).")
             except Exception as exc:
                 log.error(f"Digest scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("digest-loop", str(exc))
             try:
                 from ..weekly_email import run_weekly_emails
                 sent = await asyncio.to_thread(run_weekly_emails)
@@ -84,6 +88,22 @@ def create_app() -> FastAPI:
                     log.info(f"Weekly money email: sent to {sent} org(s).")
             except Exception as exc:
                 log.error(f"Weekly email scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("weekly-email-loop", str(exc))
+            try:
+                from ..backup import run_nightly_backup
+                status = await asyncio.to_thread(run_nightly_backup)
+                if not status.startswith("skipped"):
+                    log.info(f"DB backup: {status}")
+                if status.startswith("FAILED"):
+                    log.error(f"DB backup FAILED: {status}")
+                    from ..ops_alert import record_error
+                    for _ in range(10):
+                        record_error("backup-failed", status)
+            except Exception as exc:
+                log.error(f"DB backup scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("backup-loop", str(exc))
             await asyncio.sleep(3600)
 
     async def _scheduled_send_loop() -> None:
@@ -100,6 +120,8 @@ def create_app() -> FastAPI:
                     log.info(f"Scheduled-send sweep: {sent} message(s)/call(s) dispatched.")
             except Exception as exc:
                 log.error(f"Scheduled-send scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("scheduled-send-loop", str(exc))
             await asyncio.sleep(120)
 
     async def _blooio_poll_loop() -> None:
@@ -116,6 +138,8 @@ def create_app() -> FastAPI:
                     log.info(f"Blooio poll: {n} inbound message(s) processed.")
             except Exception as exc:
                 log.error(f"Blooio poll error: {exc}")
+                from ..ops_alert import record_error
+                record_error("blooio-poll-loop", str(exc))
             await asyncio.sleep(120)
 
     async def _automation_loop() -> None:
@@ -131,7 +155,20 @@ def create_app() -> FastAPI:
                     threading.Thread(target=run_automation, args=(aid,), daemon=True).start()
             except Exception as exc:
                 log.error(f"Automation scheduler error: {exc}")
+                from ..ops_alert import record_error
+                record_error("automation-loop", str(exc))
             await asyncio.sleep(300)
+
+    @app.middleware("http")
+    async def _error_alert_mw(request: Request, call_next):
+        """Unhandled exceptions in request handlers feed the founder burst
+        alerter — a crash-looping endpoint becomes an email, not silence."""
+        try:
+            return await call_next(request)
+        except Exception as exc:
+            from ..ops_alert import record_error
+            record_error("http", f"{request.method} {request.url.path}: {exc}")
+            raise
 
     # ------------------------------------------------------------------
     # Root — redirect to app (login redirect handled by app_routes)
