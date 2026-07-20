@@ -62,6 +62,22 @@ class InboundProcessor:
         to_number: str | None = None,
     ) -> InboundResult:
         with get_session(self.settings) as s:
+            # Idempotency: Twilio's webhook times out at 15s and retries while
+            # our (slower) Claude processing is still running — without this,
+            # the retry produces a SECOND AI reply to the same customer text.
+            # Any inbound we've already recorded by provider_id is a no-op.
+            # (The poller has its own dedupe; this covers the webhook path and
+            # webhook↔poller overlap.)
+            if provider_id:
+                dup = (
+                    s.query(Message)
+                    .filter(Message.provider_id == provider_id,
+                            Message.direction == "inbound")
+                    .first()
+                )
+                if dup is not None:
+                    return InboundResult(status="ignored", reason="duplicate provider_id")
+
             # Tenant isolation: the number the customer texted identifies the
             # business. Without this, two orgs sharing a contact's phone would
             # leak each other's replies.
@@ -123,8 +139,23 @@ class InboundProcessor:
             s.add(inbound)
             s.flush()  # so inbound.id is populated
 
+            # STOP / opt-out ALWAYS wins — checked with a cheap string match
+            # BEFORE the abuse guards, so a throttled or over-budget contact
+            # who texts STOP is still honored (TCPA). This is a pure keyword
+            # compare, no Claude call, so it costs nothing even under a flood.
+            _normalized = (body or "").strip().upper()
+            if _normalized in {"STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"}:
+                from .escalation import Classification as _Cls
+                stop_cls = _Cls(
+                    category="stop", confidence="high",
+                    reasoning="Recipient sent an SMS opt-out keyword.",
+                    suggested_action="Stop the campaign immediately.",
+                )
+                return self._dispatch(s, campaign, patient, stop_cls, [], body)
+
             # Abuse guards — BEFORE any Claude call, but AFTER the inbound
-            # is logged, so a flood is still fully auditable.
+            # is logged and AFTER the STOP check, so a flood is still fully
+            # auditable and opt-out is never lost.
             from datetime import datetime as _dt, timedelta as _td
             from .ai_guard import contact_reply_throttled, record_ai_event
             if contact_reply_throttled(s, patient.id):

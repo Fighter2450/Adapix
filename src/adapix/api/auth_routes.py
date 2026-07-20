@@ -24,6 +24,23 @@ from .auth import (
 router = APIRouter(tags=["auth"])
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
+# Session cookie is Secure by default (HTTPS-only) so the 30-day token
+# can't leak over a downgraded/http request. Local dev over plain http
+# sets ADAPIX_COOKIE_INSECURE=1 to log in.
+import os as _os
+_COOKIE_SECURE = _os.environ.get("ADAPIX_COOKIE_INSECURE", "") != "1"
+
+
+def _set_session_cookie(resp, token: str) -> None:
+    resp.set_cookie(
+        COOKIE_NAME,
+        token,
+        max_age=ACCESS_TOKEN_EXPIRE_DAYS * 86400,
+        httponly=True,
+        samesite="lax",
+        secure=_COOKIE_SECURE,
+    )
+
 # Marketing-site origins allowed to ask "is this browser signed in?" —
 # adapixai.com and app.adapixai.com are the same site, so the session
 # cookie (SameSite=Lax) rides along on the fetch; CORS headers below are
@@ -117,14 +134,7 @@ async def api_signup(
         background.add_task(ensure_org_number, new_org_id)
 
     resp = JSONResponse({"ok": True, "redirect": "/app/billing"})
-    resp.set_cookie(
-        COOKIE_NAME,
-        token,
-        max_age=ACCESS_TOKEN_EXPIRE_DAYS * 86400,
-        httponly=True,
-        samesite="lax",
-        secure=False,  # set True behind HTTPS in production
-    )
+    _set_session_cookie(resp, token)
     return resp
 
 
@@ -142,14 +152,7 @@ async def api_login(
         token = create_access_token(user.id, user.org_id, user.email)
 
     resp = JSONResponse({"ok": True, "redirect": "/app"})
-    resp.set_cookie(
-        COOKIE_NAME,
-        token,
-        max_age=ACCESS_TOKEN_EXPIRE_DAYS * 86400,
-        httponly=True,
-        samesite="lax",
-        secure=False,
-    )
+    _set_session_cookie(resp, token)
     return resp
 
 

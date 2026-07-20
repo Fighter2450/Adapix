@@ -1939,6 +1939,7 @@ def api_escalation_reply(escalation_id: int, body: EscalationReplyBody, org_id: 
 
         settings = Settings()
         org = s.get(Organization, org_id)
+        transport = None
         if channel == "email":
             if not patient.email:
                 raise HTTPException(status_code=400, detail="This contact has no email on file")
@@ -1950,9 +1951,34 @@ def api_escalation_reply(escalation_id: int, body: EscalationReplyBody, org_id: 
         else:
             if not patient.phone:
                 raise HTTPException(status_code=400, detail="This contact has no phone on file")
-            r = SmsChannel(settings).send(patient.phone, text)
+            # Reply on the org's OWN line first (the number the customer
+            # texted), then Claw, then shared Twilio — otherwise the owner's
+            # words arrive from an unknown number in a different thread.
+            r = None
+            transport = None
+            if settings.prefer_imessage and org and org.blooio_channel_id:
+                from ..channels import IMessageChannel
+                imsg = IMessageChannel(settings)
+                if imsg.is_configured(org.blooio_channel_id):
+                    ir = imsg.send(patient.phone, text, channel_id=org.blooio_channel_id)
+                    if ir.status != "failed":
+                        r, transport = ir, "imessage"
+            if r is None:
+                from ..channels import ClawChannel
+                claw = ClawChannel(settings)
+                if settings.prefer_imessage and claw.is_configured():
+                    cr = claw.send(patient.phone, text)
+                    if cr.status != "failed":
+                        r, transport = cr, "imessage-claw"
+            if r is None:
+                r = SmsChannel(settings).send(patient.phone, text)
             status, provider_id, error = r.status, r.provider_id, r.error
 
+        md = {"kind": "owner_reply"}
+        if error:
+            md["error"] = error
+        if transport:
+            md["transport"] = transport
         s.add(Message(
             campaign_id=campaign.id,
             direction="outbound",
@@ -1960,9 +1986,14 @@ def api_escalation_reply(escalation_id: int, body: EscalationReplyBody, org_id: 
             body=text,
             status=status,
             provider_id=provider_id,
-            metadata_json={"kind": "owner_reply", "error": error} if error else {"kind": "owner_reply"},
+            metadata_json=md,
         ))
         e.resolved = True
+        # Re-open the conversation: an escalated campaign is otherwise a
+        # dead-end — the customer's reply to THIS message would match no
+        # active campaign and be silently ignored.
+        if status != "failed" and campaign.status == "escalated":
+            campaign.status = "active"
         s.commit()
     if status == "failed":
         raise HTTPException(status_code=502, detail=f"Send failed: {error}")
@@ -3301,6 +3332,7 @@ def api_patients_list(q: str = "", _user: str = Depends(verify_admin)):
                 "preferred_channel": p.preferred_channel,
                 "status": p.status,
                 "opted_out": bool(p.opted_out),
+                "notes": p.notes,   # edit form saves this back — omitting it erased notes
                 "treatment_type": p.treatment_type,
                 "treatment_plan_amount": p.treatment_plan_amount,
                 "consult_date": p.consult_date.isoformat() if p.consult_date else None,

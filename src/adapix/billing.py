@@ -59,6 +59,17 @@ def _store_path() -> Path:
     return Path(os.environ.get("ADAPIX_VAR", ".")) / "billing.json"
 
 
+# billing.json is the platform's paid-access gate — a torn write or a
+# lost concurrent update stops paying customers. One process-wide lock
+# serializes the read-modify-write (Stripe webhook on the event loop +
+# billing-page refreshes on the to_thread pool race otherwise), and every
+# write is atomic (tmp file + os.replace) so a crash mid-write can never
+# truncate it to {} and flip every org to "no card on file".
+import threading as _threading
+
+_billing_lock = _threading.RLock()
+
+
 def _load() -> dict[str, Any]:
     p = _store_path()
     if not p.exists():
@@ -72,17 +83,21 @@ def _load() -> dict[str, Any]:
 def _save(d: dict[str, Any]) -> None:
     p = _store_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(d, indent=2))
+    tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, indent=2))
+    os.replace(tmp, p)
 
 
 def get_billing(org_id: str) -> dict[str, Any]:
-    return _load().get(org_id) or {}
+    with _billing_lock:
+        return _load().get(org_id) or {}
 
 
 def set_billing(org_id: str, record: dict[str, Any]) -> None:
-    d = _load()
-    d[org_id] = {**(d.get(org_id) or {}), **record, "updated_at": int(time.time())}
-    _save(d)
+    with _billing_lock:
+        d = _load()
+        d[org_id] = {**(d.get(org_id) or {}), **record, "updated_at": int(time.time())}
+        _save(d)
 
 
 # ---------------------------------------------------------------------------

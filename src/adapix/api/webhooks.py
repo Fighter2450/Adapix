@@ -105,9 +105,13 @@ async def twilio_inbound_sms(request: Request):
         return PlainTextResponse(content=EMPTY_TWIML, media_type="application/xml")
 
     try:
+        # process_sms runs the SYNC Anthropic client — off the event loop,
+        # or one classification freezes health checks and every other webhook.
+        import asyncio as _asyncio
         processor = InboundProcessor()
-        result = processor.process_sms(
-            from_number=From, body=Body, provider_id=MessageSid or None, to_number=To or None
+        result = await _asyncio.to_thread(
+            processor.process_sms,
+            from_number=From, body=Body, provider_id=MessageSid or None, to_number=To or None,
         )
         print(
             f"[adapix] inbound from={From} status={result.status} "
@@ -183,8 +187,10 @@ async def blooio_inbound(request: Request):
         pass
 
     try:
+        import asyncio as _asyncio
         processor = InboundProcessor()
-        result = processor.process_sms(
+        result = await _asyncio.to_thread(
+            processor.process_sms,
             from_number=sender, body=text,
             provider_id=data.get("message_id"), to_number=recipient or None,
         )
@@ -198,8 +204,12 @@ async def blooio_inbound(request: Request):
 @router.post("/vapi")
 async def vapi_call_events(request: Request):
     import os as _os
+    # Fail CLOSED: with no secret configured, reject — an unauthenticated
+    # end-of-call-report can attach forged transcripts/escalations to any
+    # contact of any org (metadata.patient_id is trusted downstream). The
+    # secret is set in prod; a dev without it simply can't hit this route.
     expected = _os.environ.get("VAPI_WEBHOOK_SECRET", "").strip()
-    if expected and request.headers.get("x-vapi-secret", "") != expected:
+    if not expected or request.headers.get("x-vapi-secret", "") != expected:
         raise HTTPException(status_code=403, detail="bad vapi secret")
     """Vapi call events. The important one is 'end-of-call-report', which
     carries the transcript + summary once a call finishes.
@@ -242,15 +252,19 @@ async def vapi_call_events(request: Request):
 
         recording_url = extract_recording_url(msg) or extract_recording_url(call)
         call_id = call.get("id") or msg.get("id")
+        import asyncio as _asyncio
         if not recording_url and call_id:
             # Webhook sometimes fires before the recording finishes uploading —
             # the GET /call/{id} API reliably has it once the call has ended.
-            fetched = fetch_vapi_call(_Settings(), call_id)
+            # Sync HTTP — keep it off the event loop.
+            fetched = await _asyncio.to_thread(fetch_vapi_call, _Settings(), call_id)
             recording_url = extract_recording_url(fetched or {})
         print(f"[adapix] call ended to={number or '?'} reason={ended or '?'} recording={'yes' if recording_url else 'no'}")
 
         try:
-            result = InboundProcessor().process_call_outcome(
+            # process_call_outcome runs the sync Claude client — off-loop.
+            result = await _asyncio.to_thread(
+                InboundProcessor().process_call_outcome,
                 transcript=transcript,
                 summary=summary,
                 ended_reason=ended,
@@ -281,7 +295,14 @@ async def vapi_call_events(request: Request):
 
 @router.post("/dev/sms")
 async def dev_inbound_sms(payload: dict):
-    """Dev-only simulator. Body: {"from": "+1...", "body": "..."}"""
+    """Dev-only inbound simulator. DISABLED unless ADAPIX_ENABLE_DEV_SMS=1.
+    Without this gate the route is unauthenticated in production and lets
+    anyone forge inbound texts for any contact of any org — opting them out,
+    reading back their AI reply (which leaks the contact's name/quote), and
+    burning AI budget. It ships off; a dev sets the flag locally."""
+    import os as _os
+    if _os.environ.get("ADAPIX_ENABLE_DEV_SMS", "") != "1":
+        raise HTTPException(status_code=404, detail="Not found")
     from_number = payload.get("from") or ""
     body = payload.get("body") or ""
     if not from_number or not body:

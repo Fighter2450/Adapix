@@ -117,3 +117,9 @@ agent_chat_*.json
 automation_results/
 =*
 docs/purchases.html
+
+# secrets that must never be tracked
+jwt_secret
+billing.json
+ai_usage.json
+*.bak
