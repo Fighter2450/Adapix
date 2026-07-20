@@ -620,7 +620,7 @@ body{
       renderSuggestions(j.suggestions || []);
     } catch (e) {
       removeTyping();
-      addBubble('bot', "I couldn't reach the AI service. Check your ANTHROPIC_API_KEY in .env and try again.");
+      addBubble('bot', "I couldn't reach the AI service just now — give it a moment and try again.");
     }
   }
 

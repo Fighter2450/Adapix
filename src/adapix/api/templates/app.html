@@ -4378,8 +4378,8 @@ body::after{
   const WORKSHOP_PLUGINS = [
     { key:'google',    name:'Gmail',          kind:'Email' },
     { key:'microsoft', name:'Outlook 365',    kind:'Email' },
-    { key:'twilio',    name:'Twilio',         kind:'SMS' },
-    { key:'resend',    name:'Resend',         kind:'Email' },
+    { key:'sms',       name:'Text messaging', kind:'SMS' },
+    { key:'email',     name:'Email delivery', kind:'Email' },
     { key:'webpush',   name:'Web push',       kind:'Notifications' },
   ];
 
@@ -5194,14 +5194,14 @@ body::after{
       return;
     }
 
-    const rcsLabel = {none:'Not started', submitted:'Submitted — Twilio/Google review usually takes days, not hours', rejected:'Needs another look — see below'}[data.rcs_status] || 'Not started';
+    const rcsLabel = {none:'Not started', submitted:'Submitted — carrier &amp; Google review usually takes days, not hours', rejected:'Needs another look — see below'}[data.rcs_status] || 'Not started';
     const showForm = data.rcs_status === 'none' || data.rcs_status === 'rejected';
     el.innerHTML = `
       <div class="sform-hint" style="margin-bottom:${showForm ? '10px' : '0'}"><b style="color:var(--ink)">Status:</b> ${escapeHTML(rcsLabel)}${data.rcs_status === 'submitted' ? ' <a href="#" id="rcs-check-status" style="color:var(--cyan)">check status</a>' : ''}</div>
       ${showForm ? `
       <button class="sch-connect" id="rcs-start-btn">Register for RCS branding</button>
       <div id="rcs-form" style="display:none;margin-top:12px;flex-direction:column;gap:8px;max-width:480px">
-        <div class="sform-hint">This submits your real business details to Twilio and Google for a genuine compliance review — not instant, and not something any provider can skip. Uses the same logo/banner/screenshots/demo video already prepared.</div>
+        <div class="sform-hint">This submits your real business details to the mobile carriers and Google for a genuine compliance review — not instant, and not something any provider can skip. Uses the same logo/banner/screenshots/demo video already prepared.</div>
         <input class="sform-input" id="rcs-brand-name" placeholder="Name shown to customers on texts" />
         <input class="sform-input" id="rcs-legal-name" placeholder="Legal business name" />
         <select class="sform-input" id="rcs-business-type">
@@ -5265,7 +5265,7 @@ body::after{
       rcsSubmitBtn.disabled = true; rcsSubmitBtn.textContent = 'Submitting…';
       try {
         const r = await api('/api/v1/phone/rcs', { method:'POST', body: JSON.stringify(payload) });
-        if (r.ok) { toast('Submitted — Twilio/Google review takes days, not hours'); loadRcsCard(); }
+        if (r.ok) { toast('Submitted — carrier & Google review takes days, not hours'); loadRcsCard(); }
         else { toast(r.detail || 'Could not submit right now', true); rcsSubmitBtn.disabled = false; rcsSubmitBtn.textContent = 'Submit for approval'; }
       } catch(e){ toast(e.message || 'Could not submit right now', true); rcsSubmitBtn.disabled = false; rcsSubmitBtn.textContent = 'Submit for approval'; }
     });
@@ -5648,7 +5648,7 @@ body::after{
         cnamSubmitBtn.disabled = true; cnamSubmitBtn.textContent = 'Submitting…';
         try {
           const r = await api('/api/v1/phone/cnam', { method:'POST', body: JSON.stringify(payload) });
-          if (r.ok) { toast('Submitted — Twilio usually takes a few business days to review'); loadPhoneCard(); }
+          if (r.ok) { toast('Submitted — the carriers usually take a few business days to review'); loadPhoneCard(); }
           else { toast(r.detail || 'Could not submit right now', true); cnamSubmitBtn.disabled = false; cnamSubmitBtn.textContent = 'Submit for approval'; }
         } catch(e){ toast(e.message || 'Could not submit right now', true); cnamSubmitBtn.disabled = false; cnamSubmitBtn.textContent = 'Submit for approval'; }
       });
@@ -6108,7 +6108,7 @@ body::after{
         const composed = (j.results||[]).reduce((s,x)=>s+(x.composed||0),0);
         const errs = (j.errors||[]).length;
         if (errs && !composed) {
-          toast('Campaign pass hit an error — Claude API may be busy. Will retry in 5 min.');
+          toast('Follow-up pass hit an error — the AI service may be busy. Will retry in 5 min.');
         } else if (composed > 0) {
           toast(composed + ' message' + (composed===1?'':'s') + ' drafted — check the Queue tab to approve.');
           await loadFeed(); render();
