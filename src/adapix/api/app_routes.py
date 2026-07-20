@@ -3925,6 +3925,52 @@ def api_patient_memory_delete(patient_id: int, fact_id: str, _user: str = Depend
     return {"ok": True}
 
 
+@router.get("/documents", response_class=HTMLResponse)
+def documents_page():
+    """A small, unlinked founder page that lists generated documents — the
+    files live on disk but nothing in the app surfaces them (the AI-Team chat
+    that used to show download links is cut from nav). Reachable by URL only;
+    the data behind it is founder-gated."""
+    return HTMLResponse((TEMPLATE_DIR / "documents.html").read_text(encoding="utf-8"))
+
+
+@router.get("/api/v1/documents")
+def api_documents_list(_user: str = Depends(require_founder)):
+    """List the generated documents on disk (newest first) with a download
+    link for each. Founder-only, same as the download route."""
+    import os
+    import re
+    from pathlib import Path
+    doc_dir = Path(os.environ.get("ADAPIX_VAR", ".")) / "agent_documents"
+    out = []
+    if doc_dir.is_dir():
+        for f in doc_dir.iterdir():
+            if not f.is_file() or f.suffix.lower() != ".docx":
+                continue
+            stem = f.stem
+            # Filenames are "{Title_Slug}_{YYYYMMDD_HHMMSS}"; split the
+            # trailing timestamp back out into a title + readable date.
+            title, when = stem, None
+            m = re.match(r"^(.*)_(\d{8})_(\d{6})$", stem)
+            if m:
+                title = m.group(1).replace("_", " ").strip() or stem
+                d, t = m.group(2), m.group(3)
+                try:
+                    from datetime import datetime as _dt
+                    when = _dt.strptime(d + t, "%Y%m%d%H%M%S").isoformat()
+                except Exception:
+                    when = None
+            out.append({
+                "filename": f.name,
+                "title": title,
+                "created_at": when,
+                "size_kb": round(f.stat().st_size / 1024, 1),
+                "url": f"/api/v1/team-agents/doc/documents/{f.name}",
+            })
+    out.sort(key=lambda x: x["filename"], reverse=True)
+    return {"documents": out, "total": len(out)}
+
+
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")
 def api_agent_document(slug: str, filename: str, _user: str = Depends(require_founder)):
     # Documents are saved to a flat dir with no org tag, so ownership can't
