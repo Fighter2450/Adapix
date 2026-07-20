@@ -46,7 +46,37 @@ class _TextExtractor(HTMLParser):
             self.parts.append(data.strip())
 
 
+def _assert_public_url(url: str) -> None:
+    """SSRF guard: only fetch public http(s) hosts. Blocks a logged-in user
+    from making the server fetch its own cloud metadata endpoint
+    (169.254.169.254), localhost, or any private/internal address and read
+    the response back through the import preview."""
+    import ipaddress
+    import socket
+
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("only http/https URLs can be imported")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("invalid URL")
+    if parsed.port is not None and parsed.port not in (80, 443):
+        raise ValueError("only ports 80 and 443 are allowed")
+    # Resolve EVERY address the host maps to and reject if ANY is non-public
+    # (a hostname can resolve to both a public and a private A record).
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except Exception:
+        raise ValueError("could not resolve host")
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+            raise ValueError("that address isn't publicly reachable")
+
+
 def _fetch(url: str) -> tuple[str, list[str]]:
+    _assert_public_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; AdapixImport/1.0)"})
     with urllib.request.urlopen(req, timeout=20) as r:
         raw = r.read(1_500_000).decode("utf-8", errors="replace")

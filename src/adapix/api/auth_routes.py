@@ -41,6 +41,33 @@ def _set_session_cookie(resp, token: str) -> None:
         secure=_COOKIE_SECURE,
     )
 
+
+# Per-IP throttle on the credential endpoints — bcrypt slows a guesser but
+# doesn't stop credential-stuffing or email enumeration. In-memory sliding
+# window (resets on restart, fine as a burst brake). 10 attempts / 5 min / IP.
+import threading as _threading
+import time as _time
+from collections import deque as _deque
+
+_auth_attempts: dict[str, _deque] = {}
+_auth_lock = _threading.RLock()
+_AUTH_MAX = 10
+_AUTH_WINDOW = 300
+
+
+def _auth_rate_ok(request: Request) -> bool:
+    ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+          or (request.client.host if request.client else "unknown"))
+    now = _time.monotonic()
+    with _auth_lock:
+        win = _auth_attempts.setdefault(ip, _deque())
+        while win and now - win[0] > _AUTH_WINDOW:
+            win.popleft()
+        if len(win) >= _AUTH_MAX:
+            return False
+        win.append(now)
+        return True
+
 # Marketing-site origins allowed to ask "is this browser signed in?" —
 # adapixai.com and app.adapixai.com are the same site, so the session
 # cookie (SameSite=Lax) rides along on the fetch; CORS headers below are
@@ -84,12 +111,15 @@ def signup_page():
 
 @router.post("/auth/signup")
 async def api_signup(
+    request: Request,
     background: BackgroundTasks,
     email: str = Form(...),
     password: str = Form(...),
     business_name: str = Form(...),
     ref: str = Form(""),
 ):
+    if not _auth_rate_ok(request):
+        raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes and try again.")
     email = email.lower().strip()
     business_name = business_name.strip()
     ref = ref.strip().upper()[:16]
@@ -140,9 +170,12 @@ async def api_signup(
 
 @router.post("/auth/login")
 async def api_login(
+    request: Request,
     email: str = Form(...),
     password: str = Form(...),
 ):
+    if not _auth_rate_ok(request):
+        raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes and try again.")
     email = email.lower().strip()
 
     with get_session() as s:
