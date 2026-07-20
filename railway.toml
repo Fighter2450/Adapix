@@ -7,3 +7,9 @@ healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+# MUST stay 1. The background scheduler loops (campaign, digest, scheduled-
+# send, blooio poll) and the in-memory dedupe/rate-limit state assume a
+# single process. Two replicas would double-send every text and split the
+# abuse counters. Scale vertically (more CPU/RAM), never horizontally, until
+# the loops use a DB-backed lease/lock and the in-memory state moves to the DB.
+numReplicas = 1
