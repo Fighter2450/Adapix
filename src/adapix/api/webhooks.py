@@ -84,17 +84,8 @@ async def twilio_inbound_sms(request: Request):
     # downstream exception or a signature mismatch (misconfigured webhook
     # URL, rotated auth token) that eats it.
     if From and Body:
-        try:
-            import json as _json
-            import os as _os
-            import time as _time
-            from pathlib import Path as _Path
-            raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
-            with raw.open("a", encoding="utf-8") as f:
-                f.write(_json.dumps({"t": int(_time.time()), "from": From, "to": To,
-                                     "body": Body, "sid": MessageSid}) + chr(10))
-        except Exception:
-            pass
+        from ..rawlog import append_raw
+        append_raw("inbound_raw.jsonl", {"from": From, "to": To, "body": Body, "sid": MessageSid})
 
     if not await _verify_twilio(request, form_dict):
         # Don't 401 — Twilio retries aggressively. Just no-op + log.
@@ -175,16 +166,9 @@ async def blooio_inbound(request: Request):
         return {"ok": True, "ignored": "empty"}
 
     # Same never-lose-a-reply raw persist as the Twilio route.
-    try:
-        import os as _os
-        import time as _time
-        from pathlib import Path as _Path
-        rawlog = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "inbound_raw.jsonl"
-        with rawlog.open("a", encoding="utf-8") as f:
-            f.write(_json.dumps({"t": int(_time.time()), "from": sender, "to": recipient,
-                                 "body": text, "sid": data.get("message_id"), "via": "blooio"}) + chr(10))
-    except Exception:
-        pass
+    from ..rawlog import append_raw
+    append_raw("inbound_raw.jsonl", {"from": sender, "to": recipient,
+                                     "body": text, "sid": data.get("message_id"), "via": "blooio"})
 
     try:
         import asyncio as _asyncio
@@ -229,16 +213,8 @@ async def vapi_call_events(request: Request):
     if event == "end-of-call-report":
         # Persist the raw report BEFORE processing — Vapi never retries, so a
         # downstream exception must not cost us the transcript.
-        try:
-            import json as _json
-            import os as _os
-            import time as _time
-            from pathlib import Path as _Path
-            raw = _Path(_os.environ.get("ADAPIX_VAR", ".")) / "vapi_raw.jsonl"
-            with raw.open("a", encoding="utf-8") as f:
-                f.write(_json.dumps({"t": int(_time.time()), "payload": msg}, default=str) + chr(10))
-        except Exception:
-            pass
+        from ..rawlog import append_raw
+        append_raw("vapi_raw.jsonl", {"payload": msg})
         call = msg.get("call") or {}
         meta = call.get("metadata") or msg.get("metadata") or {}
         number = ((call.get("customer") or {}).get("number")) or ""
