@@ -288,19 +288,54 @@ def enforce_one_trial_per_card(org_id: str) -> dict:
         return {"ok": False, "reason": str(e)}
 
 
-def apply_referral_credit(referrer_org_id: str, amount_cents: int = 9900,
+def referrer_monthly_cents(org_id: str) -> int:
+    """What the referrer ACTUALLY pays per month — so 'one free month' credits
+    exactly that, not a flat $99. A founding customer on $49 must get a $49
+    credit, not $99 (which would be nearly two free months). Reads the base
+    price from their subscription items and nets out any coupon discount.
+    Falls back to the $99 list price if anything can't be read."""
+    LIST = 9900
+    rec = get_billing(org_id)
+    sub_id = rec.get("subscription_id")
+    if not (sub_id and configured()):
+        return LIST
+    try:
+        sub = _call("GET", f"/subscriptions/{sub_id}?expand[]=discount.coupon")
+        base = 0
+        for it in (sub.get("items") or {}).get("data") or []:
+            price = it.get("price") or {}
+            unit = price.get("unit_amount")
+            if unit is None:
+                unit = (it.get("plan") or {}).get("amount") or 0
+            base += int(unit) * int(it.get("quantity") or 1)
+        disc = sub.get("discount") or {}
+        coupon = disc.get("coupon") or {}
+        if coupon.get("percent_off"):
+            base = int(round(base * (1 - float(coupon["percent_off"]) / 100.0)))
+        elif coupon.get("amount_off"):
+            base = max(0, base - int(coupon["amount_off"]))
+        # Only trust a sane, positive figure; otherwise fall back.
+        return base if 0 < base <= LIST else LIST
+    except Exception:
+        return LIST
+
+
+def apply_referral_credit(referrer_org_id: str, amount_cents: int | None = None,
                           *, referred_org_id: str | None = None) -> bool:
     """Give the referrer one free month as a Stripe customer-balance credit
     (offsets their next invoice). Returns False when there's no Stripe
     customer to credit yet — caller should leave the reward pending.
 
-    The idempotency key is derived from (referrer, referee) so even if this
-    is somehow called twice for the same referral, Stripe applies the credit
-    ONCE."""
+    amount_cents defaults to the referrer's ACTUAL monthly charge (so a
+    founding customer gets their real $49, not a flat $99). The idempotency
+    key is derived from (referrer, referee) so even if this is somehow called
+    twice for the same referral, Stripe applies the credit ONCE."""
     rec = get_billing(referrer_org_id)
     customer_id = rec.get("customer_id")
     if not (customer_id and configured()):
         return False
+    if amount_cents is None:
+        amount_cents = referrer_monthly_cents(referrer_org_id)
     idem = f"referral-{referrer_org_id}-{referred_org_id or 'x'}"
     try:
         _call("POST", f"/customers/{customer_id}/balance_transactions", {

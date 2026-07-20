@@ -114,6 +114,45 @@ class InboundProcessor:
                 .first()
             )
             if campaign is None:
+                # A reply to a missed-call text-back ("…reply here and we'll
+                # get right back to you") lands here — its campaign is excluded
+                # from AI routing above. But we PROMISED a human would follow
+                # up, so escalate it: log the reply, flag it, and notify the
+                # owner. Anything else with no campaign is still just logged.
+                mc = (
+                    s.query(Campaign)
+                    .filter(Campaign.patient_id == patient.id,
+                            Campaign.workflow_id == "missed_call_textback")
+                    .order_by(Campaign.started_at.desc())
+                    .first()
+                )
+                if mc is not None:
+                    inbound = Message(campaign_id=mc.id, direction="inbound",
+                                      channel="sms", body=body, status="received",
+                                      provider_id=provider_id)
+                    s.add(inbound)
+                    s.flush()
+                    s.add(EscalationEvent(
+                        campaign_id=mc.id,
+                        triggered_by_message_id=inbound.id,
+                        category="callback_request",
+                        confidence="high",
+                        reasoning="Customer replied to the missed-call text-back.",
+                        suggested_action="Reply from your Inbox — they reached out after a missed call.",
+                    ))
+                    mc.status = CampaignStatus.escalated.value
+                    try:
+                        from .notifications import push_notification
+                        who = f"{patient.first_name} {patient.last_name}".strip() or "A caller"
+                        push_notification(
+                            title=f"{who} replied after a missed call",
+                            body=(body or "")[:120],
+                            url="/app", tag="adapix-missedcall-reply", org_id=patient.practice_id,
+                        )
+                    except Exception:
+                        pass
+                    return InboundResult(status="escalated", reason="missed-call reply")
+
                 # Still log inbound for audit, but no action
                 s.add(
                     Message(
