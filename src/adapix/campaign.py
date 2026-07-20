@@ -27,7 +27,7 @@ log = logging.getLogger("adapix.campaign")
 from .channels import EmailChannel, SmsChannel
 from .config import PracticeConfig, Settings, WorkflowConfig, load_practice, load_workflow
 from .db import get_session
-from .models import Campaign, CampaignStatus, Message, Patient
+from .models import Campaign, CampaignStatus, Message, Organization, Patient
 
 
 PENDING_APPROVAL = "pending_approval"
@@ -261,11 +261,19 @@ class CampaignRunner:
                 pass
             return
 
-        # Auto mode - send immediately
+        # Auto mode - send immediately, on the org's OWN line first (Blooio →
+        # Claw → Twilio) so auto-sent texts share the thread the customer can
+        # reply to — not the shared Twilio number.
         if step.channel == "sms":
-            result = self.sms.send(patient.phone or "", plan.body,
-                                   first_touch=campaign.last_step_completed == 0)
+            from .outbound import send_org_sms
+            org = session.get(Organization, campaign.practice_id)
+            result = send_org_sms(
+                self.settings, org, patient.phone or "", plan.body,
+                first_touch=campaign.last_step_completed == 0, dry_run=self.dry_run,
+            )
             extra: dict[str, Any] = {"intent": step.intent}
+            if result.transport:
+                extra["transport"] = result.transport
         elif step.channel == "email":
             subject = plan.subject or f"A note from {self.practice.name}"
             from .oauth import send_email_for_org

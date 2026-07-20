@@ -172,9 +172,13 @@ class ApprovalManager:
                 .all()
             )
             for m in messages:
-                if m.scheduled_at is not None:
-                    if m.scheduled_at > now or not in_quiet_hours_window:
-                        continue
+                # Quiet hours (8am–9pm ET) apply to EVERY message, scheduled or
+                # not — a row approved at 2am must wait, not fire immediately on
+                # the next sweep. Calls carry their own window in VoiceChannel.
+                if m.channel in ("sms", "email") and not in_quiet_hours_window:
+                    continue
+                if m.scheduled_at is not None and m.scheduled_at > now:
+                    continue
                 campaign = s.get(Campaign, m.campaign_id)
                 if campaign is None:
                     continue
@@ -185,18 +189,30 @@ class ApprovalManager:
                     continue
                 if patient.opted_out:
                     m.status = "rejected"
+                    s.commit()
                     continue
                 org = s.get(Organization, campaign.practice_id)
                 prior_sent = self._prior_sms_sent_to_patient(s, campaign.patient_id, exclude_message_id=m.id)
-                self._send_one(
-                    m, patient, sms, email, voice,
-                    org.vapi_phone_number_id if org else None,
-                    org.name if org else None,
-                    campaign.practice_id,
-                    org.blooio_channel_id if org else None,
-                    first_touch=prior_sent == 0,
-                )
-                attempted += 1
+                try:
+                    self._send_one(
+                        m, patient, sms, email, voice,
+                        org.vapi_phone_number_id if org else None,
+                        org.name if org else None,
+                        campaign.practice_id,
+                        org.blooio_channel_id if org else None,
+                        first_touch=prior_sent == 0,
+                    )
+                    # Commit after EACH send so a later exception can't roll
+                    # back already-delivered messages and re-send them next
+                    # sweep (a customer getting the same text 3–4 times).
+                    s.commit()
+                    attempted += 1
+                except Exception as exc:
+                    # One bad send must not abort the whole sweep. Persist
+                    # nothing for this row (it stays 'approved', retried next
+                    # pass) and move on to the rest.
+                    s.rollback()
+                    print(f"[adapix] send_approved: message {m.id} failed, skipping: {exc}")
         return attempted
 
     def approve_and_send(

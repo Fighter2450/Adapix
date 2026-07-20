@@ -1426,6 +1426,13 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
         raise HTTPException(status_code=400, detail="Enter a recipient")
     if not body.body.strip():
         raise HTTPException(status_code=400, detail="Enter a message")
+    # Normalize the phone to E.164 BEFORE lookup/create — every other write
+    # path stores +1XXXXXXXXXX, so an owner typing "412-555-0100" must match
+    # the existing "+14125550100" contact, not spawn a duplicate whose the
+    # customer's E.164 replies would never thread back to.
+    if channel == "sms":
+        from ..phone import normalize_phone
+        to = normalize_phone(to) or to
 
     scheduled_dt = None
     if body.scheduled_at:
