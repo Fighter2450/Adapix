@@ -130,6 +130,7 @@ const TASKS = [
   {owner:"rocco", status:"done",    title:"Dashboard live on app.adapixai.com", note:"Custom domain + DNS + PUBLIC_BASE_URL done 2026-07-06. Website links updated."},
   {owner:"rocco", status:"done",    title:"Google OAuth redirect URI for app.adapixai.com", note:"Added + saved 2026-07-06. Google notes it can take 5 min to a few hours to take effect."},
   {owner:"rocco", status:"done",    title:"Founder board + auto-update protocol", note:"Both Claudes now check tasks off and add new ones on their own — see CLAUDE.md."},
+  {owner:"rocco", status:"done",    title:"Higgsfield brand film for the 3D site revamp", note:"Two 6s clips generated 2026-07-07 (logo reveal + features stemming from the A) in the site palette, stitched to one ~12s hero film. Links + design brief in docs/WEBSITE_3D_REVAMP.md.", handoff:"Ben: implement the immersive 3D UI + embed the film"},
   {owner:"rocco", status:"done",    title:"Multi-tenant security lockdown", note:"Feed/activity/dashboard/approvals scoped per org; 14 open endpoints now need login."},
   {owner:"rocco", status:"done",    title:"Mobile pass", note:"Sidebar bug fixed, full bottom nav, all tabs verified at 375px."},
 
@@ -140,6 +141,7 @@ const TASKS = [
   {owner:"ben",   status:"done",    title:"Hero brand-film test reverted", note:"The 3D orbiting-A hero film was a test — Rocco had it reverted + taken off the live site 2026-07-07. The rest of the animated UI (timeline, tilt, Station demo) stays live."},
   {owner:"ben",   status:"done",    title:"Full-page brand film opener — LIVE", note:"Rocco ack'd + deployed 2026-07-07. The 3D circuit-A film owns the first screen on adapixai.com."},
   {owner:"ben",   status:"done",    title:"Hosting moved: Netlify → Vercel (auto-deploy)", note:"Netlify blocked deploys (credits exhausted). Site now deploys automatically on every push to main via Vercel. NEW RULE: website/ commits on main go live in ~1 min — use branches for unfinished work. Film scroll-scrub fix ships with the cutover."},
+  {owner:"ben",   status:"next",    title:"Immersive 3D UI revamp for adapixai.com", note:"Rocco wants the site more immersive/3D. Brand film is ready + full design brief in docs/WEBSITE_3D_REVAMP.md (uses the GSAP/three.js stack already in website/vendor). NB: the last 3D hero test was reverted — integrate, don't bolt on, and confirm the hero treatment with Rocco before deploy.", handoff:"From Rocco: film + brief ready in docs/WEBSITE_3D_REVAMP.md"},
   {owner:"ben",   status:"now",     title:"Record 60-second demo video", note:"Draft arrives in Inbox → tap Send → Station updates. The video slot is ready in website/index.html (search DEMO VIDEO SLOT)."},
   {owner:"ben",   status:"next",    title:"Collect 3 real testimonials from trial users", note:"Collection kit ready in docs/OUTREACH.md — when/how to ask, 3 questions that produce usable quotes, written-consent mechanics. Site section stays commented out until 3 real ones exist."},
   {owner:"ben",   status:"next",    title:"Set up social accounts + first content batch", note:"Position around 'the follow-up employee'. Site copy is the voice reference."},
