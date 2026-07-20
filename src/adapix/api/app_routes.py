@@ -1669,7 +1669,7 @@ def service_worker():
     We do NOT cache the JSON API — escalations must always be fresh.
     """
     sw = """
-const CACHE = 'adapix-shell-v5';
+const CACHE = 'adapix-shell-v6';
 const SHELL = ['/app', '/app/manifest.json', '/app/icon-192.png', '/app/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -1692,12 +1692,19 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   // Network-first for the HTML shell so UI updates show immediately when
   // online; fall back to the cached shell only when offline (keeps PWA).
-  if (e.request.mode === 'navigate' || url.pathname === '/app') {
+  // Only /app itself refreshes the cached shell — otherwise visiting
+  // /login or /welcome overwrites it, and the installed PWA would open to
+  // the wrong page offline. Other navigations are network-first with the
+  // /app shell as their offline fallback, but never overwrite it.
+  const isAppShell = url.pathname === '/app';
+  if (e.request.mode === 'navigate' || isAppShell) {
     e.respondWith(
       fetch(e.request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('/app', copy));
+          if (isAppShell) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put('/app', copy));
+          }
           return res;
         })
         .catch(() => caches.match('/app'))
