@@ -717,14 +717,31 @@ def api_notify_test(body: TestPushBody, _user: str = Depends(verify_admin)):
 # ---------------------------------------------------------------------------
 # Expense tracker — founder bookkeeping (personal for now, will be exposed
 # to practices later as a billable feature on Adapix proper).
+#
+# Until it's a real per-org feature, the data lives in a single shared file
+# with no tenant dimension — so every route below is gated to the FOUNDER's
+# org only. Any other logged-in org gets a 404 (not 403 — don't confirm the
+# endpoint exists), closing the cross-tenant read/delete of the founder's
+# financial records.
 # ---------------------------------------------------------------------------
+def require_founder(org_id: str = Depends(verify_admin)) -> str:
+    from ..models import User
+    founder_email = os.environ.get("ADAPIX_FOUNDER_EMAIL", "roccochenet95@gmail.com").lower()
+    with get_session() as s:
+        u = s.query(User).filter(User.email == founder_email).first()
+        founder_org = u.org_id if u else None
+    if not founder_org or org_id != founder_org:
+        raise HTTPException(status_code=404, detail="Not found")
+    return org_id
+
+
 @router.get("/expenses", response_class=HTMLResponse)
 def expenses_page():
     return HTMLResponse((TEMPLATE_DIR / "expenses.html").read_text(encoding="utf-8"))
 
 
 @router.get("/api/v1/expenses")
-def api_expenses_list(_user: str = Depends(verify_admin)):
+def api_expenses_list(_user: str = Depends(require_founder)):
     from ..expenses import (
         list_expenses, totals_by_category, totals_by_month,
         total_all_time, total_this_month, count_all, all_categories,
@@ -756,7 +773,7 @@ class AddSubscriptionBody(BaseModel):
 
 
 @router.post("/api/v1/subscriptions")
-def api_subscriptions_add(body: AddSubscriptionBody, _user: str = Depends(verify_admin)):
+def api_subscriptions_add(body: AddSubscriptionBody, _user: str = Depends(require_founder)):
     from ..expenses import add_subscription
     try:
         sub = add_subscription(
@@ -773,7 +790,7 @@ def api_subscriptions_add(body: AddSubscriptionBody, _user: str = Depends(verify
 
 
 @router.post("/api/v1/subscriptions/{sub_id}/cancel")
-def api_subscriptions_cancel(sub_id: str, _user: str = Depends(verify_admin)):
+def api_subscriptions_cancel(sub_id: str, _user: str = Depends(require_founder)):
     """Stop future auto-charges. Past charges stay in history."""
     from ..expenses import cancel_subscription
     if not cancel_subscription(sub_id):
@@ -782,7 +799,7 @@ def api_subscriptions_cancel(sub_id: str, _user: str = Depends(verify_admin)):
 
 
 @router.delete("/api/v1/subscriptions/{sub_id}")
-def api_subscriptions_delete(sub_id: str, _user: str = Depends(verify_admin)):
+def api_subscriptions_delete(sub_id: str, _user: str = Depends(require_founder)):
     """Remove a subscription entirely from the list. Past expense entries
     from it remain in history."""
     from ..expenses import delete_subscription
@@ -800,7 +817,7 @@ class AddExpenseBody(BaseModel):
 
 
 @router.post("/api/v1/expenses")
-def api_expenses_add(body: AddExpenseBody, _user: str = Depends(verify_admin)):
+def api_expenses_add(body: AddExpenseBody, _user: str = Depends(require_founder)):
     from ..expenses import add_expense
     try:
         rec = add_expense(
@@ -817,7 +834,7 @@ def api_expenses_add(body: AddExpenseBody, _user: str = Depends(verify_admin)):
 
 
 @router.delete("/api/v1/expenses/{expense_id}")
-def api_expenses_delete(expense_id: str, _user: str = Depends(verify_admin)):
+def api_expenses_delete(expense_id: str, _user: str = Depends(require_founder)):
     from ..expenses import remove_expense
     if not remove_expense(expense_id):
         raise HTTPException(status_code=404, detail="expense not found")
@@ -825,7 +842,7 @@ def api_expenses_delete(expense_id: str, _user: str = Depends(verify_admin)):
 
 
 @router.get("/api/v1/expenses/export.csv", response_class=PlainTextResponse)
-def api_expenses_csv(_user: str = Depends(verify_admin)):
+def api_expenses_csv(_user: str = Depends(require_founder)):
     from ..expenses import to_csv
     return PlainTextResponse(content=to_csv(), media_type="text/csv")
 
@@ -835,7 +852,7 @@ class BulkExpenseBody(BaseModel):
 
 
 @router.post("/api/v1/expenses/bulk")
-def api_expenses_bulk(body: BulkExpenseBody, _user: str = Depends(verify_admin)):
+def api_expenses_bulk(body: BulkExpenseBody, _user: str = Depends(require_founder)):
     """Bulk paste — one expense per non-blank line. Each line goes through
     the Claude expense extractor and gets added if it parses as an expense.
     Returns a summary of how many were added vs skipped, plus per-line
@@ -3909,7 +3926,13 @@ def api_patient_memory_delete(patient_id: int, fact_id: str, _user: str = Depend
 
 
 @router.get("/api/v1/team-agents/{slug}/documents/{filename}")
-def api_agent_document(slug: str, filename: str, _user: str = Depends(verify_admin)):
+def api_agent_document(slug: str, filename: str, _user: str = Depends(require_founder)):
+    # Documents are saved to a flat dir with no org tag, so ownership can't
+    # be checked per-file — and any authed org could otherwise download any
+    # other org's generated doc. The Team feature is founder-only tooling
+    # right now (cut from the customer nav), so gate to the founder. When
+    # Team becomes a customer feature, save docs under an org-scoped path
+    # and switch this back to a per-org ownership check.
     import os
     from pathlib import Path
     doc_dir = Path(os.environ.get("ADAPIX_VAR", ".")) / "agent_documents"

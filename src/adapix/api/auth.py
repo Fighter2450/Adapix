@@ -50,6 +50,37 @@ def _decode_token(token: str) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
+RESET_TOKEN_EXPIRE_MINUTES = 30
+
+
+def create_reset_token(user_id: int, password_hash: str) -> str:
+    """A short-lived password-reset token. It's signed over a fingerprint of
+    the CURRENT password hash, so the moment the password changes (or the
+    token is used to change it) the token stops verifying — single-use for
+    free, no server-side token store needed."""
+    import hashlib
+    fp = hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+    expire = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+    payload = {"sub": str(user_id), "pfp": fp, "typ": "reset", "exp": expire}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_reset_token(token: str, password_hash: str) -> int | None:
+    """Return the user id if the reset token is valid for THIS password hash,
+    else None (expired, wrong type, or already used because the hash moved)."""
+    import hashlib
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("typ") != "reset":
+            return None
+        fp = hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+        if payload.get("pfp") != fp:
+            return None
+        return int(payload["sub"])
+    except (JWTError, KeyError, ValueError):
+        return None
+
+
 class CurrentUser:
     """Lightweight session context extracted from the JWT cookie."""
 

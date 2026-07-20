@@ -196,6 +196,83 @@ async def api_logout():
     return resp
 
 
+# ---------------------------------------------------------------------------
+# Password reset — request a link, then set a new password.
+# ---------------------------------------------------------------------------
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page():
+    return HTMLResponse((TEMPLATE_DIR / "forgot-password.html").read_text(encoding="utf-8"))
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page():
+    return HTMLResponse((TEMPLATE_DIR / "reset-password.html").read_text(encoding="utf-8"))
+
+
+@router.post("/auth/forgot")
+async def api_forgot(request: Request, email: str = Form(...)):
+    """Email a password-reset link. ALWAYS returns ok — never reveal whether
+    an email is registered (no enumeration oracle). Rate-limited per IP."""
+    if not _auth_rate_ok(request):
+        raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes and try again.")
+    email = email.lower().strip()
+    from .auth import create_reset_token
+    from ..config import Settings
+    try:
+        with get_session() as s:
+            user = s.query(User).filter(User.email == email).first()
+            if user is not None:
+                token = create_reset_token(user.id, user.password_hash)
+                uid_email = user.email
+        if user is not None:
+            base = (Settings().public_base_url or f"{request.url.scheme}://{request.url.netloc}").rstrip("/")
+            link = f"{base}/reset-password?token={token}"
+            try:
+                from ..channels import EmailChannel
+                EmailChannel(Settings()).send(
+                    uid_email,
+                    "Reset your Adapix password",
+                    (
+                        "Someone (hopefully you) asked to reset the password on your "
+                        "Adapix account.\n\nUse this link within 30 minutes to set a new "
+                        f"password:\n{link}\n\nIf you didn't ask for this, you can ignore "
+                        "this email — your password won't change."
+                    ),
+                    from_name="Adapix",
+                )
+            except Exception as e:
+                print(f"[adapix] reset email send failed: {e}")
+    except Exception as e:
+        print(f"[adapix] forgot-password error: {e}")
+    return JSONResponse({"ok": True})
+
+
+@router.post("/auth/reset")
+async def api_reset(request: Request, token: str = Form(...), password: str = Form(...)):
+    """Set a new password from a valid reset token. The token is signed over
+    the OLD password hash, so it's single-use — once the hash changes it stops
+    verifying."""
+    if not _auth_rate_ok(request):
+        raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes and try again.")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    from .auth import _decode_token, verify_reset_token
+    with get_session() as s:
+        # The token's signature is already valid (we signed it); decode it to
+        # get the user id, load that user, then verify_reset_token confirms it
+        # still matches their CURRENT password hash (single-use enforcement).
+        try:
+            uid = int(_decode_token(token).get("sub", 0))
+        except Exception:
+            raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
+        user = s.query(User).filter(User.id == uid).first()
+        if user is None or verify_reset_token(token, user.password_hash) != user.id:
+            raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
+        user.password_hash = hash_password(password)
+        s.commit()
+    return JSONResponse({"ok": True})
+
+
 @router.get("/auth/me")
 async def api_me(user: CurrentUser = Depends(get_current_user)):
     return {"id": user.id, "email": user.email, "org_id": user.org_id}
