@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -40,12 +41,18 @@ def configured() -> bool:
     return bool(_key() and price_id())
 
 
-def _call(method: str, path: str, params: dict[str, Any] | None = None) -> dict:
+def _call(method: str, path: str, params: dict[str, Any] | None = None,
+          *, idempotency_key: str | None = None) -> dict:
     data = urllib.parse.urlencode(params or {}).encode() if params else None
+    headers = {"Authorization": f"Bearer {_key()}"}
+    # Idempotency-Key makes a retried POST (network hiccup, webhook fan-out)
+    # reuse Stripe's first result instead of creating a second charge/credit.
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
     req = urllib.request.Request(
         f"{STRIPE_API}{path}",
         data=data,
-        headers={"Authorization": f"Bearer {_key()}"},
+        headers=headers,
         method=method,
     )
     with urllib.request.urlopen(req, timeout=20) as r:
@@ -98,6 +105,46 @@ def set_billing(org_id: str, record: dict[str, Any]) -> None:
         d = _load()
         d[org_id] = {**(d.get(org_id) or {}), **record, "updated_at": int(time.time())}
         _save(d)
+
+
+# ---------------------------------------------------------------------------
+# Stripe event idempotency — the SAME event id is delivered more than once
+# (Stripe retries, and a trial-end fires several subscription.updated events
+# in a burst). Processing one twice = a duplicate referral credit. We record
+# every handled event id and refuse to process it again.
+# ---------------------------------------------------------------------------
+_events_lock = _threading.RLock()
+
+
+def _events_path() -> Path:
+    return Path(os.environ.get("ADAPIX_VAR", ".")) / "stripe_events.json"
+
+
+def mark_stripe_event_processed(event_id: str) -> bool:
+    """Record event_id as handled. Returns True if this is the FIRST time
+    (caller should process it), False if already seen (caller should skip).
+    Keeps the most recent 5000 ids so the file stays small."""
+    if not event_id:
+        return True
+    with _events_lock:
+        p = _events_path()
+        try:
+            seen = json.loads(p.read_text()) if p.exists() else []
+        except Exception:
+            seen = []
+        if event_id in seen:
+            return False
+        seen.append(event_id)
+        if len(seen) > 5000:
+            seen = seen[-5000:]
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            tmp = p.with_suffix(".tmp")
+            tmp.write_text(json.dumps(seen))
+            os.replace(tmp, p)
+        except Exception:
+            pass
+        return True
 
 
 # ---------------------------------------------------------------------------
@@ -241,23 +288,61 @@ def enforce_one_trial_per_card(org_id: str) -> dict:
         return {"ok": False, "reason": str(e)}
 
 
-def apply_referral_credit(referrer_org_id: str, amount_cents: int = 9900) -> bool:
+def apply_referral_credit(referrer_org_id: str, amount_cents: int = 9900,
+                          *, referred_org_id: str | None = None) -> bool:
     """Give the referrer one free month as a Stripe customer-balance credit
     (offsets their next invoice). Returns False when there's no Stripe
-    customer to credit yet — caller should leave the reward pending."""
+    customer to credit yet — caller should leave the reward pending.
+
+    The idempotency key is derived from (referrer, referee) so even if this
+    is somehow called twice for the same referral, Stripe applies the credit
+    ONCE."""
     rec = get_billing(referrer_org_id)
     customer_id = rec.get("customer_id")
     if not (customer_id and configured()):
         return False
+    idem = f"referral-{referrer_org_id}-{referred_org_id or 'x'}"
     try:
         _call("POST", f"/customers/{customer_id}/balance_transactions", {
             "amount": str(-abs(amount_cents)),   # negative = credit
             "currency": "usd",
             "description": "Referral reward — 1 free month (give a month, get a month)",
-        })
+        }, idempotency_key=idem)
         return True
     except Exception:
         return False
+
+
+def reconcile_all_billing() -> int:
+    """Re-pull every org's real subscription status from Stripe and correct
+    any drift in the local cache. This is the safety net for a missed
+    webhook (a canceled customer who'd otherwise keep spending on stale
+    'active' state forever). Runs hourly. Returns how many records changed."""
+    if not configured():
+        return 0
+    changed = 0
+    with _billing_lock:
+        orgs = list(_load().items())
+    for org_id, rec in orgs:
+        sub_id = rec.get("subscription_id")
+        if not sub_id:
+            continue
+        try:
+            sub = _call("GET", f"/subscriptions/{sub_id}")
+            real = sub.get("status", "unknown")
+            if real != rec.get("status"):
+                set_billing(org_id, {"status": real})
+                changed += 1
+        except urllib.error.HTTPError as he:
+            # ONLY a genuine 404 (subscription deleted in Stripe) means
+            # canceled. A network blip or 5xx must NOT cancel a paying
+            # customer — leave the cache untouched and retry next hour.
+            if he.code == 404:
+                set_billing(org_id, {"status": "canceled"})
+                changed += 1
+        except Exception:
+            pass  # transient — retry next sweep
+    return changed
 
 
 # ---------------------------------------------------------------------------

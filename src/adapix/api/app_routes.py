@@ -225,6 +225,13 @@ def api_billing_checkout(request: Request, _user: str = Depends(verify_admin)):
     from ..models import User
     if not configured():
         raise HTTPException(status_code=503, detail="Billing isn't set up yet — you can skip this step.")
+    # Refuse a second checkout when the org already has a live subscription —
+    # otherwise a double-click or a second tab creates two $99 subscriptions,
+    # the second invisible to the app and silently double-billing the customer.
+    from ..billing import get_billing
+    _existing = get_billing(_user).get("status")
+    if _existing in ("trialing", "active"):
+        raise HTTPException(status_code=409, detail="You already have an active subscription.")
     from ..models import Organization
     with get_session() as s:
         owner = s.query(User).filter(User.org_id == _user, User.role == "owner").first()

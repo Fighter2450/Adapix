@@ -359,7 +359,13 @@ async def stripe_webhook(request: Request):
     etype = event.get("type", "")
     obj = (event.get("data") or {}).get("object") or {}
 
-    from ..billing import find_subscription_by_org, set_billing
+    from ..billing import find_subscription_by_org, mark_stripe_event_processed, set_billing
+
+    # Idempotency: Stripe delivers the same event id more than once (retries,
+    # and a trial-end fires several subscription.updated events at once). Handle
+    # each id exactly once so a referral is never credited twice.
+    if not mark_stripe_event_processed(event.get("id", "")):
+        return {"ok": True, "dedup": True}
 
     org_id = None
     status = None
@@ -368,16 +374,39 @@ async def stripe_webhook(request: Request):
         status = "canceled" if etype.endswith("deleted") else obj.get("status")
     elif etype == "invoice.payment_failed":
         meta = ((obj.get("subscription_details") or {}).get("metadata")) or {}
+        # API-version-robust fallback for where the metadata lives.
+        if not meta:
+            meta = (((obj.get("parent") or {}).get("subscription_details") or {}).get("metadata")) or {}
         org_id = meta.get("org_id")
         status = "past_due"
+    elif etype in ("invoice.paid", "invoice.payment_succeeded"):
+        # The referral reward lands ONLY when a real invoice is PAID (amount
+        # > 0) — i.e. the referred business became a paying customer, not just
+        # a trial signup whose card might decline at trial end. Gating on
+        # status=active (the old behavior) paid out before any money cleared.
+        amount_paid = obj.get("amount_paid", 0) or 0
+        meta = ((obj.get("subscription_details") or {}).get("metadata")) or {}
+        if not meta:
+            meta = (((obj.get("parent") or {}).get("subscription_details") or {}).get("metadata")) or {}
+        paid_org = meta.get("org_id")
+        if paid_org and amount_paid > 0:
+            _maybe_reward_referrer(paid_org)
+        return {"ok": True}
     elif etype == "checkout.session.completed":
-        org_id = obj.get("client_reference_id")
+        org_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("org_id")
         if org_id:
-            find_subscription_by_org(org_id)  # records sub + status
+            # Persist straight from the session object — its `subscription`
+            # and `customer` fields are authoritative and immediate, unlike
+            # the eventually-consistent /subscriptions/search (which often
+            # returns nothing for a just-created sub, silently skipping the
+            # one-trial-per-card check).
+            sub_id = obj.get("subscription")
+            cust_id = obj.get("customer")
+            if sub_id:
+                set_billing(org_id, {"subscription_id": sub_id, "customer_id": cust_id})
+            else:
+                find_subscription_by_org(org_id)
             print(f"[adapix] stripe checkout completed for org {org_id}")
-            # One free trial per CARD — same card fingerprint on a second
-            # account ends that account's trial immediately and voids any
-            # referral attribution (see _void_referral_if_duplicate).
             try:
                 from ..billing import enforce_one_trial_per_card
                 r = enforce_one_trial_per_card(org_id)
@@ -394,8 +423,8 @@ async def stripe_webhook(request: Request):
                              "subscription_id": obj.get("id") if etype.startswith("customer.subscription.") else None}
                     if etype.startswith("customer.subscription.") else {"status": status})
         print(f"[adapix] stripe {etype}: org {org_id} -> {status}")
-        if status == "active":
-            _maybe_reward_referrer(org_id)
+        # NOTE: referral reward intentionally NOT triggered on status=active —
+        # it fires on invoice.paid above, after real money clears.
     return {"ok": True}
 
 
@@ -438,7 +467,7 @@ def _maybe_reward_referrer(referred_org_id: str) -> None:
             )
             if referrer is None:
                 return
-            if apply_referral_credit(referrer.id):
+            if apply_referral_credit(referrer.id, referred_org_id=referred_org_id):
                 org.referral_rewarded = True
                 print(f"[adapix] referral reward: org {referrer.id} credited for referring {referred_org_id}")
             else:

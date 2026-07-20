@@ -94,6 +94,15 @@ def create_app() -> FastAPI:
                 from ..ops_alert import record_error
                 record_error("weekly-email-loop", str(exc))
             try:
+                from ..billing import reconcile_all_billing
+                n = await asyncio.to_thread(reconcile_all_billing)
+                if n:
+                    log.info(f"Billing reconcile: corrected {n} org(s) vs Stripe.")
+            except Exception as exc:
+                log.error(f"Billing reconcile error: {exc}")
+                from ..ops_alert import record_error
+                record_error("billing-reconcile-loop", str(exc))
+            try:
                 from ..backup import run_nightly_backup
                 status = await asyncio.to_thread(run_nightly_backup)
                 if not status.startswith("skipped"):
