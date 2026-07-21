@@ -1743,7 +1743,12 @@ body::after{
       if (!gapsEl) return;
       const gaps = [];
       if (!(d.business_name || '').trim()) gaps.push({label: 'Add your business name', focus: 'db-name'});
-      if (!(d.owner_name || '').trim()) gaps.push({label: 'Tell Adapix what to call you', focus: 'db-owner'});
+      // Signature choice — stays until they either set a first name (sign
+      // personally) OR turn the "use my first name" toggle off (business-only).
+      // Both live in Business knowledge → Identity (db-owner / db-use-owner).
+      if (!(d.owner_name || '').trim() && d.use_owner_name !== false) {
+        gaps.push({label: 'Choose how your messages are signed — add your first name, or switch to business-only', focus: 'db-owner'});
+      }
       if (!(d.phone || '').trim()) gaps.push({label: 'Add your business phone number', focus: 'db-phone'});
       // Fastest path to a well-taught AI (fewer escalations): paste the
       // website once instead of filling in description/pricing/FAQs by
