@@ -3635,26 +3635,22 @@ body::after{
       <button class="spage-back" id="ci-back">← Contacts</button>
       <div class="spage-head">
         <div class="spage-title">Import contacts</div>
-        <div class="spage-sub">Upload a spreadsheet of your contacts and Adapix starts following up automatically. All it needs is a name, plus a phone number or email.</div>
-      </div>
-
-      <div class="scard" style="margin-bottom:16px">
-        <div class="scard-title">Step 1 — Get the template</div>
-        <p style="font-size:13px;color:var(--ink-2);margin-bottom:14px">Download, fill it in with your contacts, then upload it below.</p>
-        <a href="/api/v1/contacts/template.csv" download style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink);font-size:13px;font-weight:500;text-decoration:none"><i data-lucide="download"></i> Download template CSV</a>
+        <div class="spage-sub">Export your customers from wherever they live now — your CRM, your booking or field-service app, your phone, or a spreadsheet — and drop that file in. Adapix figures out the columns for you. No reformatting.</div>
       </div>
 
       <div class="scard" id="ci-upload-card">
-        <div class="scard-title">Step 2 — Upload your CSV</div>
+        <div class="scard-title">Upload your export</div>
         <div class="ci-dropzone" id="ci-dropzone">
           <div style="font-size:36px;margin-bottom:14px;opacity:.35">📂</div>
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">Drop your CSV file here</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">Drop your file here</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-bottom:10px">CSV, Excel (.xlsx), or contacts (.vcf) — from any system</div>
           <div style="font-size:12px;color:var(--ink-3);margin-bottom:18px">or</div>
           <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);color:var(--cyan-2);font-size:13px;font-weight:600;cursor:pointer">
             <i data-lucide="upload"></i> Choose file
-            <input type="file" id="ci-file" accept=".csv,text/csv" style="display:none">
+            <input type="file" id="ci-file" accept=".csv,.xlsx,.xls,.vcf,text/csv" style="display:none">
           </label>
         </div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:14px;text-align:center">Starting from scratch or a notebook? <a href="/api/v1/contacts/template.csv" download style="color:var(--cyan-2)">Download a blank template</a> to fill in.</div>
       </div>
 
       <div id="ci-preview-card" style="display:none">
@@ -3691,7 +3687,8 @@ body::after{
     const successEl    = main.querySelector('#ci-success');
 
     async function handleFile(file){
-      if (!file || !file.name.toLowerCase().endsWith('.csv')){ toast('Please select a .csv file'); return; }
+      const ok = file && /\.(csv|xlsx|xls|vcf)$/i.test(file.name);
+      if (!ok){ toast('Upload a .csv, Excel (.xlsx), or contacts (.vcf) file'); return; }
       pendingFile = file;
       dropzone.style.opacity = '.4';
       dropzone.style.pointerEvents = 'none';
@@ -3704,20 +3701,39 @@ body::after{
         const j = await fetch('/api/v1/contacts/import', {method:'POST', credentials:'include', body:fd}).then(r=>r.json());
         const rows = j.preview || [];
         const total = j.total || 0;
-        const cols = (j.columns || []).filter(c => c);
+        const m = j.mapping || {};
 
         previewTitle.textContent = total + ' contact' + (total !== 1 ? 's' : '') + ' found';
-        importBtn.textContent = 'Import ' + total + ' contact' + (total !== 1 ? 's' : '') + ' →';
+        importBtn.textContent = total ? ('Import ' + total + ' contact' + (total !== 1 ? 's' : '') + ' →') : 'Nothing to import';
+        importBtn.disabled = !total;
 
-        const th = cols.map(c => `<th>${escapeHTML(c)}</th>`).join('');
-        const trs = rows.map(r => `<tr>${cols.map(c => `<td>${escapeHTML(r[c]||'')}</td>`).join('')}</tr>`).join('');
-        previewTable.innerHTML = `<table class="ci-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`
-          + (total > 5 ? `<div style="padding:8px 10px;font-size:11px;color:var(--ink-3)">Showing first 5 of ${total} rows</div>` : '');
+        // Show what Adapix matched automatically, so the owner trusts it.
+        const nameSrc = m.first_name || m.full_name;
+        const bits = [];
+        if (nameSrc) bits.push(`Name ← <b style="color:var(--ink)">${escapeHTML(nameSrc)}</b>`);
+        if (m.phone) bits.push(`Phone ← <b style="color:var(--ink)">${escapeHTML(m.phone)}</b>`);
+        if (m.email) bits.push(`Email ← <b style="color:var(--ink)">${escapeHTML(m.email)}</b>`);
+        const mapLine = bits.length
+          ? `<div style="font-size:12.5px;color:var(--ink-2);margin-bottom:12px;padding:10px 12px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);border-radius:9px">✓ Matched your columns automatically — ${bits.join(' · ')}</div>`
+          : `<div style="font-size:12.5px;color:#fbbf24;margin-bottom:12px">Couldn't auto-detect a name/phone/email column — check the file has a header row.</div>`;
+
+        // Preview the CLEANED contacts (name / phone / email), not raw columns.
+        const disp = [
+          ['Name', r => ((r.first_name||'')+' '+(r.last_name||'')).trim()],
+          ['Phone', r => r.phone||''],
+          ['Email', r => r.email||''],
+          ['Notes', r => r.notes||r.service_type||''],
+        ];
+        const th = disp.map(d => `<th>${d[0]}</th>`).join('');
+        const trs = rows.map(r => `<tr>${disp.map(d => `<td>${escapeHTML(d[1](r))}</td>`).join('')}</tr>`).join('');
+        previewTable.innerHTML = mapLine
+          + `<table class="ci-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`
+          + (total > 5 ? `<div style="padding:8px 10px;font-size:11px;color:var(--ink-3)">Showing first 5 of ${total} contacts</div>` : '');
 
         uploadCard.style.display = 'none';
         previewCard.style.display = 'block';
       } catch(e){
-        toast('Could not read CSV — check the file format');
+        toast('Could not read that file — try exporting again as CSV or Excel');
         dropzone.style.opacity = '';
         dropzone.style.pointerEvents = '';
       }

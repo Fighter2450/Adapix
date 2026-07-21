@@ -3680,28 +3680,42 @@ async def api_contacts_import(
     chase: str = Form("all"),
     _user: str = Depends(verify_admin),
 ):
-    """Upload a CSV of contacts. With preview=true returns first 5 rows without inserting.
+    """Import contacts from whatever a business exported from its old system —
+    a CSV or Excel (.xlsx) from any CRM / field-service / booking tool, or a
+    vCard (.vcf) from phone/Google contacts. Columns are auto-mapped (see
+    contact_import.py) so the owner never has to reformat into our template.
+
+    With preview=true: returns the first 5 mapped rows + the detected
+    column mapping, without inserting.
 
     chase="all"  -> imported contacts enter the follow-up pool (capped drafting)
     chase="none" -> imported as records only; the owner opts each one in later
     Re-imports are deduped on (org, phone) and (org, external_id).
     """
-    import csv as csv_mod
-    import io
-    from datetime import datetime as dt
+    import re
+    from ..contact_import import detect_mapping, normalize_rows, rows_from_upload
 
     content = await file.read()
     try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        text = content.decode("latin-1")
+        raw_rows, columns, kind = rows_from_upload(content, file.filename or "")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Couldn't read that file: {exc}")
 
-    reader = csv_mod.DictReader(io.StringIO(text))
-    rows = list(reader)
-    columns = list(reader.fieldnames or [])
+    canonical = normalize_rows(raw_rows, columns)
 
     if preview.lower() in ("true", "1", "yes"):
-        return {"preview": rows[:5], "total": len(rows), "columns": columns}
+        m = detect_mapping(columns)
+        # A friendly "we found: Name <- Given Name, Phone <- Mobile Phone" map.
+        mapping_summary = {}
+        for field, src in m.items():
+            mapping_summary[field] = src if isinstance(src, str) else (src[0] if src else None)
+        return {
+            "preview": canonical[:5],
+            "total": len(canonical),
+            "columns": columns,
+            "kind": kind,
+            "mapping": mapping_summary,
+        }
 
     imported = 0
     skipped = 0
@@ -3709,25 +3723,21 @@ async def api_contacts_import(
     errors: list[str] = []
     status_for_new = "consulted_not_started" if chase != "none" else "on_hold"
 
+    from ..phone import normalize_phone
     with get_session() as s:
         existing = s.query(Patient.phone, Patient.external_id).filter(Patient.practice_id == _user).all()
         seen_phones = {ph for ph, _ in existing if ph}
         seen_ext = {ext for _, ext in existing if ext}
-        for i, row in enumerate(rows):
+        for i, row in enumerate(canonical):
             try:
-                from ..phone import normalize_phone
                 row_phone = normalize_phone(row.get("phone"))
                 row_ext = (row.get("external_id") or "").strip() or None
                 if (row_phone and row_phone in seen_phones) or (row_ext and row_ext in seen_ext):
                     duplicates += 1
                     continue
-                consult_date = None
-                raw_date = row.get("consult_date", "").strip()
-                if raw_date:
-                    consult_date = dt.fromisoformat(raw_date)
 
                 amount = None
-                raw_amount = (row.get("deal_value") or row.get("treatment_plan_amount") or "").strip()
+                raw_amount = re.sub(r"[^\d.]", "", row.get("deal_value") or "")
                 if raw_amount:
                     try:
                         amount = float(raw_amount)
@@ -3736,14 +3746,13 @@ async def api_contacts_import(
 
                 s.add(Patient(
                     practice_id=_user,
-                    external_id=(row.get("external_id") or "").strip() or None,
+                    external_id=row_ext,
                     first_name=(row.get("first_name") or "").strip(),
                     last_name=(row.get("last_name") or "").strip(),
                     phone=row_phone,
                     email=(row.get("email") or "").strip() or None,
-                    preferred_channel=(row.get("preferred_channel") or "sms").strip(),
-                    consult_date=consult_date,
-                    treatment_type=(row.get("service_type") or row.get("treatment_type") or "").strip() or None,
+                    preferred_channel="email" if (row.get("email") and not row_phone) else "sms",
+                    treatment_type=(row.get("service_type") or "").strip() or None,
                     treatment_plan_amount=amount,
                     notes=(row.get("notes") or "").strip() or None,
                     status=status_for_new,
@@ -3757,7 +3766,8 @@ async def api_contacts_import(
                 errors.append(f"Row {i + 2}: {exc}")
                 skipped += 1
 
-    return {"imported": imported, "skipped": skipped, "duplicates": duplicates, "errors": errors}
+    return {"imported": imported, "skipped": skipped, "duplicates": duplicates,
+            "errors": errors, "kind": kind}
 
 
 class ContactAddBody(BaseModel):
