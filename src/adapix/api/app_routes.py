@@ -282,53 +282,22 @@ def billing_success(request: Request, session_id: str = ""):
 
 @router.get("/app", response_class=HTMLResponse)
 def app_shell(request: Request):
+    """The dashboard. Flow is Create account → Stripe → Dashboard — there is
+    no setup wizard: a brand-new org lands straight here, and the home screen's
+    setup-gap nudges (business name, "let Adapix read your website", pricing,
+    calling number, email…) guide configuration in place, non-blocking. The
+    OrgProfile is created lazily the first time they save any business info."""
     from fastapi.responses import RedirectResponse
     from .auth import COOKIE_NAME, _decode_token
     from jose import JWTError
-    from ..db import get_engine
-    from ..models import OrgProfile
-    from sqlalchemy.orm import Session
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         return RedirectResponse(url="/login", status_code=302)
     try:
-        payload = _decode_token(token)
-        org_id = payload.get("org")
+        _decode_token(token)
     except (JWTError, Exception):
         return RedirectResponse(url="/login", status_code=302)
-    # Check per-org profile in DB first; fall back to legacy flat file
-    configured = False
-    if org_id:
-        try:
-            with Session(get_engine()) as s:
-                configured = s.get(OrgProfile, org_id) is not None
-        except Exception:
-            pass
-    if not configured and not org_id:
-        # Legacy single-tenant fallback only — a real org is judged solely
-        # by its own profile, otherwise the first business to finish setup
-        # would silence the welcome wizard for every signup after it.
-        configured = CONFIGURED_FLAG.exists()
-    if not configured:
-        return RedirectResponse(url="/welcome", status_code=302)
     return HTMLResponse((TEMPLATE_DIR / "app.html").read_text(encoding="utf-8"))
-
-
-# ---------------------------------------------------------------------------
-# First-time setup wizard
-# ---------------------------------------------------------------------------
-# Persistence: a flag file marks the device as configured; the practice
-# profile + voice + workflow choices land in a small JSON sidecar.
-# Both default to ./ in dev mode so you can iterate without root perms.
-SETUP_DIR = Path(os.environ.get("ADAPIX_VAR", "."))
-CONFIGURED_FLAG = SETUP_DIR / "configured.flag"
-PRACTICE_JSON = SETUP_DIR / "practice_profile.json"
-
-
-@router.get("/welcome", response_class=HTMLResponse)
-def welcome_page():
-    """6-step first-time setup wizard. Runs once per device."""
-    return HTMLResponse((TEMPLATE_DIR / "welcome.html").read_text(encoding="utf-8"))
 
 
 @router.get("/calculator", response_class=HTMLResponse)
@@ -883,110 +852,6 @@ def api_expenses_bulk(body: BulkExpenseBody, _user: str = Depends(require_founde
             results.append({"line": ln, "added": False})
             skipped += 1
     return {"ok": True, "added": added, "skipped": skipped, "total_lines": len(lines), "results": results}
-
-
-class SetupBody(BaseModel):
-    practice: dict = {}
-    tone: str = "warm_professional"
-    workflows: list[str] = []
-    escalations: list[str] = []
-    # Optional free-form custom items from the "Other" cards in the wizard
-    workflow_custom: str = ""
-    escalation_custom: str = ""
-    # Free-form description of the problems the practice is facing — the
-    # heart of "adapt to my practice". Pasted into the AI's system prompt.
-    practice_problems: str = ""
-    # What kind of practice this is. The wizard now uses a searchable picker
-    # backed by ~200 specific business types — practice_type is the slug id
-    # (e.g. "oral_surgeon", "coffee_shop") and practice_type_label is the
-    # human-readable name we show in the UI and feed to Adapix's prompt.
-    # practice_type_custom is filled only when the user picks "Not listed".
-    practice_type: str = ""
-    practice_type_label: str = ""
-    practice_type_custom: str = ""
-    # Branch chosen at the top of the welcome wizard. "existing" = user already
-    # runs a business and Adapix is automating follow-up for it. "new" = user
-    # is launching a business and Adapix should help them set it up (naming,
-    # services, pricing, first customers, etc.). The downstream system prompt
-    # and dashboard widget defaults differ between the two.
-    mode: str = "existing"
-
-
-@router.post("/api/v1/setup/save")
-def api_setup_save(body: SetupBody, org_id: str = Depends(verify_admin)):
-    """Save the wizard's collected config per org into the DB."""
-    from ..db import get_engine
-    from ..models import OrgProfile
-    from sqlalchemy.orm import Session
-    payload = {
-        "practice": body.practice,
-        "tone": body.tone,
-        "workflows": body.workflows,
-        "escalations": body.escalations,
-        "workflow_custom": body.workflow_custom,
-        "escalation_custom": body.escalation_custom,
-        "practice_problems": body.practice_problems,
-        "practice_type": body.practice_type,
-        "practice_type_label": body.practice_type_label,
-        "practice_type_custom": body.practice_type_custom,
-        "mode": body.mode if body.mode in ("new", "existing") else "existing",
-        "configured_at": datetime.utcnow().isoformat() + "Z",
-    }
-    try:
-        with Session(get_engine()) as s:
-            row = s.get(OrgProfile, org_id)
-            if row:
-                # MERGE, never replace. The profile blob also holds everything
-                # taught after the wizard (knowledge_base, services, rules,
-                # description, paused…) — a wizard re-run must not wipe it.
-                # Empty wizard values never overwrite existing non-empty ones.
-                merged = dict(row.data or {})
-                for k, v in payload.items():
-                    if k == "practice" and isinstance(v, dict):
-                        practice = dict(merged.get("practice") or {})
-                        for pk, pv in v.items():
-                            if pv not in ("", None, []):
-                                practice[pk] = pv
-                        merged["practice"] = practice
-                    elif v not in ("", None, []):
-                        merged[k] = v
-                merged["configured_at"] = payload["configured_at"]
-                row.data = merged
-                row.configured_at = datetime.utcnow()
-            else:
-                s.add(OrgProfile(org_id=org_id, data=payload))
-            s.commit()
-        return {"ok": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"could not save: {e}")
-
-
-@router.get("/api/v1/setup/status")
-def api_setup_status(org_id: str = Depends(verify_admin)):
-    """Read current setup state for the calling org."""
-    from ..db import get_engine
-    from ..models import Organization, OrgProfile
-    from sqlalchemy.orm import Session
-    try:
-        with Session(get_engine()) as s:
-            row = s.get(OrgProfile, org_id)
-            if row:
-                return {"configured": True, "profile": row.data}
-            # Not configured yet — surface the business name given at signup
-            # so the wizard can prefill instead of asking for it twice.
-            org = s.get(Organization, org_id)
-            if org and org.name:
-                return {"configured": False, "profile": None, "org_name": org.name}
-    except Exception:
-        pass
-    # Legacy fallback for dev environments
-    if CONFIGURED_FLAG.exists():
-        try:
-            profile = json.loads(PRACTICE_JSON.read_text()) if PRACTICE_JSON.exists() else None
-        except Exception:
-            profile = None
-        return {"configured": True, "profile": profile}
-    return {"configured": False, "profile": None}
 
 
 # ---------------------------------------------------------------------------
