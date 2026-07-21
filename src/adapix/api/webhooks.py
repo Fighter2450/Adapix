@@ -392,6 +392,20 @@ async def stripe_webhook(request: Request):
                     _void_referral_attribution(org_id)
             except Exception as e:
                 print(f"[adapix] one-trial-per-card check error: {e}")
+            # Provision the org's dedicated calling number NOW — the trial has
+            # started with a card on file, so this is a real business, and the
+            # "instant dedicated number" promise should be true from their
+            # first minute in the app. Provisioning at checkout (not signup)
+            # means we never burn a paid number on a tire-kicker who never
+            # entered a card. Runs in a thread so Stripe still gets a fast 200.
+            try:
+                from ..config import Settings
+                if Settings().auto_provision_numbers:
+                    import threading
+                    from ..provisioning import ensure_org_number
+                    threading.Thread(target=ensure_org_number, args=(org_id,), daemon=True).start()
+            except Exception as e:
+                print(f"[adapix] number provisioning kick-off error: {e}")
         return {"ok": True}
 
     if org_id and status:

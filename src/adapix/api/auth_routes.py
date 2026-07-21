@@ -10,7 +10,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from ..config import Settings
 from ..db import get_session
 from ..models import Organization, User
-from ..provisioning import ensure_org_number
 from .auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
     COOKIE_NAME,
@@ -158,10 +157,10 @@ async def api_signup(
         token = create_access_token(user.id, org.id, user.email)
         new_org_id = org.id
 
-    # Give the new business its own dedicated calling number, in the background
-    # so signup stays instant. No-op if Vapi isn't configured or it's disabled.
-    if Settings().auto_provision_numbers:
-        background.add_task(ensure_org_number, new_org_id)
+    # NOTE: the dedicated calling number is provisioned when the TRIAL STARTS
+    # (checkout completed, card on file) — see the Stripe checkout.session.
+    # completed webhook — NOT here at signup. Provisioning at signup would burn
+    # a paid carrier number on every tire-kicker who never enters a card.
 
     resp = JSONResponse({"ok": True, "redirect": "/app/billing"})
     _set_session_cookie(resp, token)
