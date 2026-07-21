@@ -3294,7 +3294,7 @@ body::after{
     } catch(_){ state.patients = []; }
 
     const addBtn = `<button id="go-add" class="btn btn-primary" style="padding:8px 16px;font-size:13px"><i data-lucide="user-plus" style="width:15px;height:15px"></i>Add contact</button>`;
-    const importBtn = `<button id="go-import" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer"><i data-lucide="upload" style="width:15px;height:15px"></i>Import CSV</button>`;
+    const importBtn = `<button id="go-import" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer"><i data-lucide="upload" style="width:15px;height:15px"></i>Import customer file</button>`;
     const actionBtns = `<div style="display:flex;gap:8px">${addBtn}${importBtn}</div>`;
     const searchBox = `<input id="contacts-search" value="${escapeHTML(state.contactsSearch||'')}" placeholder="Search name, phone, email…" style="width:100%;max-width:340px;background:var(--bg-2);border:1px solid var(--border);border-radius:9px;padding:9px 13px;color:var(--ink);font-family:inherit;font-size:13.5px;margin-bottom:16px" />`;
 
