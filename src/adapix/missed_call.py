@@ -134,6 +134,9 @@ def maybe_textback(
                 business = (org.name or "").strip()
             if owner.lower() in ("", "dr.", "dr"):
                 owner = ""
+            # Honor the "sign with my first name" preference.
+            if not getattr(prof, "use_owner_name", True):
+                owner = ""
             intro = f"Hi, it's {owner} at {business}" if owner and business else (
                 f"Hi, it's {business}" if business else "Hi"
             )

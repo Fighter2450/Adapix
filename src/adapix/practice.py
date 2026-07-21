@@ -89,6 +89,12 @@ class PracticeProfile:
     phone: str = ""
     hours: str = ""
     tone: str = "warm_professional"
+    # Whether follow-ups sign with the owner's first name ("it's Rocco from
+    # Rocco's Plumbing") or just the business name ("it's Rocco's Plumbing").
+    # Default on — a first name reads like a person and gets more replies, and
+    # it's honest because the owner approves every message. A business can turn
+    # it off in Business profile if it prefers a company voice.
+    use_owner_name: bool = True
 
     workflows: list[str] = field(default_factory=lambda: ["case_acceptance"])
     workflow_custom: str = ""
@@ -440,10 +446,13 @@ def _raw_to_profile(raw: dict) -> PracticeProfile:
     practice = raw.get("practice") or {}
     return PracticeProfile(
         practice_name=practice.get("name") or "your practice",
-        doctor=practice.get("owner") or practice.get("doctor") or "there",
+        # Empty when unset — NEVER "there". The signature falls back to the
+        # business name (see config.load_practice / the composer prompt).
+        doctor=practice.get("owner") or practice.get("doctor") or "",
         phone=practice.get("phone") or "",
         hours=practice.get("hours") or "",
         tone=raw.get("tone") or "warm_professional",
+        use_owner_name=raw.get("use_owner_name", True),
         workflows=raw.get("workflows") or ["case_acceptance"],
         workflow_custom=raw.get("workflow_custom") or "",
         escalations=raw.get("escalations") or [

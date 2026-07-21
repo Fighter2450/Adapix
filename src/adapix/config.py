@@ -181,10 +181,14 @@ def load_practice(practice_id: str, root: Path | None = None) -> PracticeConfig:
         additional["owner_taught_answers"] = qa
     additional["tone_guidance"] = profile.tone_guidance()
 
+    # Honor the "sign with my first name" preference: if it's off, the owner
+    # name is dropped and the composer signs with the business name only.
+    owner_name = profile.doctor if getattr(profile, "use_owner_name", True) else ""
+
     return PracticeConfig(
         id=practice_id,
         name=profile.practice_name,
-        doctor_name=profile.doctor,
+        doctor_name=owner_name,
         office_phone=profile.phone or "(not configured)",
         office_hours=profile.hours or "(not configured)",
         additional_knowledge=additional,

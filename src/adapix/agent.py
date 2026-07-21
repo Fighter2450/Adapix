@@ -55,9 +55,9 @@ ESCALATION RULES (apply across the whole campaign)
 SOUND LIKE A PERSON, NOT LIKE SPAM (hard rules)
 - The FIRST message of any conversation must open by identifying who is texting
   and from where, using the real names from the context above:
-  "Hi {{first name}}, it's {doctor_name} from {practice_name} - ..." Never send an
-  unidentified message; a text that doesn't say who it's from reads as spam and
-  gets deleted.
+  "Hi {{first name}}, it's {sender_identity} - ..." (use exactly that identity —
+  don't add a name that isn't there). Never send an unidentified message; a text
+  that doesn't say who it's from reads as spam and gets deleted.
 - Every message must reference the SPECIFIC reason for the follow-up from the
   contact's context: the service discussed, the estimate given, the visit date,
   the question they asked. If context includes it, use it by name.
@@ -224,6 +224,14 @@ class AdapixAgent:
     # Prompt construction
     # ------------------------------------------------------------------
 
+    def _sender_identity(self) -> str:
+        """Who the first message says it's from. 'Rocco from Rocco's Plumbing'
+        when an owner name is set (and the business opted to use it), else just
+        'Rocco's Plumbing' — never a dangling 'from' or the word 'there'."""
+        owner = (self.practice.doctor_name or "").strip()
+        business = (self.practice.name or "").strip() or "us"
+        return f"{owner} from {business}" if owner else business
+
     def _outbound_system_prompt(self, day: int, channel: str, intent: str) -> str:
         voice = self.workflow.voice or {}
         forbidden = voice.get("forbidden_phrases") or []
@@ -234,6 +242,7 @@ class AdapixAgent:
             practice_name=self.practice.name,
             workflow_name=self.workflow.name,
             workflow_objective=self.workflow.objective.strip(),
+            sender_identity=self._sender_identity(),
             doctor_name=self.practice.doctor_name,
             office_phone=self.practice.office_phone,
             office_hours=self.practice.office_hours,
@@ -257,6 +266,7 @@ class AdapixAgent:
             practice_name=self.practice.name,
             workflow_name=self.workflow.name,
             workflow_objective=self.workflow.objective.strip(),
+            sender_identity=self._sender_identity(),
             doctor_name=self.practice.doctor_name,
             office_phone=self.practice.office_phone,
             office_hours=self.practice.office_hours,

@@ -1016,6 +1016,7 @@ class DatabaseUpdateBody(BaseModel):
     business_type_label: str | None = None
     pronunciation: str | None = None
     review_link: str | None = None
+    use_owner_name: bool | None = None
 
 
 @router.get("/api/v1/database")
@@ -1052,6 +1053,7 @@ def api_database(org_id: str = Depends(verify_admin)):
         return {
             "business_name": practice.get("name") or "",
             "owner_name": practice.get("owner") or practice.get("doctor") or "",
+            "use_owner_name": data.get("use_owner_name", True),
             "phone": practice.get("phone") or "",
             "hours": practice.get("hours") or "",
             "website": practice.get("website") or "",
@@ -1120,6 +1122,8 @@ def api_database_update(body: DatabaseUpdateBody, org_id: str = Depends(verify_a
             data["pronunciation"] = body.pronunciation.strip()
         if body.review_link is not None:
             data["review_link"] = body.review_link.strip()
+        if body.use_owner_name is not None:
+            data["use_owner_name"] = bool(body.use_owner_name)
         if body.business_type_id is not None:
             data["practice_type"] = body.business_type_id.strip()
             data["practice_type_label"] = (body.business_type_label or "").strip()
@@ -2343,11 +2347,17 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
     practice = data.get("practice") or {}
     business = (practice.get("name") or "").strip()
     owner = (practice.get("owner") or practice.get("doctor") or "").strip()
+    # Honor the "sign with my first name" preference (Business profile toggle).
+    if not data.get("use_owner_name", True):
+        owner = ""
 
     # Plain-template fallback — used if the Claude call fails, and as the
     # floor of quality: always personal, never the banned "just checking in".
-    intro = f"Hi {first}, it's {owner} from {business}".strip().rstrip(",")
-    if not owner and not business:
+    if owner and business:
+        intro = f"Hi {first}, it's {owner} from {business}".rstrip(",")
+    elif business:
+        intro = f"Hi {first}, it's {business}".rstrip(",")
+    else:
         intro = f"Hi {first}"
     about = f" about the {job.lower()}" if job else ""
     quote_bit = f" — the ${amount:,.0f} quote" if amount else ""
@@ -2399,11 +2409,14 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
             "Subject: <subject line>\n\n<email body>"
         )
     else:
+        _open = (f"'Hi <name>, it's {owner} from {business}'" if owner and business
+                 else (f"'Hi <name>, it's {business}' — do NOT use any personal name, "
+                       "this business signs as the company" if business
+                       else "'Hi <name>,'"))
         system = (
             "You write ONE short, personal follow-up text message (SMS) from a "
-            "small business owner to a customer whose quote went quiet. Under 320 "
-            "characters. Open with 'Hi <name>, it's <owner> from <business>' (or a "
-            "natural variant with what's available). Mention their actual job and "
+            "small business to a customer whose quote went quiet. Under 320 "
+            f"characters. Open with {_open}. Mention their actual job and "
             "quote; weave in a learned detail naturally if one fits. Never the "
             "phrase 'just checking in', never bracketed placeholders like [link], "
             "never invented links, prices, or details not in the context. "
@@ -3430,6 +3443,8 @@ def api_win_mark(body: WinBody, org_id: str = Depends(verify_admin)):
                 practice = data.get("practice") or {}
                 biz = practice.get("name") or "our team"
                 owner = practice.get("owner") or ""
+                if not data.get("use_owner_name", True):
+                    owner = ""
                 first = (p.first_name or "").strip() or "there"
                 channel = "sms" if p.phone else "email"
                 intro = f"it's {owner} from {biz}" if owner else f"it's {biz}"

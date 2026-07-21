@@ -1925,8 +1925,12 @@ body::after{
           <div class="scard-title">Identity</div>
           <div class="sform-2col">
             <div class="sform-row"><label class="sform-label">Business name</label><input class="sform-input" id="db-name" value="${escapeAttr(d.business_name)}" placeholder="Not set" /></div>
-            <div class="sform-row"><label class="sform-label">What I call you</label><input class="sform-input" id="db-owner" value="${escapeAttr(d.owner_name)}" placeholder="Not set" /></div>
+            <div class="sform-row"><label class="sform-label">Your first name</label><input class="sform-input" id="db-owner" value="${escapeAttr(d.owner_name)}" placeholder="e.g. Rocco" /></div>
           </div>
+          <label class="sform-row" style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;margin-top:2px">
+            <input type="checkbox" id="db-use-owner" ${d.use_owner_name === false ? '' : 'checked'} style="accent-color:#7c3aed;width:16px;height:16px;margin-top:2px;flex:0 0 auto" />
+            <span style="font-size:13px;color:var(--ink-2)">Sign messages with my first name — "Hi Maria, it's <b style="color:var(--ink)">${escapeHTML(d.owner_name || 'Rocco')}</b> from ${escapeHTML(d.business_name || 'your business')}". A first name gets more replies. Turn off to sign as the business only.</span>
+          </label>
           <div class="sform-2col">
             <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" id="db-phone" value="${escapeAttr(d.phone)}" placeholder="Not set" /></div>
             <div class="sform-row"><label class="sform-label">Hours</label><input class="sform-input" id="db-hours" value="${escapeAttr(d.hours)}" placeholder="Not set" /></div>
@@ -2055,6 +2059,7 @@ body::after{
           await api('/api/v1/database', { method: 'POST', body: JSON.stringify({
             business_name: document.getElementById('db-name').value,
             owner_name: document.getElementById('db-owner').value,
+            use_owner_name: (document.getElementById('db-use-owner') || {}).checked !== false,
             phone: document.getElementById('db-phone').value,
             hours: document.getElementById('db-hours').value,
             tone: document.getElementById('db-tone').value,
