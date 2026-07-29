@@ -1201,6 +1201,93 @@ body::after{
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
+/* ════════════════════════════════════════════════════════════
+   LIQUID GLASS LAYER (Rocco 7/23) — frosted translucent surfaces
+   over ambient color orbs. Overrides the flat card styles above;
+   remove this block to restore the previous look.
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --glass-bg:linear-gradient(135deg,rgba(255,255,255,.085),rgba(255,255,255,.028));
+  --glass-bg-hover:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.05));
+  --glass-border:rgba(255,255,255,.13);
+  --glass-shine:inset 0 1px 0 rgba(255,255,255,.16);
+  --glass-shadow:0 8px 32px rgba(3,2,16,.45);
+}
+/* Ambient light orbs the glass refracts */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(640px 640px at 8% -6%,rgba(124,58,237,.32),transparent 62%),
+    radial-gradient(560px 560px at 104% 12%,rgba(244,63,94,.16),transparent 60%),
+    radial-gradient(720px 720px at 88% 104%,rgba(34,211,238,.17),transparent 60%),
+    radial-gradient(520px 520px at -4% 88%,rgba(167,139,250,.14),transparent 58%);
+}
+body>*{position:relative;z-index:1}
+/* Sidebar → tall glass pane */
+.sidebar{
+  background:linear-gradient(180deg,rgba(10,16,38,.62),rgba(8,12,30,.72));
+  backdrop-filter:blur(22px) saturate(1.45);-webkit-backdrop-filter:blur(22px) saturate(1.45);
+  border-right:1px solid var(--glass-border);
+  box-shadow:var(--glass-shine);
+}
+/* Main canvas lets the orbs glow through */
+.main{background:transparent}
+/* Core surfaces → frosted glass */
+.row-card,.home-stat-card,.hero-card,.activity-feed,.toast,
+.settings-card,.contact-card,.an-card,.ref-card,.team-card,.digest-card{
+  background:var(--glass-bg);
+  backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shine),var(--glass-shadow);
+  border-radius:14px;
+}
+.row-card:hover{background:var(--glass-bg-hover)}
+.row-card.hot{border-color:rgba(244,63,94,.4)}
+/* Buttons & pills */
+.btn-ghost{
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shine);
+}
+.btn-ghost:hover{background:rgba(255,255,255,.12)}
+.btn-primary{
+  background:linear-gradient(135deg,rgba(124,106,255,.92),rgba(124,58,237,.88));
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(196,181,253,.35);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 4px 18px rgba(124,58,237,.35);
+}
+.pill{
+  backdrop-filter:blur(8px) saturate(1.3);-webkit-backdrop-filter:blur(8px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.10);
+}
+/* Search + inputs get a glass inset */
+.sidebar-search{
+  background:rgba(255,255,255,.06);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);
+}
+/* Mobile bottom nav → floating glass dock */
+#bn{
+  background:rgba(10,10,30,.55)!important;
+  backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
+  border-top:1px solid var(--glass-border);
+}
+/* Specular sweep on hero cards */
+.hero-card{position:relative;overflow:hidden}
+.hero-card::after{
+  content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.06) 45%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.06) 55%,transparent);
+  transform:skewX(-18deg);animation:glass-sweep 9s var(--ease-out) infinite;
+}
+@keyframes glass-sweep{0%,68%{left:-60%}88%,100%{left:130%}}
+@media(prefers-reduced-motion:reduce){.hero-card::after{animation:none}}
+/* Fallback: solid surfaces if backdrop-filter unsupported */
+@supports not (backdrop-filter:blur(1px)){
+  .row-card,.home-stat-card,.hero-card,.activity-feed,.toast{background:var(--bg-2)}
+  .sidebar{background:var(--sidebar-bg)}
+  #bn{background:var(--bg-2)!important}
+}
+
 </style>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
