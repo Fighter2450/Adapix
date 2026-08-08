@@ -462,9 +462,9 @@ def api_connectors_status(org_id: str = Depends(verify_admin)):
                 "account": oauth.get("google", {}).get("email", ""),
                 "help_url": "https://console.cloud.google.com/apis/credentials",
                 "env_keys": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
-                "connect_url": "/api/v1/oauth/google/start",
+                "connect_url": "/oauth/google/start",
                 "test_url": "/api/v1/email/test",
-                "disconnect_url": "/api/v1/oauth/disconnect",
+                "disconnect_url": "/api/v1/email/disconnect",
             },
             {
                 "id": "microsoft",
@@ -475,9 +475,9 @@ def api_connectors_status(org_id: str = Depends(verify_admin)):
                 "account": oauth.get("microsoft", {}).get("email", ""),
                 "help_url": "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
                 "env_keys": ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"],
-                "connect_url": "/api/v1/oauth/microsoft/start",
+                "connect_url": "/oauth/microsoft/start",
                 "test_url": "/api/v1/email/test",
-                "disconnect_url": "/api/v1/oauth/disconnect",
+                "disconnect_url": "/api/v1/email/disconnect",
             },
             {
                 "id": "twilio",
@@ -1394,7 +1394,15 @@ def api_messages_compose(body: ComposeMessageBody, org_id: str = Depends(verify_
         return {"ok": True, "status": "pending_approval", "message_id": message_id}
 
     status = ApprovalManager().approve_and_send(message_id)
-    return {"ok": status in ("sent",), "status": status, "message_id": message_id}
+    send_error = None
+    if status not in ("sent",):
+        # Surface the real reason so the UI can show it instead of a generic
+        # "could not send" (the frontend keeps the typed message on failure).
+        with Session(get_engine()) as s2:
+            m = s2.get(Message, message_id)
+            meta = (m.metadata_json or {}) if m else {}
+            send_error = meta.get("send_error")
+    return {"ok": status in ("sent",), "status": status, "message_id": message_id, "send_error": send_error}
 
 
 # ---------------------------------------------------------------------------
@@ -1967,16 +1975,16 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             )
         esc_payload.sort(key=lambda x: (x["severity_rank"], x["created_at"] or ""), reverse=False)
 
-        # Pending-approval messages
-        pending = (
+        # Pending-approval messages (list caps at 25; total lets the UI say
+        # "25 of 45" so acting on one doesn't look like a no-op as the list refills)
+        pending_q = (
             s.query(Message)
             .join(Campaign, Message.campaign_id == Campaign.id)
             .filter(Campaign.practice_id == _user)
             .filter(Message.status == "pending_approval")
-            .order_by(Message.created_at.desc())
-            .limit(25)
-            .all()
         )
+        approvals_total = pending_q.count()
+        pending = pending_q.order_by(Message.created_at.desc()).limit(25).all()
         appr_payload = []
         for m in pending:
             campaign = s.get(Campaign, m.campaign_id)
@@ -2043,6 +2051,7 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             "as_of": datetime.utcnow().isoformat() + "Z",
             "escalations": esc_payload,
             "approvals": appr_payload,
+            "approvals_total": approvals_total,
             "digest": {
                 "sent_today": sent_today,
                 "booked_recent": booked_today,
@@ -2479,7 +2488,7 @@ def api_contact_suggest(patient_id: int, channel: str = "sms", org_id: str = Dep
 # Dynamic dashboard — the widgets Adapix has decided to show.
 # ---------------------------------------------------------------------------
 @router.get("/api/v1/dashboard")
-def api_dashboard_get(org_id: str = Depends(verify_admin)):
+def api_dashboard_get(org_id: str = Depends(require_founder)):
     """Return the current dashboard layout + the data for each widget.
     The UI uses this to render the Home view dynamically."""
     from ..dashboard import load_config, catalog_index, get_widget_data
@@ -2515,7 +2524,7 @@ class WidgetMutationBody(BaseModel):
 
 
 @router.post("/api/v1/dashboard/add")
-def api_dashboard_add(body: WidgetMutationBody, _user: str = Depends(verify_admin)):
+def api_dashboard_add(body: WidgetMutationBody, _user: str = Depends(require_founder)):
     from ..dashboard import add_widget
     if not add_widget(body.widget_id, position=body.position, reason=body.reason):
         raise HTTPException(status_code=400, detail="unknown widget id")
@@ -2523,7 +2532,7 @@ def api_dashboard_add(body: WidgetMutationBody, _user: str = Depends(verify_admi
 
 
 @router.post("/api/v1/dashboard/remove")
-def api_dashboard_remove(body: WidgetMutationBody, _user: str = Depends(verify_admin)):
+def api_dashboard_remove(body: WidgetMutationBody, _user: str = Depends(require_founder)):
     from ..dashboard import remove_widget
     if not remove_widget(body.widget_id, reason=body.reason):
         raise HTTPException(status_code=404, detail="widget not on dashboard")
@@ -2537,7 +2546,7 @@ class WidgetPinBody(BaseModel):
 
 
 @router.post("/api/v1/dashboard/pin")
-def api_dashboard_pin(body: WidgetPinBody, _user: str = Depends(verify_admin)):
+def api_dashboard_pin(body: WidgetPinBody, _user: str = Depends(require_founder)):
     from ..dashboard import pin_widget
     if not pin_widget(body.widget_id, body.pinned, reason=body.reason):
         raise HTTPException(status_code=404, detail="widget not on dashboard")
@@ -2545,7 +2554,7 @@ def api_dashboard_pin(body: WidgetPinBody, _user: str = Depends(verify_admin)):
 
 
 @router.post("/api/v1/dashboard/reset")
-def api_dashboard_reset(_user: str = Depends(verify_admin)):
+def api_dashboard_reset(_user: str = Depends(require_founder)):
     from ..dashboard import reset_to_default
     return reset_to_default()
 
@@ -3072,10 +3081,13 @@ def api_update_automation(aid: int, body: AutomationBody, _user: str = Depends(v
         a.task = body.task
         a.schedule = body.schedule
         a.output_format = body.output_format
-        a.login_url = body.login_url or None
-        a.login_username = body.login_username or None
-        a.login_password = body.login_password or None
-        a.login_email = body.login_email or None
+        # Only touch login fields the client actually sent — the edit modal
+        # sends none, and unconditional assignment was wiping saved creds on
+        # every rename (next scheduled run then failed with no hint why).
+        sent = body.model_dump(exclude_unset=True)
+        for f in ("login_url", "login_username", "login_password", "login_email"):
+            if f in sent:
+                setattr(a, f, sent[f] or None)
     return {"ok": True}
 
 
@@ -3095,7 +3107,7 @@ def api_run_automation(aid: int, _user: str = Depends(verify_admin)) -> dict[str
         try:
             run_automation(aid)
         except Exception as exc:
-            log.error(f"Automation {aid} thread error: {exc}")
+            print(f"[automations] Automation {aid} thread error: {exc}")
     threading.Thread(target=_run, daemon=True).start()
     return {"ok": True, "message": "Automation started — check back in a moment for results."}
 
@@ -3163,7 +3175,7 @@ def api_team_agents(_user: str = Depends(verify_admin)):
 
 
 @router.get("/api/v1/team-agents/{slug}/chat/history")
-def api_agent_history(slug: str, _user: str = Depends(verify_admin)):
+def api_agent_history(slug: str, _user: str = Depends(require_founder)):
     if not get_agent(slug):
         raise HTTPException(status_code=404, detail="agent not found")
     return {"messages": load_agent_history(slug)}
@@ -3178,7 +3190,7 @@ async def api_agent_send(
     slug: str,
     message: str = Form(""),
     files: List[UploadFile] = File(default=[]),
-    _user: str = Depends(verify_admin),
+    _user: str = Depends(require_founder),
 ):
     attachments = await _parse_attachments(files)
     try:
@@ -3191,7 +3203,7 @@ async def api_agent_send(
 
 
 @router.delete("/api/v1/team-agents/{slug}/chat/history")
-def api_agent_clear(slug: str, _user: str = Depends(verify_admin)):
+def api_agent_clear(slug: str, _user: str = Depends(require_founder)):
     clear_agent_history(slug)
     return {"ok": True}
 

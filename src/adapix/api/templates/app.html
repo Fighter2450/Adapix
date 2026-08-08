@@ -1476,13 +1476,14 @@ body>*{position:relative;z-index:1}
     try{
       const l = $('loader');
       if (l) l.textContent = 'loading…';  // #loader is removed after first boot
-      const [feed, dashboard, calls] = await Promise.all([
+      // (dropped the /api/v1/dashboard fetch — nothing ever read
+      // state.dashboard, and hydrating every widget cost several DB
+      // queries per page load for a feature with no UI)
+      const [feed, calls] = await Promise.all([
         api('/api/v1/feed').catch(()=>({escalations:[], approvals:[], digest:{}})),
-        api('/api/v1/dashboard').catch(()=>({widgets:[]})),
         api('/api/v1/calls').catch(()=>({pending:[], history:[]})),
       ]);
       state.feed = feed;
-      state.dashboard = dashboard;
       state.calls = calls;
       render();
     } catch(e){
@@ -1496,7 +1497,12 @@ body>*{position:relative;z-index:1}
     let feed;
     try { feed = await api('/api/v1/feed'); } catch(_) { return; }
     state.feed = feed;
-    if (state.view === 'inbox' && !document.querySelector('[data-draft-editor]:not([hidden])')) {
+    // Never re-render over someone mid-edit: any open draft OR escalation-reply
+    // editor, or any focused/typed-in field inside the main pane, blocks the wipe.
+    const editing = document.querySelector('[data-draft-editor]:not([hidden]), [data-esc-editor]:not([hidden])')
+      || (document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName)
+          && document.activeElement.closest('#main'));
+    if (state.view === 'inbox' && !editing) {
       render();
     } else {
       const escCount = (feed.escalations || []).length;
@@ -1564,8 +1570,13 @@ body>*{position:relative;z-index:1}
       </div>`;
   }
 
+  // Single definition — accepts a Date OR an ISO string. (There used to be a
+  // second `function timeAgo(iso)` further down that hoisted over this one
+  // and silently changed behavior app-wide.)
   function timeAgo(d){
-    const sec = Math.max(1, Math.floor((Date.now() - d.getTime())/1000));
+    if (!d) return 'Never';
+    const t = d instanceof Date ? d.getTime() : new Date(d).getTime();
+    const sec = Math.max(1, Math.floor((Date.now() - t)/1000));
     if (sec < 60)   return sec + 's ago';
     const min = Math.floor(sec/60);
     if (min < 60)   return min + 'm ago';
@@ -1590,6 +1601,7 @@ body>*{position:relative;z-index:1}
       const el = document.getElementById('home-chart');
       if (!el || state.view !== 'home') return;
       drawHomeChart(el, j.days || []);
+      loadHomeChart._days = j.days || []; // resize handler reads the LATEST data, not first-load's closure
       if (!loadHomeChart._resizeWired){
         loadHomeChart._resizeWired = true;
         let rt;
@@ -1597,7 +1609,7 @@ body>*{position:relative;z-index:1}
           clearTimeout(rt);
           rt = setTimeout(() => {
             const el2 = document.getElementById('home-chart');
-            if (el2 && state.view === 'home') drawHomeChart(el2, j.days || []);
+            if (el2 && state.view === 'home') drawHomeChart(el2, loadHomeChart._days || []);
           }, 150);
         });
       }
@@ -1774,7 +1786,7 @@ body>*{position:relative;z-index:1}
         </div>
         <div class="home-stat-card" style="cursor:pointer" data-goto-view="contacts">
           <div class="home-stat-label">Following up</div>
-          <div class="home-stat-val" id="home-watch">${(state.patients || []).length || 0}</div>
+          <div class="home-stat-val" id="home-watch">${(state.patients || []).filter(p => !p.opted_out && p.status !== 'explicitly_declined' && p.status !== 'treatment_started').length || 0}</div>
           <div class="home-stat-sub">People Adapix is keeping warm</div>
         </div>
       </div>
@@ -1953,10 +1965,10 @@ body>*{position:relative;z-index:1}
       let text = null, tone = 'neutral';
       if (escs.length){
         text = escs.length === 1 ? '1 reply needs you' : escs.length + ' replies need you';
-        text += ' -- open Inbox to answer.';
+        text += ' — open Inbox to answer.';
         tone = 'alert';
       } else if (staleDrafts){
-        text = staleDrafts + (staleDrafts !== 1 ? ' drafts have' : ' draft has') + ' been waiting over a day -- a quick look keeps things moving.';
+        text = staleDrafts + (staleDrafts !== 1 ? ' drafts have' : ' draft has') + ' been waiting over a day — a quick look keeps things moving.';
         tone = 'warn';
       } else if (winsData && winsData.week_total && winsData.last_week_total){
         const pct = Math.round((winsData.week_total - winsData.last_week_total) / winsData.last_week_total * 100);
@@ -2038,7 +2050,7 @@ body>*{position:relative;z-index:1}
           </div>
           <label class="sform-row" style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;margin-top:2px">
             <input type="checkbox" id="db-use-owner" ${d.use_owner_name === false ? '' : 'checked'} style="accent-color:#7c3aed;width:16px;height:16px;margin-top:2px;flex:0 0 auto" />
-            <span style="font-size:13px;color:var(--ink-2)">Sign messages with my first name — "Hi Maria, it's <b style="color:var(--ink)">${escapeHTML(d.owner_name || 'Rocco')}</b> from ${escapeHTML(d.business_name || 'your business')}". A first name gets more replies. Turn off to sign as the business only.</span>
+            <span style="font-size:13px;color:var(--ink-2)">Sign messages with my first name — "Hi Maria, it's <b style="color:var(--ink)">${escapeHTML(d.owner_name || 'your name')}</b> from ${escapeHTML(d.business_name || 'your business')}". A first name gets more replies. Turn off to sign as the business only.</span>
           </label>
           <div class="sform-2col">
             <div class="sform-row"><label class="sform-label">Phone</label><input class="sform-input" id="db-phone" value="${escapeAttr(d.phone)}" placeholder="Not set" /></div>
@@ -2286,6 +2298,18 @@ body>*{position:relative;z-index:1}
           await refreshKb();
         } catch(_){ toast('Could not add', true); }
         btn.disabled = false; btn.textContent = '+ Add answer';
+      });
+      // "Setup failed — Retry" for the calling number renders in THIS view;
+      // wire it here (it was previously only wired in the Messages view,
+      // where the button never exists — a dead recovery path).
+      const retryNum = document.getElementById('retry-calling-number');
+      if (retryNum) retryNum.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        retryNum.disabled = true; retryNum.textContent = 'Retrying…';
+        try {
+          await api('/api/v1/calling-number/retry', {method:'POST'});
+          toast('Retrying — check back in a minute');
+        } catch(err){ toast(err.message || 'Could not retry', true); retryNum.disabled = false; retryNum.textContent = 'Retry'; }
       });
     }).catch(() => {
       document.getElementById('db-body').innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-3)">Could not load — try refreshing.</div>';
@@ -2581,6 +2605,7 @@ body>*{position:relative;z-index:1}
           queue,
           scheduled_at: scheduledAt,
         })});
+        const sent = r.ok || r.status === 'scheduled' || queue;
         if (r.status === 'scheduled') {
           toast('Scheduled for ' + fmtScheduled(r.scheduled_at));
         } else if (queue) {
@@ -2588,11 +2613,15 @@ body>*{position:relative;z-index:1}
         } else if (r.ok) {
           toast('Sent');
         } else {
-          toast('Could not send — check your connection above', true);
+          toast(r.send_error || 'Could not send — check your connection above. Your message is still here.', true);
         }
-        document.getElementById('msg-body').value = '';
-        document.getElementById('msg-contact-name').value = '';
-        document.getElementById('msg-schedule').value = '';
+        if (sent) {
+          // Only clear the form when the message actually went somewhere —
+          // a failed send must never eat what the owner typed.
+          document.getElementById('msg-body').value = '';
+          document.getElementById('msg-contact-name').value = '';
+          document.getElementById('msg-schedule').value = '';
+        }
         loadMessages();
         refreshFeed();
       } catch(e){
@@ -2941,7 +2970,10 @@ body>*{position:relative;z-index:1}
       }
       if (apprs.length){
         html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:24px;margin-bottom:12px">'
-             + '<span class="section-eyebrow" style="margin:0">Ready to send — just say OK · ' + apprs.length + '</span>'
+             + '<span class="section-eyebrow" style="margin:0">Ready to send — just say OK · '
+             +   ((state.feed && state.feed.approvals_total > apprs.length)
+                    ? apprs.length + ' of ' + state.feed.approvals_total
+                    : apprs.length) + '</span>'
              + (apprs.length > 1
                 ? '<span style="display:flex;gap:8px">'
                   + '<button class="btn btn-primary" style="padding:6px 14px;font-size:12px" data-action="bulk-approve">Send all ' + apprs.length + '</button>'
@@ -2981,7 +3013,7 @@ body>*{position:relative;z-index:1}
         toast('Sent');
         load();
       } catch(e){
-        toast('Could not send', true);
+        toast(e.message || 'Could not send', true);
         btn.disabled = false; btn.textContent = orig;
       }
     }
@@ -2999,7 +3031,7 @@ body>*{position:relative;z-index:1}
         catch(_){ fail++; }
       }
       toast(ok + ' sent' + (fail ? ', ' + fail + ' failed' : ''));
-      renderInboxView();
+      await load(); // refetch — re-rendering from stale state.feed left every sent draft on screen
     });
     const bulkR = main.querySelector('[data-action="bulk-reject"]');
     if (bulkR) bulkR.addEventListener('click', async () => {
@@ -3011,7 +3043,7 @@ body>*{position:relative;z-index:1}
         try { await api(`/api/v1/approvals/${m.id}/reject`, {method:'POST', body: JSON.stringify({})}); } catch(_){}
       }
       toast('All rejected');
-      renderInboxView();
+      await load(); // refetch — stale re-render kept rejected drafts visible
     });
     // Escalations: toggle the inline reply/resolve panel, then act.
     main.querySelectorAll('[data-action="esc-toggle"]').forEach(row => {
@@ -3077,7 +3109,7 @@ body>*{position:relative;z-index:1}
           await api(`/api/v1/approvals/${id}/reject`, { method:'POST', body: JSON.stringify({}) });
           toast('Draft rejected');
           load();
-        } catch(e){ toast('Could not reject', true); }
+        } catch(e){ toast(e.message || 'Could not reject', true); }
       });
     });
   }
@@ -3546,7 +3578,13 @@ body>*{position:relative;z-index:1}
       searchInput.addEventListener('input', () => {
         clearTimeout(searchTimer);
         const val = searchInput.value;
-        searchTimer = setTimeout(() => { state.contactsSearch = val; renderPatientsView(); }, 300);
+        searchTimer = setTimeout(() => {
+          state.contactsSearch = val;
+          // Capture focus at the moment we re-render — removal fires a blur,
+          // so a blur-listener flag is already false by the time we get here.
+          state.contactsSearchFocused = (document.activeElement === searchInput);
+          renderPatientsView();
+        }, 300);
       });
       // Every render replaces this input node, which drops focus mid-typing —
       // restore it and put the cursor back at the end.
@@ -3555,8 +3593,6 @@ body>*{position:relative;z-index:1}
         const len = searchInput.value.length;
         searchInput.setSelectionRange(len, len);
       }
-      searchInput.addEventListener('focus', () => { state.contactsSearchFocused = true; });
-      searchInput.addEventListener('blur', () => { state.contactsSearchFocused = false; });
     }
     wire('go-import',    () => goContactsView('import'));
     wire('go-add',       () => goContactsView('add'));
@@ -3610,7 +3646,9 @@ body>*{position:relative;z-index:1}
         <div class="thread-modal-body" id="thread-body"><div class="thread-empty">Loading conversation…</div></div>
       </div>`;
     document.body.appendChild(backdrop);
-    const close = () => backdrop.remove();
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const close = () => { document.removeEventListener('keydown', onKey); backdrop.remove(); };
+    document.addEventListener('keydown', onKey);
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
     backdrop.querySelector('[data-close]').addEventListener('click', close);
 
@@ -4104,7 +4142,7 @@ body>*{position:relative;z-index:1}
       // Restore chips
       const chipsEl2 = document.getElementById('agent-chips');
       if (chipsEl2) {
-        const CHIPS2 = {'Strategy & Leadership':['Build a 90-day action plan','Identify our biggest bottleneck','Help me prioritize Q3 goals'],'Marketing':['Write a 30-day content calendar','Research our top competitors','Draft a campaign for new patients'],'Sales':['Review my sales pipeline','Script a follow-up call','Find customers to re-engage'],'Finance':['Summarize our current metrics','Spot cash flow risks','Draft a pricing review'],'Customer':['List customers who need follow-up','Draft a re-engagement message','Handle a complaint script'],'HR & People':['Write a job description','Create an onboarding checklist','Draft a team meeting agenda'],'Legal':['Check our consent language','Review a client contract clause','Draft a data policy summary'],'Brand & Design':['Describe our brand voice','Write brand guidelines','Create a style brief'],'Product':['Prioritize our feature backlog','Write a user story','Summarize customer feedback themes'],'Engineering':['Review this architecture decision','Write a technical spec','Suggest a testing strategy']};
+        const CHIPS2 = {'Strategy & Leadership':['Build a 90-day action plan','Identify our biggest bottleneck','Help me prioritize Q3 goals'],'Marketing':['Write a 30-day content calendar','Research our top competitors','Draft a campaign to win new customers'],'Sales':['Review my sales pipeline','Script a follow-up call','Find customers to re-engage'],'Finance':['Summarize our current metrics','Spot cash flow risks','Draft a pricing review'],'Customer':['List customers who need follow-up','Draft a re-engagement message','Handle a complaint script'],'HR & People':['Write a job description','Create an onboarding checklist','Draft a team meeting agenda'],'Legal':['Check our consent language','Review a client contract clause','Draft a data policy summary'],'Brand & Design':['Describe our brand voice','Write brand guidelines','Create a style brief'],'Product':['Prioritize our feature backlog','Write a user story','Summarize customer feedback themes'],'Engineering':['Review this architecture decision','Write a technical spec','Suggest a testing strategy']};
         (CHIPS2[category]||['What can you help me with?','Give me a quick win','Where should I start?']).forEach(p=>{const c=document.createElement('button');c.className='agent-empty-chip';c.textContent=p;c.addEventListener('click',()=>{document.getElementById('agent-input').value=p;document.getElementById('agent-input').focus();});chipsEl2.appendChild(c);});
       }
     });
@@ -4367,7 +4405,7 @@ body>*{position:relative;z-index:1}
     {id:'courier',name:'Courier / delivery service',cat:'Logistics'},{id:'trucking',name:'Trucking company',cat:'Logistics'},{id:'limo',name:'Limo / car service',cat:'Logistics'},
     {id:'farm',name:'Farm / ranch',cat:'Agriculture'},{id:'orchard',name:'Orchard / CSA',cat:'Agriculture'},{id:'plant_nursery',name:'Plant nursery',cat:'Agriculture'},
   ];
-  const STYPE_DEFAULTS = ['general_dentist','med_spa','orthodontist','hair_salon','real_estate_agent','auto_repair','lawyer_general','restaurant'];
+  const STYPE_DEFAULTS = ['auto_repair','hair_salon','real_estate_agent','lawyer_general','restaurant','med_spa','general_dentist','orthodontist'];
 
   // -------- CONCIERGE view --------
   const CONCIERGE_CATEGORIES = [
@@ -4604,17 +4642,7 @@ body>*{position:relative;z-index:1}
     } catch(_){ return cron; }
   }
 
-  function timeAgo(iso){
-    if (!iso) return 'Never';
-    const ms = Date.now() - new Date(iso).getTime();
-    const s = Math.floor(ms/1000);
-    if (s < 60) return 'Just now';
-    const m = Math.floor(s/60);
-    if (m < 60) return m + 'm ago';
-    const h = Math.floor(m/60);
-    if (h < 24) return h + 'h ago';
-    return Math.floor(h/24) + 'd ago';
-  }
+  // (duplicate timeAgo removed — the shared one near the top handles ISO strings too)
 
   let autoFilter = 'all';
 
@@ -4740,7 +4768,7 @@ body>*{position:relative;z-index:1}
         +   '</div>'
         +   '<div class="auto-actions-right">'
         +     '<button class="auto-icon-btn edit auto-edit-btn" data-id="'+a.id
-        +       +'" data-auto=\''+JSON.stringify(a).replace(/'/g,"&#39;")+'\' title="Edit">'
+        +       '" data-auto=\''+JSON.stringify(a).replace(/'/g,"&#39;")+'\' title="Edit">'
         +       '<i data-lucide="pencil" style="width:13px;height:13px"></i>'
         +     '</button>'
         +     '<button class="auto-icon-btn del auto-del-btn" data-id="'+a.id+'" title="Delete">'
@@ -4943,8 +4971,11 @@ body>*{position:relative;z-index:1}
       });
     });
 
-    document.getElementById('am-cancel').addEventListener('click', () => backdrop.remove());
-    backdrop.addEventListener('click', e => { if(e.target === backdrop) backdrop.remove(); });
+    const amKey = (e) => { if (e.key === 'Escape') amClose(); };
+    const amClose = () => { document.removeEventListener('keydown', amKey); backdrop.remove(); };
+    document.addEventListener('keydown', amKey);
+    document.getElementById('am-cancel').addEventListener('click', amClose);
+    backdrop.addEventListener('click', e => { if(e.target === backdrop) amClose(); });
 
     document.getElementById('am-save').addEventListener('click', async () => {
       const name = document.getElementById('am-name').value.trim();
@@ -5161,6 +5192,13 @@ body>*{position:relative;z-index:1}
       }
     }
     async function refresh(){
+      // Kill the poll if the user left Settings — otherwise the interval
+      // outlives the view and hits the API every 5s forever, painting
+      // detached DOM (and stacks a new interval on each revisit).
+      if (!document.getElementById('wi-status')){
+        if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+        return;
+      }
       try { paint(await api('/api/v1/website-import')); } catch(_){}
     }
     start.addEventListener('click', async () => {
@@ -6025,10 +6063,10 @@ body>*{position:relative;z-index:1}
 
     main.querySelector('[data-action="back"]').addEventListener('click', () => goSettingsView(null));
 
-    main.querySelectorAll('.sform-save, [data-action="save"]').forEach(btn => {
-      if (btn.id === 'rules-save' || btn.id === 'bp-save' || btn.id === 'channels-notify-save') return; // has its own real handler
-      btn.addEventListener('click', () => toast('Changes saved'));
-    });
+    // (Removed the placeholder catch-all that toasted a fake "Changes saved"
+    // on every save-style button — all surviving buttons have real handlers,
+    // and the bogus toast fired on top of them, e.g. over a FAILED website
+    // import or while Stripe checkout opened.)
     const inv = main.querySelector('[data-action="invite"]');
     if (inv) inv.addEventListener('click', () => toast('Invite link copied — feature coming soon'));
     const deact = main.querySelector('[data-action="deactivate"]');
