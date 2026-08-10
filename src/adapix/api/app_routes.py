@@ -2632,6 +2632,56 @@ def oauth_microsoft_callback(request: Request, code: str = "", state: str = ""):
     return RedirectResponse(url="/app?tab=settings", status_code=302)
 
 
+# ---- Salesforce (CRM pipeline sync + task write-back) ----
+
+@router.get("/oauth/salesforce/start")
+def oauth_salesforce_start(request: Request, org_id: str = Depends(verify_admin)):
+    from fastapi.responses import RedirectResponse
+    from ..oauth import new_state
+    from ..salesforce import auth_url
+    try:
+        state = new_state("salesforce", org_id)
+        url = auth_url(_oauth_redirect_uri(request, "salesforce"), state)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    return RedirectResponse(url=url, status_code=302)
+
+
+@router.get("/oauth/salesforce/callback")
+def oauth_salesforce_callback(request: Request, code: str = "", state: str = ""):
+    from fastapi.responses import RedirectResponse
+    from ..oauth import consume_state
+    from ..salesforce import complete_connection
+    meta = consume_state(state, "salesforce") if code else None
+    if not meta or not meta.get("org_id"):
+        raise HTTPException(status_code=400, detail="invalid or expired auth state")
+    try:
+        complete_connection(meta["org_id"], code, _oauth_redirect_uri(request, "salesforce"))
+    except Exception as e:
+        return HTMLResponse(f"<h1>Connection failed</h1><pre>{e}</pre>")
+    return RedirectResponse(url="/app?tab=settings", status_code=302)
+
+
+@router.get("/api/v1/salesforce/status")
+def api_salesforce_status(org_id: str = Depends(verify_admin)):
+    from ..salesforce import status as sf_status
+    return sf_status(org_id)
+
+
+@router.post("/api/v1/salesforce/sync")
+def api_salesforce_sync(org_id: str = Depends(verify_admin)):
+    from ..salesforce import status as sf_status, sync_org
+    if not sf_status(org_id).get("connected"):
+        raise HTTPException(status_code=400, detail="Salesforce is not connected")
+    return {"ok": True, "result": sync_org(org_id)}
+
+
+@router.post("/api/v1/salesforce/disconnect")
+def api_salesforce_disconnect(org_id: str = Depends(verify_admin)):
+    from ..salesforce import disconnect as sf_disconnect
+    return {"ok": sf_disconnect(org_id)}
+
+
 @router.get("/api/v1/email/status")
 def api_email_status(org_id: str = Depends(verify_admin)):
     """This org's connected email provider (if any) — used by the Settings

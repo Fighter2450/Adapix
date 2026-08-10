@@ -53,6 +53,20 @@ def create_app() -> FastAPI:
         asyncio.create_task(_digest_loop())
         asyncio.create_task(_scheduled_send_loop())
         asyncio.create_task(_blooio_poll_loop())
+        asyncio.create_task(_salesforce_sync_loop())
+
+    async def _salesforce_sync_loop() -> None:
+        """Hourly pull of every connected org's Salesforce pipeline. No-op
+        unless SALESFORCE_CLIENT_ID/SECRET are configured and an org has
+        connected — costs nothing for everyone else."""
+        await asyncio.sleep(90)  # offset from the other loops
+        while True:
+            try:
+                from ..salesforce import sync_all_connected
+                await asyncio.to_thread(sync_all_connected)
+            except Exception as exc:
+                log.error(f"Salesforce sync loop error: {exc}")
+            await asyncio.sleep(3600)
 
     async def _campaign_loop() -> None:
         """Run campaigns every 5 minutes in the background."""

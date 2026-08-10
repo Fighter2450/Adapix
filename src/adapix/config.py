@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
+    # OAuth — Salesforce Connected App (pipeline sync + task write-back)
+    salesforce_client_id: str = ""
+    salesforce_client_secret: str = ""
+
     # OAuth — Microsoft 365 (Outlook send-as practice email)
     microsoft_client_id: str = ""
     microsoft_client_secret: str = ""

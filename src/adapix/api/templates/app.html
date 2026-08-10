@@ -2327,6 +2327,10 @@ body>*{position:relative;z-index:1}
         <div class="scard-title">Your email connection</div>
         <div id="email-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
       </div>
+      <div class="scard" id="msg-sf-card" hidden>
+        <div class="scard-title">Salesforce</div>
+        <div id="sf-card-body" style="font-size:13px;color:var(--ink-2)">Loading…</div>
+      </div>
       <div class="scard">
         <div class="scard-title">Your texting line</div>
         <div class="sch-row" id="msg-imessage-row">
@@ -2388,6 +2392,7 @@ body>*{position:relative;z-index:1}
     `;
     renderLucide(main);
     loadEmailCard();
+    loadSalesforceCard();
     loadRcsCard();
 
     // Per-business iMessage line status (each org has its OWN Blooio line,
@@ -5446,6 +5451,59 @@ body>*{position:relative;z-index:1}
         loadRcsCard();
       } catch(_){ toast('Could not check status', true); }
     });
+  }
+
+  async function loadSalesforceCard(){
+    // Hidden unless the server actually has a Connected App configured —
+    // no dead "coming soon" buttons (see the placeholder-toast lesson).
+    const card = document.getElementById('msg-sf-card');
+    const el = document.getElementById('sf-card-body');
+    if (!card || !el) return;
+    let d;
+    try { d = await api('/api/v1/salesforce/status'); } catch(_){ return; }
+    if (!d.configured && !d.connected) return;   // stay hidden
+    card.hidden = false;
+    if (d.connected){
+      const sync = d.last_sync_result || {};
+      const syncLine = d.last_sync
+        ? `Last sync ${timeAgo(d.last_sync)} — ${sync.pulled ?? 0} opportunities pulled, ${sync.created ?? 0} new, ${sync.updated ?? 0} updated${sync.error ? ' · <span style="color:#fda4af">' + escapeHTML(sync.error) + '</span>' : ''}`
+        : 'First sync is running…';
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <i data-lucide="cloud" style="width:16px;height:16px;color:var(--cyan)"></i>
+          <span style="font-size:15px;font-weight:700;color:var(--ink)">Connected${d.identity ? ' as ' + escapeHTML(d.identity) : ''}</span>
+          <span class="sch-badge">Salesforce</span>
+        </div>
+        <div class="sform-hint">Open opportunities sync in as quotes to chase; every follow-up Adapix sends is logged back as a completed Task.</div>
+        <div class="sform-hint" style="margin-top:6px">${syncLine}</div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="sch-connect" id="sf-sync">Sync now</button>
+          <button class="sch-connect" id="sf-disconnect">Disconnect</button>
+        </div>`;
+      renderLucide(el);
+      const sy = document.getElementById('sf-sync');
+      if (sy) sy.addEventListener('click', async () => {
+        sy.disabled = true; sy.textContent = 'Syncing…';
+        try {
+          const r = await api('/api/v1/salesforce/sync', { method:'POST', body: JSON.stringify({}) });
+          const res = r.result || {};
+          toast(res.error ? ('Sync problem: ' + res.error) : `Synced — ${res.pulled} opportunities, ${res.created} new`, !!res.error);
+        } catch(e){ toast(e.message || 'Sync failed', true); }
+        loadSalesforceCard();
+      });
+      const dc = document.getElementById('sf-disconnect');
+      if (dc) dc.addEventListener('click', async () => {
+        dc.disabled = true; dc.textContent = 'Disconnecting…';
+        try {
+          await api('/api/v1/salesforce/disconnect', { method:'POST', body: JSON.stringify({}) });
+          toast('Salesforce disconnected'); loadSalesforceCard();
+        } catch(e){ toast(e.message || 'Could not disconnect', true); dc.disabled = false; dc.textContent = 'Disconnect'; }
+      });
+    } else {
+      el.innerHTML = `
+        <div class="sform-hint">Connect Salesforce and Adapix watches your pipeline: open opportunities become quotes to chase, stalled ones get follow-up drafts, and every sent message is logged back as a completed Task.</div>
+        <div style="margin-top:12px"><a class="sch-connect" href="/oauth/salesforce/start" style="text-decoration:none;display:inline-block">Connect Salesforce</a></div>`;
+    }
   }
 
   async function loadEmailCard(){

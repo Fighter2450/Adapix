@@ -510,3 +510,13 @@ class ApprovalManager:
         message.status = new_status
         if result.provider_id:
             message.provider_id = result.provider_id
+
+        # Salesforce write-back: a follow-up that actually went out gets
+        # logged as a completed Task on the source Opportunity, so the CRM
+        # stays the system of record. Fire-and-forget; never blocks a send.
+        if new_status == SENT:
+            try:
+                from .salesforce import write_back_async
+                write_back_async(org_id, patient.external_id, message.channel, message.body)
+            except Exception:
+                pass
