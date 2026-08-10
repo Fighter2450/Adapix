@@ -96,6 +96,15 @@ If all of that works with real money and real phones, you're live.
   budget/throttles, single-replica pin.
 - Billing engine: hardened for live mode (see Gate 2 note).
 - Vendor names scrubbed from all customer-facing surfaces.
+- Dashboard hardening pass 2026-08-09: 20 functional defects fixed (stale
+  inbox lists, focus-loss search, dead buttons, fake toasts, mid-typing
+  refresh wipe, cross-tenant dashboard/AI-team storage, real error surfacing)
+  plus the liquid-glass UI.
+- Marketing/trust surfaces live: product-proof screenshots on the homepage,
+  /compare page, two produced video ads (one posted), pilot playbook + demo
+  video script in docs/, X + IG accounts posting daily via scheduler.
+- Salesforce connector built & deployed (inert until the Connected App is
+  created — optional, not a launch gate; docs/SALESFORCE_SETUP.md).
 
 ## Known limitations to launch WITH (not blockers)
 

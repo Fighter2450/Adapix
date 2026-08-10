@@ -120,6 +120,17 @@ customer's OWN numbers whenever possible (their average job value), not ours.
   quotes = what they're leaving on the table. BUILT & LIVE 7/16, moved to
   the HOMEPAGE per Rocco (big glowing card after "the leak" section, "How
   much is walking away from you?") — public-facing, safe to reference.
+- **Salesforce connector** — BUILT & DEPLOYED 8/10: customer clicks Connect
+  Salesforce (SMS & Email tab), their open Opportunities sync in as quotes to
+  chase (Amount -> value, Closed Won -> won, Closed Lost -> declined), and
+  every follow-up Adapix sends is logged back into Salesforce as a completed
+  Task on the Opportunity. Functionally tested against mocked SF payloads,
+  NOT yet verified against a live Salesforce org — Rocco must first create
+  the Connected App (docs/SALESFORCE_SETUP.md, ~10 min) and we run one live
+  end-to-end test. ONLY THEN may "Connects to Salesforce" appear anywhere
+  public. Never label the CSV importer as a Salesforce integration; the
+  honest pre-verification line is "import your customers from anywhere —
+  including Salesforce exports."
 - **Business name on caller ID (not just a number)** — the bigger prize on
   top of the $1.50/mo dedicated-number upgrade (hook #3). Requires the
   business to submit real legal details for carrier verification and takes
@@ -152,16 +163,23 @@ customer's OWN numbers whenever possible (their average job value), not ours.
 
 ## Proof assets — build in this order
 
-1. **60–90s demo video** (slot already exists on /how): open on the "Won back
-   $X" counter → the 5-dead-quotes import → a draft that names a real job →
-   tap Send → reply comes in. Real dashboard, seeded demo business, no stock
-   footage.
-2. **2–3 real dashboard screenshots** for the homepage (Inbox with drafts, the
-   money counter, a conversation).
+1. ~~Demo video~~ DONE 8/9 — two produced ads exist and the pipeline is
+   repeatable (fast-cut formula in the social memory notes): Ad #1 "The Loss"
+   (motion-graphics, LIVE on X + IG 8/9), Ad #2 "The Approve Tap" (real
+   mobile-dashboard footage, delivered, unposted). Raw scripted dashboard
+   takes can be re-recorded on demand against the seeded demo org
+   (scratch/seed_video_demo.py = Dave's Plumbing).
+2. ~~Real dashboard screenshots~~ DONE — three real product shots live on the
+   homepage "look at it" section (approval inbox, contact timeline, won-back
+   counter), plus the full stat-card/poster library at adapixai.com/social/.
 3. **One-page PDF** for local outreach: the pitch, the math, the founding
-   offer, QR code to /pricing.
-4. **First real customer quote** — the moment a founding customer says
-   something true and good, ask permission and replace hypotheticals with it.
+   offer, QR code to /pricing. (Still to build.)
+4. **First real customer quote** — THE current bottleneck; the playbook to
+   get five of them is docs/PILOT_PLAYBOOK.md. The moment a founding customer
+   says something true and good, ask permission and replace hypotheticals.
+5. Comparison page LIVE at adapixai.com/compare — honest category comparison
+   (review platforms / all-in-one suites / field-service add-ons / DIY);
+   keep competitor claims general, never specific prices.
 
 ## Where things live
 

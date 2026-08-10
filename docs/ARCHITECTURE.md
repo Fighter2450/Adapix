@@ -108,12 +108,18 @@ constraints".
 - **digest** (hourly) — daily push + weekly money email + billing reconcile + nightly backup
 - **scheduled-send** (2 min) — dispatch due approved/scheduled messages
 - **blooio poll** (2 min) — pull inbound texts as a webhook safety net
+- **salesforce sync** (hourly) — pull each connected org's open Opportunities
+  into contacts/quotes (`salesforce.py`); no-op unless the Connected App env
+  vars are set and an org has connected
 
 ## Integrations
 
 Anthropic (Claude), Twilio (SMS + A2P), Vapi (voice), Blooio (iMessage/RCS),
 Claw (shared iMessage), Resend + Gmail/Outlook OAuth (email), Stripe (billing),
-Web Push (VAPID). Keys live in Railway env / `.env` (gitignored).
+Web Push (VAPID), **Salesforce** (OAuth Connected App: hourly Opportunity →
+quote sync + completed-Task write-back on every sent follow-up; per-org opt-in,
+inert without `SALESFORCE_CLIENT_ID/SECRET` — `docs/SALESFORCE_SETUP.md`).
+Keys live in Railway env / `.env` (gitignored).
 
 ## Security & tenancy
 

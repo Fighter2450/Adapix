@@ -52,8 +52,10 @@ adapix/
 
 1. **Sign up** → a business gets its own dashboard, a dedicated calling number,
    and a 14-day trial (card up front, $0 charged today).
-2. **Import contacts** (CSV or one-by-one) and **teach Adapix** the business —
-   services, pricing, hours, FAQs (or auto-import from the business's website).
+2. **Import contacts** (CSV/Excel/vCard, one-by-one, or sync them straight
+   from **Salesforce** — see `docs/SALESFORCE_SETUP.md`) and **teach Adapix**
+   the business — services, pricing, hours, FAQs (or auto-import from the
+   business's website).
 3. **Adapix drafts follow-ups** — text, email, or an AI phone call — naming the
    real job and quote. Every draft waits in the **Inbox** for one-tap approval.
 4. **Customers reply** and Adapix holds the conversation, answering from what it
