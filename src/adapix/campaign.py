@@ -271,7 +271,7 @@ class CampaignRunner:
                 self.settings, org, patient.phone or "", plan.body,
                 first_touch=campaign.last_step_completed == 0, dry_run=self.dry_run,
             )
-            extra: dict[str, Any] = {"intent": step.intent}
+            extra: dict[str, Any] = {"intent": step.intent, "autopilot": True}
             if result.transport:
                 extra["transport"] = result.transport
         elif step.channel == "email":
@@ -283,7 +283,7 @@ class CampaignRunner:
             result = EmailResult(provider_id=r.get("provider_id"),
                                  status="sent" if r.get("ok") else "failed",
                                  error=r.get("error"))
-            extra = {"intent": step.intent, "subject_planned": plan.subject}
+            extra = {"intent": step.intent, "subject_planned": plan.subject, "autopilot": True}
         else:
             raise ValueError(f"Unsupported channel: {step.channel}")
 

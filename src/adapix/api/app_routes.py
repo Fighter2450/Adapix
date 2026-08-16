@@ -2052,6 +2052,7 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
             "escalations": esc_payload,
             "approvals": appr_payload,
             "approvals_total": approvals_total,
+            "autopilot": _autopilot_stats(s, _user),
             "digest": {
                 "sent_today": sent_today,
                 "booked_recent": booked_today,
@@ -2059,6 +2060,88 @@ def feed(_user: str = Depends(verify_admin)) -> dict[str, Any]:
                 "pending_approvals": len(appr_payload),
             },
         }
+
+
+def _autopilot_stats(s, org_id: str) -> dict:
+    """The trust ladder's raw material.
+
+    streak  — how many of the owner's most recent approval decisions in a row
+              were "sent as written" (no edit, no rejection). An edit or a
+              reject resets it: those are the signals Adapix hasn't earned
+              autonomy yet.
+    enabled — the Follow-up rules auto_approve flag (approval_mode=auto).
+    auto_sent_week — how many follow-ups went out ON autopilot in the last
+              7 days (campaign.py marks them metadata.autopilot).
+    offer   — true when the streak has earned the autopilot nudge and the
+              owner hasn't enabled it yet. The dismissal cooldown lives
+              client-side in the org profile (autopilot_dismissed_at_streak).
+    """
+    from datetime import datetime, timedelta
+    data = _load_org_profile_data(s, org_id)
+    enabled = bool((data.get("rules") or {}).get("auto_approve"))
+
+    decided = (
+        s.query(Message)
+        .join(Campaign, Message.campaign_id == Campaign.id)
+        .filter(Campaign.practice_id == org_id)
+        .filter(Message.direction == "outbound")
+        .filter(Message.status.in_(("sent", "delivered", "replied", "rejected", "failed")))
+        .order_by(Message.created_at.desc())
+        .limit(60)
+        .all()
+    )
+    streak = 0
+    for m in decided:
+        md = m.metadata_json or {}
+        if md.get("autopilot"):
+            continue  # auto-sent — not a human decision, doesn't affect trust
+        if m.status == "rejected" or md.get("edited_by_human"):
+            break
+        if m.status in ("sent", "delivered", "replied"):
+            streak += 1
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    auto_sent_week = sum(
+        1 for m in decided
+        if (m.metadata_json or {}).get("autopilot")
+        and m.status in ("sent", "delivered", "replied")
+        and m.created_at and m.created_at >= week_ago
+    )
+    dismissed_at = int(data.get("autopilot_dismissed_at_streak") or 0)
+    THRESHOLD = 10
+    offer = (not enabled) and streak >= THRESHOLD and streak >= dismissed_at + THRESHOLD
+    return {"enabled": enabled, "streak": streak, "threshold": THRESHOLD,
+            "auto_sent_week": auto_sent_week, "offer": offer}
+
+
+@router.post("/api/v1/autopilot/dismiss")
+def api_autopilot_dismiss(org_id: str = Depends(verify_admin)):
+    """Owner said 'not yet' — snooze the nudge until the streak grows by
+    another threshold's worth of unedited approvals."""
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        stats = _autopilot_stats(s, org_id)
+        data["autopilot_dismissed_at_streak"] = stats["streak"]
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
+
+
+@router.post("/api/v1/autopilot/enable")
+def api_autopilot_enable(org_id: str = Depends(verify_admin)):
+    """One-tap 'take it from here' — flips the same rules flag as the
+    Follow-up rules page, preserving the org's other rule settings."""
+    from ..db import get_engine
+    from sqlalchemy.orm import Session
+    with Session(get_engine()) as s:
+        data = _load_org_profile_data(s, org_id)
+        rules = dict(data.get("rules") or {})
+        rules["auto_approve"] = True
+        data["rules"] = rules
+        _save_org_profile_data(s, org_id, data)
+        s.commit()
+    return {"ok": True}
 
 
 class ApproveBody(BaseModel):
