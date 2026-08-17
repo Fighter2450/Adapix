@@ -2128,6 +2128,98 @@ def api_autopilot_dismiss(org_id: str = Depends(verify_admin)):
     return {"ok": True}
 
 
+@router.get("/api/v1/learning")
+def api_learning(org_id: str = Depends(verify_admin)):
+    """What Adapix has learned about this business's customers (reply rates
+    by hour/channel/weekday + the recommendations it's acting on)."""
+    from ..learning import stats
+    return stats(org_id)
+
+
+@router.get("/api/v1/brief")
+def api_brief(org_id: str = Depends(verify_admin)):
+    """The morning standup: pipeline at risk, today's plan, wins, bookings,
+    and the current learned insight — the agency layer's one-glance report."""
+    from datetime import datetime, timedelta
+    from ..models import Booking
+    from ..learning import stats as learning_stats
+    now = datetime.utcnow()
+    with get_session() as s:
+        open_pats = (
+            s.query(Patient)
+            .filter(Patient.practice_id == org_id,
+                    Patient.status == "consulted_not_started",
+                    Patient.opted_out == False)  # noqa: E712
+            .all()
+        )
+        # last outbound per patient — who's gone quiet a week+
+        camp_rows = s.query(Campaign).filter(Campaign.practice_id == org_id).all()
+        camps_by_patient: dict[int, list[int]] = {}
+        for c in camp_rows:
+            camps_by_patient.setdefault(c.patient_id, []).append(c.id)
+        all_cids = [c.id for c in camp_rows]
+        last_out: dict[int, datetime] = {}
+        if all_cids:
+            for m in (s.query(Message)
+                      .filter(Message.campaign_id.in_(all_cids),
+                              Message.direction == "outbound",
+                              Message.status.in_(("sent", "delivered", "replied")))
+                      .all()):
+                for pid, cids in camps_by_patient.items():
+                    if m.campaign_id in cids and m.created_at:
+                        if pid not in last_out or m.created_at > last_out[pid]:
+                            last_out[pid] = m.created_at
+        week_ago = now - timedelta(days=7)
+        at_risk = [p for p in open_pats
+                   if last_out.get(p.id) is None or last_out[p.id] < week_ago]
+        at_risk_value = sum(p.treatment_plan_amount or 0 for p in at_risk)
+        pipeline_value = sum(p.treatment_plan_amount or 0 for p in open_pats)
+
+        pending = (
+            s.query(Message)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == org_id,
+                    Message.status == "pending_approval").count()
+        )
+        scheduled_today = sum(
+            1 for m in s.query(Message)
+            .join(Campaign, Message.campaign_id == Campaign.id)
+            .filter(Campaign.practice_id == org_id,
+                    Message.status == "approved",
+                    Message.scheduled_at != None)  # noqa: E711
+            .all()
+            if m.scheduled_at and m.scheduled_at <= now + timedelta(hours=24)
+        )
+        bookings_upcoming = (
+            s.query(Booking)
+            .filter(Booking.practice_id == org_id, Booking.status == "scheduled",
+                    Booking.start_at != None,  # noqa: E711
+                    Booking.start_at >= now)
+            .count()
+        )
+        data = _load_org_profile_data(s, org_id)
+        wins = [w for w in (data.get("wins") or [])
+                if (w.get("at") or "") >= (now - timedelta(days=7)).isoformat()]
+        autopilot_on = bool((data.get("rules") or {}).get("auto_approve"))
+    try:
+        insight = learning_stats(org_id).get("insight")
+    except Exception:
+        insight = None
+    return {
+        "open_quotes": len(open_pats),
+        "pipeline_value": pipeline_value,
+        "at_risk_count": len(at_risk),
+        "at_risk_value": at_risk_value,
+        "pending_approvals": pending,
+        "scheduled_next_24h": scheduled_today,
+        "bookings_upcoming": bookings_upcoming,
+        "won_week_count": len(wins),
+        "won_week_value": sum(w.get("amount") or 0 for w in wins),
+        "autopilot": autopilot_on,
+        "insight": insight,
+    }
+
+
 @router.get("/api/v1/bookings")
 def api_bookings_list(org_id: str = Depends(verify_admin)):
     """Upcoming scheduled bookings for the Home card, soonest first."""

@@ -261,6 +261,29 @@ class CampaignRunner:
                 pass
             return
 
+        # Learning loop: with enough reply data, autopilot stops sending
+        # whenever the 5-minute pass happens to fire and instead schedules
+        # at the hour THIS business's customers actually reply. The message
+        # rides the existing approved+scheduled_at dispatch loop.
+        try:
+            from .learning import best_send_hour, next_occurrence
+            bh = best_send_hour(self.practice_id)
+        except Exception:
+            bh = None
+        if bh is not None and datetime.utcnow().hour != bh and step.channel in ("sms", "email"):
+            session.add(Message(
+                campaign_id=campaign.id,
+                direction="outbound",
+                channel=step.channel,
+                day_in_campaign=step.day,
+                subject=plan.subject,
+                body=plan.body,
+                status="approved",
+                scheduled_at=next_occurrence(bh),
+                metadata_json={"intent": step.intent, "autopilot": True, "learned_timing": True},
+            ))
+            return
+
         # Auto mode - send immediately, on the org's OWN line first (Blooio →
         # Claw → Twilio) so auto-sent texts share the thread the customer can
         # reply to — not the shared Twilio number.

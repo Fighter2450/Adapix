@@ -1756,6 +1756,11 @@ body>*{position:relative;z-index:1}
 
       <div id="home-insight" style="display:none;font-size:14px;color:var(--ink-2);background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0"></div>
 
+      <div id="home-brief" class="scard" style="display:none;margin:14px 0 4px;border-color:rgba(167,139,250,.25);background:linear-gradient(135deg,rgba(167,139,250,.07),rgba(34,211,238,.05))">
+        <div class="scard-title" style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><i data-lucide="sunrise" style="width:15px;height:15px;color:#fbbf24"></i>Your morning brief</div>
+        <div id="home-brief-body" style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--ink-2)"></div>
+      </div>
+
       <div id="home-paused-banner" style="display:none;align-items:center;gap:10px;padding:12px 16px;margin-bottom:18px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:12px;font-size:13px;color:#fde68a">
         <i data-lucide="pause-circle" style="width:16px;height:16px;flex-shrink:0"></i>
         Adapix is paused — no new follow-ups will be drafted until you resume. Anything already waiting in your Inbox can still be sent or rejected by hand.
@@ -2051,6 +2056,42 @@ body>*{position:relative;z-index:1}
           catch(e){ toast(e.message || 'Could not cancel', true); btn.disabled = false; }
         });
       });
+    }).catch(()=>{});
+
+    // Morning brief — the employee's standup report. Every line is a real
+    // count; lines with nothing to say don't render.
+    api('/api/v1/brief').then(b => {
+      const card = document.getElementById('home-brief');
+      const body = document.getElementById('home-brief-body');
+      if (!card || !body) return;
+      const money = n => '$' + Math.round(n || 0).toLocaleString();
+      const line = (icon, color, html) =>
+        `<div style="display:flex;gap:9px;align-items:flex-start"><i data-lucide="${icon}" style="width:14px;height:14px;margin-top:2px;flex-shrink:0;color:${color}"></i><span>${html}</span></div>`;
+      const lines = [];
+      if (b.at_risk_count > 0) {
+        lines.push(line('alert-triangle', '#fbbf24',
+          `<b style="color:var(--ink)">${money(b.at_risk_value)} in open quotes has gone quiet</b> — ${b.at_risk_count} ${b.at_risk_count === 1 ? 'customer hasn\'t' : 'customers haven\'t'} heard from you in a week. Adapix is on it.`));
+      }
+      if (b.scheduled_next_24h > 0) {
+        lines.push(line('send', '#22d3ee',
+          `Today's plan: <b style="color:var(--ink)">${b.scheduled_next_24h} follow-up${b.scheduled_next_24h === 1 ? '' : 's'}</b> going out in the next 24 hours${b.autopilot ? ' on autopilot' : ''}.`));
+      } else if (b.pending_approvals > 0) {
+        lines.push(line('inbox', '#a78bfa',
+          `<b style="color:var(--ink)">${b.pending_approvals} draft${b.pending_approvals === 1 ? '' : 's'}</b> waiting for your OK in the Inbox.`));
+      }
+      if (b.bookings_upcoming > 0) {
+        lines.push(line('calendar-check', '#4ade80',
+          `<b style="color:var(--ink)">${b.bookings_upcoming} appointment${b.bookings_upcoming === 1 ? '' : 's'}</b> on the books that Adapix scheduled for you.`));
+      }
+      if (b.won_week_count > 0) {
+        lines.push(line('trophy', '#4ade80',
+          `Won this week: <b style="color:var(--ink)">${b.won_week_count} customer${b.won_week_count === 1 ? '' : 's'} · ${money(b.won_week_value)}</b>.`));
+      }
+      if (b.insight) lines.push(line('brain', '#a78bfa', b.insight));
+      if (!lines.length) return;
+      body.innerHTML = lines.join('');
+      card.style.display = '';
+      renderLucide(card);
     }).catch(()=>{});
 
     // One-shot mini activity feed (Results has the live-refreshing full one)
@@ -2766,9 +2807,13 @@ body>*{position:relative;z-index:1}
         </div>
         <div id="an-chart" class="home-chart" style="min-height:170px"></div>
       </div>
-      <div class="scard">
+      <div class="scard" style="margin-bottom:18px">
         <div class="scard-title">By channel</div>
         <div id="an-channels" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+      <div class="scard" id="an-learning" style="display:none">
+        <div class="scard-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="brain" style="width:15px;height:15px;color:#a78bfa"></i>What Adapix has learned</div>
+        <div id="an-learning-body"></div>
       </div>`;
     renderLucide(main);
     main.querySelectorAll('[data-an-days]').forEach(b => b.addEventListener('click', () => {
@@ -2820,6 +2865,45 @@ body>*{position:relative;z-index:1}
       const el = document.getElementById('an-tiles');
       if (el) el.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--ink-3)">Could not load analytics — try refreshing.</div>';
     });
+
+    api('/api/v1/learning').then(L => {
+      if (state.view !== 'analytics') return;
+      const card = document.getElementById('an-learning');
+      const body = document.getElementById('an-learning-body');
+      if (!card || !body) return;
+      card.style.display = '';
+      if (!L.enough_data) {
+        body.innerHTML = `<p style="font-size:13px;color:var(--ink-2);margin:0">Still learning — Adapix studies which send times and channels get replies from <b>your</b> customers, then times autopilot follow-ups to match. It needs about ${Math.max(0, 20 - (L.sends||0))} more sends before it starts adjusting. (${L.sends||0} sends, ${L.replies||0} replies so far.)</p>`;
+        renderLucide(card);
+        return;
+      }
+      const fmtH = h => (h % 12 || 12) + (h < 12 ? 'am' : 'pm');
+      const chips = [];
+      if (L.best_hour !== null && L.best_hour !== undefined) chips.push({k:'Best send time', v:'around ' + fmtH(L.best_hour), s: Math.round((L.best_hour_rate||0)*100) + '% reply rate'});
+      if (L.best_channel) chips.push({k:'Best channel', v: L.best_channel === 'sms' ? 'Texts' : L.best_channel === 'email' ? 'Email' : L.best_channel, s:'gets the most replies'});
+      if (L.best_weekday) chips.push({k:'Best day', v: L.best_weekday + 's', s:'customers reply most'});
+      const hours = (L.by_hour||[]).filter(b => b.sends >= 3).sort((a,b) => a.key - b.key);
+      const maxRate = Math.max(0.01, ...hours.map(b => b.rate));
+      body.innerHTML = `
+        ${L.insight ? `<p style="font-size:13px;color:var(--ink-2);margin:0 0 14px">${L.insight}</p>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:${hours.length>2?'16px':'0'}">
+          ${chips.map(c => `
+            <div style="padding:12px 14px;border-radius:12px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.18)">
+              <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">${c.k}</div>
+              <div style="font-size:18px;font-weight:800;color:var(--ink);margin:3px 0 1px">${c.v}</div>
+              <div style="font-size:11.5px;color:var(--ink-3)">${c.s}</div>
+            </div>`).join('')}
+        </div>
+        ${hours.length > 2 ? `
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px">Reply rate by send hour</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:64px">
+          ${hours.map(b => `<div title="${fmtH(b.key)} — ${Math.round(b.rate*100)}% of ${b.sends} sends" style="flex:1;border-radius:4px 4px 0 0;background:${b.key===L.best_hour?'#a78bfa':'rgba(167,139,250,.3)'};height:${Math.max(6,(b.rate/maxRate*100)).toFixed(0)}%"></div>`).join('')}
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          ${hours.map(b => `<div style="flex:1;text-align:center;font-size:9.5px;color:var(--ink-3)">${fmtH(b.key)}</div>`).join('')}
+        </div>` : ''}`;
+      renderLucide(card);
+    }).catch(() => {});
   }
 
   function renderStationView(){
