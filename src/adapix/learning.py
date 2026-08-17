@@ -109,7 +109,7 @@ def _insight_line(bh, bc, bd) -> str | None:
     if bc and bc["rate"] > 0:
         parts.append(f"{bc['key']} is your best channel ({round(bc['rate']*100)}% reply rate)")
     if bd:
-        parts.append(f"{bd['key']}s reply best")
+        parts.append(f"{_DAYS[bd['key']]}s reply best")
     if not parts:
         return None
     return ("What I've learned about your customers: " + "; ".join(parts) +
