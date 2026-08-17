@@ -49,7 +49,7 @@ p b{color:#fff}
 <p>This week Adapix stopped being a tool and started being an <b>employee</b>.</p>
 <p>It now files a morning report, books appointments from a text reply, and studies its own results to learn when <b>your</b> customers actually respond.</p>
 <p>Built by one founder, shipped every week.</p>
-<div class="sig">&mdash; Rocco, founder</div>
+<div class="sig">&mdash; Rocco Chenet, founder</div>
 <div class="sub">adapixai.com</div>
 </div></body></html>"""
 
