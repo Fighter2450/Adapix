@@ -1,0 +1,11 @@
+# Railway runs only the FastAPI app — keep the upload small.
+# website/ deploys via Vercel; scratch/ is local working files.
+scratch/
+website/
+venv/
+docs/
+*.mp4
+*.webm
+*.wav
+*.mov
+.git/
