@@ -195,6 +195,29 @@ class Patient(Base):
     )
 
 
+class Booking(Base):
+    """A confirmed (or offered) appointment born from the follow-up loop.
+
+    status: "offered"   — Adapix proposed slots (note holds the ISO list) and
+                          is waiting for the customer to pick one;
+            "scheduled" — confirmed; start_at is set; a reminder message may
+                          reference this row;
+            "cancelled"/"completed" — terminal.
+    """
+
+    __tablename__ = "bookings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    practice_id: Mapped[str] = mapped_column(String(64), index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id"), nullable=True)
+    start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    duration_min: Mapped[int] = mapped_column(Integer, default=60)
+    status: Mapped[str] = mapped_column(String(32), default="scheduled", index=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Campaign(Base):
     """A run of a workflow against one patient."""
 

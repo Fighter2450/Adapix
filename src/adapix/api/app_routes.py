@@ -2128,6 +2128,50 @@ def api_autopilot_dismiss(org_id: str = Depends(verify_admin)):
     return {"ok": True}
 
 
+@router.get("/api/v1/bookings")
+def api_bookings_list(org_id: str = Depends(verify_admin)):
+    """Upcoming scheduled bookings for the Home card, soonest first."""
+    from datetime import datetime, timedelta
+    from ..models import Booking
+    with get_session() as s:
+        rows = (
+            s.query(Booking, Patient)
+            .join(Patient, Booking.patient_id == Patient.id)
+            .filter(Booking.practice_id == org_id,
+                    Booking.status == "scheduled",
+                    Booking.start_at != None,  # noqa: E711
+                    Booking.start_at >= datetime.utcnow() - timedelta(hours=2))
+            .order_by(Booking.start_at.asc())
+            .limit(10)
+            .all()
+        )
+        return {"bookings": [{
+            "id": b.id,
+            "start_at": b.start_at.isoformat(),
+            "duration_min": b.duration_min,
+            "patient_id": p.id,
+            "name": f"{p.first_name or ''} {p.last_name or ''}".strip() or "Customer",
+            "job": p.treatment_type or "",
+            "amount": p.treatment_plan_amount,
+        } for b, p in rows]}
+
+
+@router.post("/api/v1/bookings/{booking_id}/cancel")
+def api_booking_cancel(booking_id: int, org_id: str = Depends(verify_admin)):
+    from ..models import Booking
+    with get_session() as s:
+        b = s.get(Booking, booking_id)
+        if b is None or b.practice_id != org_id:
+            raise HTTPException(status_code=404, detail="not found")
+        b.status = "cancelled"
+        # kill any pending reminder for it
+        for m in s.query(Message).filter(Message.status == "approved").all():
+            md = m.metadata_json or {}
+            if md.get("booking_reminder") and md.get("booking_id") == booking_id:
+                m.status = "rejected"
+    return {"ok": True}
+
+
 @router.post("/api/v1/autopilot/enable")
 def api_autopilot_enable(org_id: str = Depends(verify_admin)):
     """One-tap 'take it from here' — flips the same rules flag as the

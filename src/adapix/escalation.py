@@ -33,9 +33,15 @@ follow-up campaign. Choose ONE category that best fits:
 - emergency — they mention danger, injury, or anything that sounds like it
   needs someone's immediate attention.
 - stop — the message is a STOP / UNSUBSCRIBE / END keyword (TCPA opt-out).
+- wants_to_book — they are ready to proceed and want to schedule: a clear
+  yes to the quoted job ("yes let's do it", "book me in", "when can you
+  come?"), asking for available times, or naming a day/time that works for
+  them. NOT a mere polite interest ("sounds good, let me think") — there
+  must be intent to get on the calendar.
 - other — a normal conversational reply the AI assistant can handle on its
   own: questions the business has already answered in its taught knowledge,
-  scheduling questions, thank yous, casual replies.
+  general scheduling questions with no intent to book yet, thank yous,
+  casual replies.
 
 IMPORTANT: If BUSINESS CONTEXT below shows the business has already taught
 Adapix the answer to this kind of question, classify it as "other" — being

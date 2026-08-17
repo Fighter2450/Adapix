@@ -245,8 +245,11 @@ class InboundProcessor:
                 body, history, business_context=profile.classifier_context_fragment()
             )
 
-            # Log escalation event for any non-"other" category
-            if classification.category != "other":
+            # Log escalation event for any non-"other" category.
+            # wants_to_book is NOT an escalation — the booking loop handles it
+            # autonomously; the owner hears about it as a booked job, not a
+            # "needs you" alarm.
+            if classification.category not in ("other", "wants_to_book"):
                 s.add(
                     EscalationEvent(
                         campaign_id=campaign.id,
@@ -426,6 +429,50 @@ class InboundProcessor:
         inbound_body: str,
     ) -> InboundResult:
         cat = classification.category
+
+        # Booking loop, part 2: if we already offered this contact time slots,
+        # try to read their reply as a pick BEFORE the category branches —
+        # "Thursday at 1 works" can classify as almost anything. STOP still
+        # wins (checked below via the category order: stop is next).
+        if cat != "stop":
+            from .booking import get_pending_offer, match_slot_choice, confirm_booking
+            offer = get_pending_offer(session, campaign.practice_id, patient.id)
+            if offer is not None:
+                import json as _json
+                try:
+                    offered = _json.loads(offer.note or "[]")
+                except ValueError:
+                    offered = []
+                picked = match_slot_choice(inbound_body, offered) if offered else None
+                if picked:
+                    body = confirm_booking(session, offer, picked, campaign.practice_id, patient)
+                    self._send_and_log(session, campaign, patient, body, "booking_confirmed")
+                    try:
+                        from .notifications import push_notification
+                        from .booking import fmt_slot
+                        from datetime import datetime as _dt
+                        who = f"{patient.first_name} {patient.last_name}".strip() or "A customer"
+                        push_notification(
+                            title="New booking 🎉",
+                            body=f"{who} is booked for {fmt_slot(_dt.fromisoformat(picked))} — Adapix handled it end to end.",
+                            url="/app", tag="adapix-booking", org_id=campaign.practice_id,
+                        )
+                    except Exception:
+                        pass
+                    return InboundResult(status="booked", classification=classification,
+                                         response_body=body)
+
+        if cat == "wants_to_book":
+            # Booking loop, part 1: they're ready — offer real openings.
+            from .booking import offer_slots
+            body = offer_slots(session, campaign.practice_id, patient, campaign)
+            if body is not None:
+                self._send_and_log(session, campaign, patient, body, "booking_offer")
+                return InboundResult(status="booking_offered", classification=classification,
+                                     response_body=body)
+            # No open slots — a human needs to sort scheduling out.
+            campaign.status = CampaignStatus.escalated.value
+            return InboundResult(status="escalated", classification=classification)
 
         if cat == "stop":
             campaign.status = CampaignStatus.stopped.value

@@ -1802,6 +1802,13 @@ body>*{position:relative;z-index:1}
         <div class="home-chart" id="home-chart"></div>
       </div>
 
+      <div id="home-bookings" style="display:none">
+        <div class="home-section-head">
+          <span class="section-eyebrow" style="margin:0">Booked by Adapix</span>
+        </div>
+        <div id="home-bookings-list"></div>
+      </div>
+
       <div class="home-section-head">
         <span class="section-eyebrow" style="margin:0">Needs you first · ${needsYou}</span>
         ${needsYou ? '<button class="home-see-all" data-goto-view="inbox">Open inbox ›</button>' : ''}
@@ -2017,6 +2024,34 @@ body>*{position:relative;z-index:1}
         if (el) el.textContent = (j.history || []).filter(c => c.direction === 'inbound').length;
       }).catch(()=>{});
     }
+
+    // Upcoming bookings Adapix closed itself — the proudest card on the page.
+    api('/api/v1/bookings').then(j => {
+      const wrap = document.getElementById('home-bookings');
+      const list = document.getElementById('home-bookings-list');
+      const bs = (j.bookings || []);
+      if (!wrap || !list || !bs.length) return;
+      wrap.style.display = 'block';
+      list.innerHTML = bs.slice(0,5).map(b => {
+        const d = new Date(b.start_at);
+        const when = d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})
+          + ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+        return '<div class="row-card" style="margin-bottom:8px">'
+          + '<div class="text"><b>' + escapeHTML(b.name) + (b.job ? ' — ' + escapeHTML(b.job) : '') + '</b>'
+          + '<span>' + when + (b.amount ? ' · $' + Math.round(b.amount).toLocaleString() : '') + '</span></div>'
+          + '<span class="pill" style="background:rgba(34,197,94,.14);color:#4ade80;border-color:rgba(34,197,94,.4)">Booked</span>'
+          + '<button class="btn btn-ghost" style="padding:5px 10px;font-size:11.5px" data-action="booking-cancel" data-id="' + b.id + '">Cancel</button>'
+          + '</div>';
+      }).join('');
+      list.querySelectorAll('[data-action="booking-cancel"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Cancel this booking? (This only updates Adapix — tell the customer separately.)')) return;
+          btn.disabled = true;
+          try { await api('/api/v1/bookings/' + btn.dataset.id + '/cancel', {method:'POST', body: JSON.stringify({})}); toast('Booking cancelled'); renderHomeView(); }
+          catch(e){ toast(e.message || 'Could not cancel', true); btn.disabled = false; }
+        });
+      });
+    }).catch(()=>{});
 
     // One-shot mini activity feed (Results has the live-refreshing full one)
     api('/api/v1/activity?limit=5').then(j => {
