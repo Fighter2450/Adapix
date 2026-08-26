@@ -3,6 +3,10 @@
 Two people share this repo: Rocco (Founder & CEO) and Ben (CMO — not a
 co-founder). Respect the lane split below no matter who is prompting you.
 
+**Cloud/phone sessions:** if you are running in the cloud (not on Rocco's PC),
+read `docs/PHONE_BRIEF.md` FIRST — it is the desktop session's memory,
+packaged for sessions that can't see his machine.
+
 ## Ownership lanes
 
 - **Rocco (Founder & CEO — technical)** owns `src/` — the FastAPI app, AI engine, campaign
